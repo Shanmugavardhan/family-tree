@@ -10,6 +10,28 @@ export const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
+// Root informational endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      service: 'Multigenerational Family Tree API',
+      status: 'online',
+      version: '1.0.0',
+      frontend: 'http://localhost:5173',
+      treeUrl: 'http://localhost:5173/tree',
+      endpoints: {
+        health: '/api/health',
+        persons: '/api/persons',
+        relationships: '/api/relationships',
+        graph: '/api/graph',
+        layout: '/api/layout',
+      },
+    },
+    error: null,
+  });
+});
+
 // Health check endpoint for Milestone 2.1
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
