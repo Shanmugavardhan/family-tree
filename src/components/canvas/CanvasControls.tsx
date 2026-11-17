@@ -88,7 +88,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
     onSelectPerson(n.id);
     setSearchTerm(`${n.firstName || ''} ${n.lastName || ''}`.trim());
     setIsSearchOpen(false);
-    setCenter(n.x + n.width / 2, n.y + n.height / 2, { duration: 800, zoom: 1.1 });
+    setCenter(n.x + n.width / 2, n.y + n.height / 2, { duration: 800, zoom: 1.35 });
   };
 
   const handleJumpToLane = (lane: CohortLane) => {
@@ -100,7 +100,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
       : 300;
     const targetY = lane.y + lane.height / 2;
 
-    setCenter(targetX, targetY, { duration: 800, zoom: 0.9 });
+    setCenter(targetX, targetY, { duration: 800, zoom: 1.35 });
   };
 
   return (
@@ -421,14 +421,20 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             <ZoomOut size={16} />
           </button>
           <button
-            onClick={() => fitView({ padding: 0.15, duration: 600 })}
+            onClick={() => {
+              const personNodeRefs = nodes.map((n) => ({ id: n.id }));
+              fitView({ nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined, padding: 0.1, duration: 600, maxZoom: 1.35 });
+            }}
             title="Fit to View"
             style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
           >
             <Maximize2 size={16} />
           </button>
           <button
-            onClick={() => fitView({ duration: 600 })}
+            onClick={() => {
+              const personNodeRefs = nodes.map((n) => ({ id: n.id }));
+              fitView({ nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined, duration: 600, maxZoom: 1.35 });
+            }}
             title="Reset View"
             style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
           >

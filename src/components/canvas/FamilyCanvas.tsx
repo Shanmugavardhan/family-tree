@@ -181,7 +181,7 @@ const FamilyCanvasInternal: React.FC = () => {
         if (targetNode) {
           setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
             duration: 600,
-            zoom: 1.1,
+            zoom: 1.35,
           });
         }
       }
@@ -200,7 +200,7 @@ const FamilyCanvasInternal: React.FC = () => {
         if (targetNode) {
           setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
             duration: 600,
-            zoom: 1.1,
+            zoom: 1.35,
           });
         }
       }
@@ -252,12 +252,24 @@ const FamilyCanvasInternal: React.FC = () => {
         setTimeout(() => {
           setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
             duration: 800,
-            zoom: 1.1,
+            zoom: 1.35,
           });
         }, 150);
       }
+    } else {
+      // Default: Focus directly on family member cards at a closer, readable zoom level
+      const personNodeRefs = layout.nodes.map((n) => ({ id: n.id }));
+      setTimeout(() => {
+        fitView({
+          nodes: personNodeRefs,
+          padding: 0.1,
+          duration: 700,
+          maxZoom: 1.35,
+          minZoom: 0.85,
+        });
+      }, 150);
     }
-  }, [layout, searchParams, selectPerson, setCenter]);
+  }, [layout, searchParams, selectPerson, setCenter, fitView]);
 
   // When selection, focusMode, or active path changes, recalculate React Flow nodes/edges
   React.useEffect(() => {
@@ -338,7 +350,7 @@ const FamilyCanvasInternal: React.FC = () => {
       // Smoothly fit view to highlight all ancestors
       setTimeout(() => {
         const nodesToFit = Array.from(ancestors).map((id) => ({ id }));
-        fitView({ nodes: nodesToFit, padding: 0.25, duration: 800 });
+        fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
       }, 100);
     },
     [layout, fitView]
@@ -379,7 +391,7 @@ const FamilyCanvasInternal: React.FC = () => {
       // Smoothly fit view to highlight all descendants
       setTimeout(() => {
         const nodesToFit = Array.from(descendants).map((id) => ({ id }));
-        fitView({ nodes: nodesToFit, padding: 0.25, duration: 800 });
+        fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
       }, 100);
     },
     [layout, fitView]
@@ -401,7 +413,7 @@ const FamilyCanvasInternal: React.FC = () => {
       if (pathData.nodeIds.size > 0) {
         setTimeout(() => {
           const nodesToFit = Array.from(pathData.nodeIds).map((id) => ({ id }));
-          fitView({ nodes: nodesToFit, padding: 0.25, duration: 800 });
+          fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
         }, 100);
       }
     },
@@ -523,7 +535,7 @@ const FamilyCanvasInternal: React.FC = () => {
             if (targetNode) {
               setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
                 duration: 800,
-                zoom: 1.1,
+                zoom: 1.35,
               });
             }
           }
@@ -552,10 +564,8 @@ const FamilyCanvasInternal: React.FC = () => {
         nodesDraggable={false} // Strictly locked to chronological coordinates
         nodesConnectable={false}
         elementsSelectable={true}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
-        minZoom={0.1}
-        maxZoom={2.5}
+        minZoom={0.2}
+        maxZoom={4.0}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#334155' : '#cbd5e1'} />
 
@@ -591,7 +601,7 @@ const FamilyCanvasInternal: React.FC = () => {
             if (targetNode) {
               setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
                 duration: 800,
-                zoom: 1.1,
+                zoom: 1.35,
               });
             }
           }

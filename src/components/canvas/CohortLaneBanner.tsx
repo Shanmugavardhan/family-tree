@@ -79,27 +79,27 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
       <div
         style={{
           position: 'absolute',
-          top: 16,
+          top: 20,
           left: 6040, // 6000px offset from -6000px left edge places it exactly at x: 40 on canvas
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
-          padding: '10px 22px',
-          borderRadius: 14,
+          gap: 18,
+          padding: '14px 28px',
+          borderRadius: 16,
           backgroundColor: isDark ? '#1e293b' : '#ffffff',
           boxShadow: isDark
-            ? '0 6px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)'
-            : '0 4px 12px rgba(0, 0, 0, 0.07)',
+            ? '0 6px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)'
+            : '0 4px 14px rgba(0, 0, 0, 0.08)',
           border: `1px solid ${isDark ? '#334155' : `${bgColor}40`}`,
-          borderLeft: `6px solid ${bgColor}`,
+          borderLeft: `7px solid ${bgColor}`,
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Generation Name (+11px text size -> 24px) */}
+          {/* Generation Name */}
           <span
             style={{
-              fontSize: '24px',
-              fontWeight: 800,
+              fontSize: '32px',
+              fontWeight: 900,
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               color: isDark ? '#f8fafc' : '#0f172a',
@@ -109,26 +109,26 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
             {lane.name}
           </span>
 
-          {/* Period Years & Member Count (+10px text size -> 21px) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+          {/* Period Years & Member Count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 5 }}>
             {lane.startYear && lane.endYear ? (
               <span
                 style={{
-                  fontSize: '21px',
+                  fontSize: '25px',
                   color: isDark ? '#94a3b8' : '#64748b',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 8,
                 }}
               >
-                <Calendar size={18} />
+                <Calendar size={22} />
                 {lane.startYear} – {lane.endYear}
               </span>
             ) : (
               <span
                 style={{
-                  fontSize: '21px',
+                  fontSize: '25px',
                   color: isDark ? '#64748b' : '#94a3b8',
                   fontStyle: 'italic',
                 }}
@@ -139,15 +139,15 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
 
             <span
               style={{
-                fontSize: '21px',
+                fontSize: '25px',
                 color: isDark ? '#94a3b8' : '#64748b',
-                fontWeight: 600,
+                fontWeight: 700,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
-              <Users size={18} />
+              <Users size={22} />
               {lane.nodeCount} {lane.nodeCount === 1 ? 'member' : 'members'}
             </span>
           </div>

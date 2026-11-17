@@ -14,18 +14,18 @@ export interface LayoutConfig {
 }
 
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
-  nodeWidth: 320,
-  nodeHeight: 150,
-  horizontalSpacing: 70,
-  spouseSpacing: 40,
-  laneHeight: 260,
+  nodeWidth: 380,
+  nodeHeight: 180,
+  horizontalSpacing: 80,
+  spouseSpacing: 50,
+  laneHeight: 320,
   laneGap: 0, // Zero gap between horizontal generation strips
   laneMarginX: 80,
   laneMarginY: 0, // Seamless continuous canvas
   compactLanes: false,
   unknownLanePlacement: 'bottom',
-  minCanvasWidth: 1600,
-  minCanvasHeight: 1200,
+  minCanvasWidth: 1800,
+  minCanvasHeight: 1400,
 };
 
 export function mergeLayoutConfig(custom?: Partial<LayoutConfig>): LayoutConfig {

@@ -100,7 +100,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
       onSelectPerson(relPersonId);
       setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
         duration: 800,
-        zoom: 1.1,
+        zoom: 1.35,
       });
     }
   };

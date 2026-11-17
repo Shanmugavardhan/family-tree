@@ -53,13 +53,13 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
   return (
     <div
       style={{
-        width: 320,
-        height: 150,
+        width: 380,
+        height: 180,
         backgroundColor: isDark ? '#1e293b' : '#ffffff',
-        borderRadius: 14,
+        borderRadius: 16,
         border: `${borderWidth} solid ${borderColor}`,
         boxShadow,
-        padding: '12px 16px',
+        padding: '14px 18px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -124,59 +124,59 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         }}
       />
 
-      {/* Card Header: Cohort Badge (+10px -> 20px) and Living Status (+10px -> 21px) */}
+      {/* Card Header: Cohort Badge and Living Status */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span
           style={{
-            fontSize: '20px',
-            fontWeight: 700,
+            fontSize: '22px',
+            fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
             color: isPathNode ? '#b45309' : genColor,
             backgroundColor: isPathNode ? '#fef3c7' : `${genColor}18`,
-            padding: '3px 10px',
+            padding: '4px 12px',
             borderRadius: 8,
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 7,
             lineHeight: 1.2,
             whiteSpace: 'nowrap',
           }}
         >
-          {isPathNode ? <Navigation size={16} /> : <Sparkles size={16} />}
+          {isPathNode ? <Navigation size={18} /> : <Sparkles size={18} />}
           {isPathNode ? 'Path Link' : nodeData.generationName || 'Unknown Cohort'}
         </span>
 
-        {/* Living / Deceased Indicator (+10px -> 21px) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Living / Deceased Indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <div
             style={{
-              width: 9,
-              height: 9,
+              width: 11,
+              height: 11,
               borderRadius: '50%',
               backgroundColor: nodeData.isLiving ? '#10b981' : '#94a3b8',
             }}
           />
-          <span style={{ fontSize: '21px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+          <span style={{ fontSize: '23px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700 }}>
             {nodeData.isLiving ? 'Living' : 'Deceased'}
           </span>
         </div>
       </div>
 
-      {/* Card Body: Photo Avatar + Full Name (+10px -> 24px) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 4 }}>
+      {/* Card Body: Photo Avatar + Full Name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
         <div
           style={{
-            width: 56,
-            height: 56,
+            width: 68,
+            height: 68,
             borderRadius: '50%',
             backgroundColor: `${genColor}20`,
             color: genColor,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '22px',
+            fontWeight: 800,
+            fontSize: '28px',
             flexShrink: 0,
             overflow: 'hidden',
             border: `2px solid ${genColor}45`,
@@ -190,7 +190,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
               onError={() => setImageFailed(true)}
             />
           ) : (
-            initials || <User size={26} />
+            initials || <User size={32} />
           )}
         </div>
 
@@ -198,23 +198,24 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           <div
             title={fullName}
             style={{
-              fontWeight: 700,
-              fontSize: '24px',
+              fontWeight: 800,
+              fontSize: '28px',
               color: isDark ? '#f8fafc' : '#0f172a',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               lineHeight: 1.2,
+              letterSpacing: '-0.01em',
             }}
           >
             {fullName}
           </div>
           <div
             style={{
-              fontSize: '22px',
+              fontSize: '24px',
               color: isDark ? '#94a3b8' : '#64748b',
-              marginTop: 4,
-              fontWeight: 500,
+              marginTop: 5,
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -237,7 +238,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             bottom: 0,
             left: 0,
             right: 0,
-            height: 4,
+            height: 5,
             backgroundColor: isPathNode ? '#f59e0b' : '#2563eb',
           }}
         />
