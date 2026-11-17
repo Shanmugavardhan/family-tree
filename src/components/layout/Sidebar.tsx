@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, UserPlus, Sparkles, X } from 'lucide-react';
+import { LayoutDashboard, GitFork, Users, UserPlus, Sparkles, X } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -78,6 +78,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </NavLink>
 
           <NavLink
+            to="/tree"
+            onClick={onClose}
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          >
+            <GitFork size={20} />
+            <span>Interactive Tree</span>
+          </NavLink>
+
+          <NavLink
             to="/people"
             end
             onClick={onClose}
@@ -100,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div style={{ padding: '16px', borderTop: '1px solid var(--color-slate-200)', background: 'var(--color-slate-50)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-slate-600)', fontSize: '0.8125rem' }}>
             <Sparkles size={16} color="var(--color-primary)" />
-            <span>Phase 2: Person Module</span>
+            <span>Phase 3: Chronological Tree</span>
           </div>
         </div>
       </aside>

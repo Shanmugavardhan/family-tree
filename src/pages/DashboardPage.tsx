@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePersons } from '../hooks/usePersons';
-import { Users, UserPlus, Heart, Sparkles, Clock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Users, UserPlus, Heart, Sparkles, Clock, ArrowRight, ShieldCheck, GitFork } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const { persons, loading } = usePersons({ includeArchived: true });
@@ -43,13 +43,17 @@ export const DashboardPage: React.FC = () => {
             Explore family lineages, manage profiles and photographs, and view kinship derivations across generations.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            <Link to="/people/new" className="btn" style={{ backgroundColor: '#ffffff', color: 'var(--color-primary-hover)', fontWeight: 700 }}>
-              <UserPlus size={16} />
-              <span>Add Family Member</span>
+            <Link to="/tree" className="btn" style={{ backgroundColor: '#ffffff', color: 'var(--color-primary-hover)', fontWeight: 700 }}>
+              <GitFork size={16} />
+              <span>Explore Interactive Tree</span>
             </Link>
             <Link to="/people" className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.3)' }}>
               <Users size={16} />
               <span>Browse Directory</span>
+            </Link>
+            <Link to="/people/new" className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: '#ffffff' }}>
+              <UserPlus size={16} />
+              <span>Add Member</span>
             </Link>
           </div>
         </div>

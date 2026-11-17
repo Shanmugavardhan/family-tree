@@ -25,3 +25,4 @@ export const layoutApi = {
     return request<FamilyLayout>(`/layout${queryString ? `?${queryString}` : ''}`);
   },
 };
+

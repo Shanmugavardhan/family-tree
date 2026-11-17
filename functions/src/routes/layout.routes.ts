@@ -10,3 +10,4 @@ export function createLayoutRoutes(layoutController = new LayoutController()): R
 }
 
 export const layoutRoutes = createLayoutRoutes();
+

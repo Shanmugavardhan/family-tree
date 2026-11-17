@@ -35,3 +35,4 @@ export function mergeLayoutConfig(custom?: Partial<LayoutConfig>): LayoutConfig 
     ...custom,
   };
 }
+
