@@ -536,6 +536,28 @@ export async function runLayoutEngineTests(): Promise<{ passed: number; total: n
     const jsonCustom: any = await resCustom.json();
     assert(jsonCustom.data.nodes[0].width === 250, 'Custom nodeWidth respected in output');
     assert(jsonCustom.data.nodes[0].height === 120, 'Custom nodeHeight respected in output');
+    // 4. GET /api/layout?inferGenerations=true (Requirement 6: Kinship Generation Inference)
+    const resInferred = await fetch(`${baseUrl}/api/layout?inferGenerations=true`);
+    assert(resInferred.status === 200, 'GET /api/layout?inferGenerations=true returns HTTP 200');
+    const jsonInferred: any = await resInferred.json();
+    assert(jsonInferred.data.nodes.length === 14, 'Returns all 14 nodes with inferred generations');
+
+    const inferredMurthy = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Murthy');
+    const inferredSarojamma = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Sarojamma');
+    const inferredSuguna = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Suguna');
+    const inferredRevati = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Revati');
+    const inferredPranavi = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Pranavi');
+    const inferredHemanth = jsonInferred.data.nodes.find((n: any) => n.firstName === 'Hemanth');
+
+    assert(inferredMurthy?.generationOrder === 1, 'Murthy Chetty inferred as Silent Generation (Order 1)');
+    assert(inferredSarojamma?.generationOrder === 1, 'Sarojamma inferred as Silent Generation (Order 1)');
+    assert(inferredSuguna?.generationOrder === 3, 'Suguna inferred as Generation X (Order 3) alongside spouse Jagannadham');
+    assert(inferredRevati?.generationOrder === 5, 'Revati inferred as Generation Z (Order 5) alongside cousins Meghana & Shanmuga');
+    assert(inferredPranavi?.generationOrder === 5, 'Pranavi inferred as Generation Z (Order 5)');
+    assert(inferredHemanth?.generationOrder === 5, 'Hemanth inferred as Generation Z (Order 5)');
+
+    const nullOrderNodes = jsonInferred.data.nodes.filter((n: any) => n.generationOrder === null);
+    assert(nullOrderNodes.length === 0, 'Zero nodes left unclassified with kinship generation inference active');
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }

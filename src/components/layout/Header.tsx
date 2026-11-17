@@ -7,7 +7,6 @@ import {
   UserPlus,
   Sun,
   Moon,
-  Heart,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -69,69 +68,82 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
           : undefined
       }
     >
-      {/* Left: Brand Identity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Left: Brand Identity (House of Konukuru - Game of Thrones nobility styling) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <Link
           to="/tree"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 12,
             textDecoration: 'none',
           }}
         >
           <div
             style={{
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               borderRadius: 10,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              background: isDark
+                ? 'linear-gradient(135deg, #d4af37 0%, #997a15 100%)'
+                : 'linear-gradient(135deg, #c59b27 0%, #78350f 100%)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '1.25rem',
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.35)',
+              boxShadow: isDark
+                ? '0 2px 12px rgba(212, 175, 55, 0.45)'
+                : '0 2px 10px rgba(120, 53, 15, 0.25)',
               flexShrink: 0,
+              border: '1px solid rgba(255, 255, 255, 0.25)',
             }}
           >
-            🌳
+            🛡️
           </div>
           <div>
             <h1
               style={{
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                lineHeight: 1.2,
-                letterSpacing: '-0.01em',
+                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+                fontSize: '1.15rem',
+                fontWeight: 900,
+                color: isDark ? '#e5c158' : '#78350f',
+                lineHeight: 1.15,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.8)' : 'none',
               }}
             >
-              Konukuru Family
+              House of Konukuru
             </h1>
             <p
               style={{
-                fontSize: '0.725rem',
-                color: 'var(--text-muted)',
-                fontWeight: 500,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '0.825rem',
+                color: isDark ? '#cbd5e1' : '#78716c',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
               }}
             >
-              Multigenerational Tree
+              Chronicles of the Lineage
             </p>
           </div>
         </Link>
       </div>
 
-      {/* Center: Navigation Items as Icons */}
+      {/* Search Slot: Injected directly into the Header (Requirement 5) */}
+      <div id="header-search-slot" style={{ display: 'flex', alignItems: 'center' }} />
+
+      {/* Center: Navigation Items */}
       <nav
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(241, 245, 249, 0.85)',
+          backgroundColor: isDark ? 'rgba(22, 28, 38, 0.75)' : 'rgba(244, 237, 224, 0.85)',
           padding: '4px 6px',
           borderRadius: 12,
-          border: '1px solid var(--border-color)',
+          border: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(197, 155, 39, 0.35)',
         }}
         aria-label="Main Navigation"
       >
@@ -150,35 +162,36 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                 gap: 7,
                 padding: '6px 12px',
                 borderRadius: 8,
-                fontSize: '0.85rem',
-                fontWeight: isActive ? 600 : 500,
+                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+                fontSize: '0.825rem',
+                fontWeight: isActive ? 700 : 600,
+                letterSpacing: '0.04em',
                 color: isActive
-                  ? '#2563eb'
-                  : 'var(--text-muted)',
+                  ? isDark ? '#e5c158' : '#78350f'
+                  : isDark ? '#94a3b8' : '#78716c',
                 backgroundColor: isActive
-                  ? isDark
-                    ? '#1e293b'
-                    : '#ffffff'
+                  ? isDark ? 'rgba(212, 175, 55, 0.15)' : '#ffffff'
                   : 'transparent',
                 boxShadow: isActive
-                  ? isDark
-                    ? '0 1px 3px rgba(0, 0, 0, 0.4)'
-                    : '0 1px 3px rgba(0, 0, 0, 0.08)'
+                  ? isDark ? '0 1px 4px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.08)'
                   : 'none',
                 textDecoration: 'none',
                 transition: 'all 0.15s ease-in-out',
                 cursor: 'pointer',
               })}
             >
-              <Icon size={18} />
+              <Icon size={16} />
               <span className="header-nav-label">{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Right: Theme Switcher & Actions */}
+      {/* Right: Canvas Actions Slot (Requirement 8) + Theme Switcher */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Canvas Actions Slot (Pathfinder, Focus Mode, Timeline, Zoom) */}
+        <div id="header-canvas-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }} />
+
         {/* Active Lineage Count Badge */}
         <div
           className="header-lineage-badge"
@@ -186,17 +199,20 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: '0.8125rem',
-            color: 'var(--text-muted)',
-            padding: '4px 10px',
+            fontFamily: "'Cinzel', Georgia, serif",
+            fontSize: '0.785rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            color: isDark ? '#e5c158' : '#78350f',
+            padding: '5px 12px',
             borderRadius: 20,
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : 'rgba(241, 245, 249, 0.8)',
-            border: '1px solid var(--border-color)',
+            backgroundColor: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(197, 155, 39, 0.12)',
+            border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
           }}
-          title="Active family lineage members"
+          title="Active House members recorded in lineage"
         >
-          <Heart size={14} color="#e11d48" fill="#e11d48" />
-          <span style={{ fontWeight: 600 }}>14 Members</span>
+          <span>⚔️</span>
+          <span>14 Members</span>
         </div>
 
         {/* Dark / Light Mode Switch Button */}
@@ -206,25 +222,25 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             width: 38,
             height: 38,
             borderRadius: 10,
-            border: '1px solid var(--border-color)',
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            color: isDark ? '#fbbf24' : '#475569',
+            border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
+            backgroundColor: isDark ? '#161c26' : '#ffffff',
+            color: isDark ? '#fbbf24' : '#78350f',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             boxShadow: isDark
-              ? '0 1px 3px rgba(0, 0, 0, 0.3)'
+              ? '0 1px 4px rgba(0, 0, 0, 0.4)'
               : '0 1px 3px rgba(0, 0, 0, 0.06)',
             transition: 'all 0.2s ease-in-out',
           }}
-          title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          title={isDark ? 'Switch to Light Realm' : 'Switch to Dark Realm'}
+          aria-label={isDark ? 'Switch to Light Realm' : 'Switch to Dark Realm'}
         >
           {isDark ? (
-            <Sun size={19} color="#fbbf24" fill="#fbbf24" style={{ filter: 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.5))' }} />
+            <Sun size={18} color="#fbbf24" fill="#fbbf24" style={{ filter: 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.5))' }} />
           ) : (
-            <Moon size={19} color="#475569" fill="#e2e8f0" />
+            <Moon size={18} color="#78350f" fill="#fef3c7" />
           )}
         </button>
       </div>

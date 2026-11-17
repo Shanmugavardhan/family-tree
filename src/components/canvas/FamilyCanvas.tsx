@@ -31,6 +31,7 @@ import { PersonNode } from './PersonNode';
 import { CohortLaneBanner } from './CohortLaneBanner';
 import { FamilyEdge } from './FamilyEdge';
 import { CanvasControls } from './CanvasControls';
+import { StickyGenerationLabels } from './StickyGenerationLabels';
 import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
 import { useTheme } from '../../context/ThemeContext';
@@ -112,15 +113,33 @@ const FamilyCanvasInternal: React.FC = () => {
 
   const [includeArchived, setIncludeArchived] = React.useState(false);
   const [compactLanes, setCompactLanes] = React.useState(false);
-  const [showMiniMap, setShowMiniMap] = React.useState(true);
+  
+  // Requirement 9: MiniMap visible strictly during zoom activity only
+  const [isZooming, setIsZooming] = React.useState(false);
+  const lastZoomRef = React.useRef<number | null>(null);
+  const zoomTimerRef = React.useRef<any>(null);
+
+  const handleZoomActivity = React.useCallback(() => {
+    setIsZooming(true);
+    if (zoomTimerRef.current) clearTimeout(zoomTimerRef.current);
+    zoomTimerRef.current = setTimeout(() => {
+      setIsZooming(false);
+    }, 1800);
+  }, []);
+
+  const handleCanvasMove = React.useCallback(
+    (_event: any, viewport: { x: number; y: number; zoom: number }) => {
+      if (lastZoomRef.current !== null && Math.abs(viewport.zoom - lastZoomRef.current) > 0.001) {
+        handleZoomActivity();
+      }
+      lastZoomRef.current = viewport.zoom;
+    },
+    [handleZoomActivity]
+  );
 
   // Milestone 3.5: Person Interaction & Exploration states
   const [selectedPersonId, setSelectedPersonId] = React.useState<string | null>(null);
   const [focusMode, setFocusMode] = React.useState(false);
-
-  // Navigation History Stack
-  const [history, setHistory] = React.useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = React.useState<number>(-1);
 
   // Active Highlighted Path (Pathfinder / Ancestor / Descendant)
   const [pathNodeIds, setPathNodeIds] = React.useState<Set<string>>(new Set());
@@ -137,9 +156,9 @@ const FamilyCanvasInternal: React.FC = () => {
 
   const isInitialLoadRef = React.useRef(true);
 
-  // Helper to select person and manage navigation history
+  // Helper to select person
   const selectPerson = React.useCallback(
-    (personId: string | null, pushToHistory = true) => {
+    (personId: string | null, _pushToHistory?: boolean) => {
       setSelectedPersonId(personId);
 
       // Update URL query params cleanly
@@ -155,57 +174,9 @@ const FamilyCanvasInternal: React.FC = () => {
         },
         { replace: true }
       );
-
-      if (personId && pushToHistory) {
-        setHistory((prev) => {
-          const newHistory = prev.slice(0, historyIndex + 1);
-          newHistory.push(personId);
-          return newHistory;
-        });
-        setHistoryIndex((prev) => prev + 1);
-      }
     },
-    [historyIndex, setSearchParams]
+    [setSearchParams]
   );
-
-  // Navigation History actions
-  const handleGoBack = React.useCallback(() => {
-    if (historyIndex > 0) {
-      const prevIndex = historyIndex - 1;
-      const prevId = history[prevIndex];
-      setHistoryIndex(prevIndex);
-      selectPerson(prevId, false);
-
-      if (layout) {
-        const targetNode = layout.nodes.find((n) => n.id === prevId);
-        if (targetNode) {
-          setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
-            duration: 600,
-            zoom: 1.35,
-          });
-        }
-      }
-    }
-  }, [historyIndex, history, layout, selectPerson, setCenter]);
-
-  const handleGoForward = React.useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const nextIndex = historyIndex + 1;
-      const nextId = history[nextIndex];
-      setHistoryIndex(nextIndex);
-      selectPerson(nextId, false);
-
-      if (layout) {
-        const targetNode = layout.nodes.find((n) => n.id === nextId);
-        if (targetNode) {
-          setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
-            duration: 600,
-            zoom: 1.35,
-          });
-        }
-      }
-    }
-  }, [historyIndex, history, layout, selectPerson, setCenter]);
 
   const fetchLayout = React.useCallback(async () => {
     setLoading(true);
@@ -214,6 +185,7 @@ const FamilyCanvasInternal: React.FC = () => {
     const res = await layoutApi.getLayout({
       includeArchived,
       compactLanes,
+      inferGenerations: true,
     });
 
     if (res.success && res.data) {
@@ -517,17 +489,17 @@ const FamilyCanvasInternal: React.FC = () => {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#0b0f19' : '#f8fafc' }}>
-      {/* Floating Canvas Controls with Navigation, Focus, and Pathfinder */}
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#080a0f' : '#fcf9f2' }}>
+      {/* Sticky Noble Generation Labels (Requirement 4: Sticky on left, no box) */}
+      <StickyGenerationLabels lanes={layout?.lanes || []} />
+
+      {/* Header Canvas Controls Portal (Requirements 5 & 8: Search & Actions in Header) */}
       <CanvasControls
         nodes={layout?.nodes || []}
-        lanes={layout?.lanes || []}
         includeArchived={includeArchived}
         onToggleIncludeArchived={setIncludeArchived}
         compactLanes={compactLanes}
         onToggleCompactLanes={setCompactLanes}
-        showMiniMap={showMiniMap}
-        onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
         onSelectPerson={(id) => {
           selectPerson(id, true);
           if (layout) {
@@ -540,15 +512,12 @@ const FamilyCanvasInternal: React.FC = () => {
             }
           }
         }}
-        canGoBack={historyIndex > 0}
-        canGoForward={historyIndex < history.length - 1}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
         focusMode={focusMode}
         onToggleFocusMode={setFocusMode}
         onOpenPathfinder={() => handleOpenPathfinder()}
         activePathSummary={activePathSummary}
         onClearActivePath={handleClearPath}
+        onZoomActivity={handleZoomActivity}
       />
 
       {/* React Flow Canvas */}
@@ -557,6 +526,7 @@ const FamilyCanvasInternal: React.FC = () => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onMove={handleCanvasMove}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={handleNodeClick}
@@ -567,26 +537,39 @@ const FamilyCanvasInternal: React.FC = () => {
         minZoom={0.2}
         maxZoom={4.0}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#334155' : '#cbd5e1'} />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#263042' : '#cbd5e1'} />
 
-        {showMiniMap && (
+        {/* MiniMap: Automatically visible ONLY during zoom activity (Requirement 9) */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 24,
+            borderRadius: 12,
+            overflow: 'hidden',
+            opacity: isZooming ? 1 : 0,
+            pointerEvents: isZooming ? 'auto' : 'none',
+            transform: isZooming ? 'scale(1)' : 'scale(0.92)',
+            transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            zIndex: 40,
+            boxShadow: isDark
+              ? '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(212, 175, 55, 0.3)'
+              : '0 8px 25px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(197, 155, 39, 0.3)',
+          }}
+        >
           <MiniMap
             nodeColor={getMiniMapNodeColor}
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
-            maskColor={isDark ? 'rgba(11, 15, 25, 0.75)' : 'rgba(241, 245, 249, 0.7)'}
+            maskColor={isDark ? 'rgba(8, 10, 15, 0.8)' : 'rgba(252, 248, 238, 0.8)'}
             style={{
-              position: 'absolute',
-              bottom: 20,
-              right: 20,
-              borderRadius: 12,
-              border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-              boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.5)' : '0 4px 14px rgba(0, 0, 0, 0.08)',
-              overflow: 'hidden',
-              backgroundColor: isDark ? '#1e293b' : '#ffffff',
+              position: 'relative',
+              bottom: 0,
+              right: 0,
+              backgroundColor: isDark ? '#111622' : '#fcf8ee',
             }}
           />
-        )}
+        </div>
       </ReactFlow>
 
       {/* Selected Person Details Drawer with Kinship actions */}

@@ -1,4 +1,4 @@
-import { FamilyGraph, FamilyGraphNode } from '../graph/graph.types';
+import { FamilyGraph, FamilyGraphNode, FamilyGraphEdge } from '../graph/graph.types';
 import { GraphService } from '../graph/graph.service';
 import { GenerationService } from '../generations/generation.service';
 import {
@@ -59,9 +59,14 @@ export class LayoutService {
       };
     }
 
+    const standardDefs = this.generationService.getGenerationDefinitions();
+    const effectiveNodes = config.inferGenerations
+      ? this.inferMissingGenerations(graph.nodes, graph.edges, standardDefs)
+      : graph.nodes;
+
     // 1. Group nodes by generationOrder (null for unknown birth date)
     const cohortNodesMap = new Map<number | null, FamilyGraphNode[]>();
-    for (const node of graph.nodes) {
+    for (const node of effectiveNodes) {
       const order = node.generationOrder !== null && Number.isInteger(node.generationOrder)
         ? node.generationOrder
         : null;
@@ -72,7 +77,6 @@ export class LayoutService {
     }
 
     // 2. Build ordered lane list
-    const standardDefs = this.generationService.getGenerationDefinitions();
     const laneDefinitions: Array<{
       id: string;
       name: string;
@@ -173,7 +177,7 @@ export class LayoutService {
     const sameCohortSpousesByNode = new Map<string, string[]>();
 
     const nodeCohortMap = new Map<string, number | null>();
-    for (const node of graph.nodes) {
+    for (const node of effectiveNodes) {
       nodeCohortMap.set(node.id, node.generationOrder ?? null);
     }
 
@@ -423,6 +427,7 @@ export class LayoutService {
             photoPath: n.photoPath,
             isLiving: n.isLiving,
             isArchived: n.isArchived,
+            isInferredGeneration: (n as any).isInferredGeneration ?? false,
           };
 
           positionedNodes.push(pNode);
@@ -474,6 +479,201 @@ export class LayoutService {
     validateFamilyLayout(layout);
 
     return layout;
+  }
+
+  /**
+   * Infers generation cohort for family members without recorded birth dates
+   * by analyzing kinship relations (spouses, siblings, cousins, children, parents).
+   */
+  private inferMissingGenerations(
+    nodes: FamilyGraphNode[],
+    edges: FamilyGraphEdge[],
+    standardDefs: ReturnType<GenerationService['getGenerationDefinitions']>
+  ): FamilyGraphNode[] {
+    const parentIdsByChild = new Map<string, string[]>();
+    const childIdsByParent = new Map<string, string[]>();
+    const spouseIdsByNode = new Map<string, string[]>();
+
+    for (const e of edges) {
+      if (e.type === 'parent_child') {
+        if (!parentIdsByChild.has(e.target)) parentIdsByChild.set(e.target, []);
+        parentIdsByChild.get(e.target)!.push(e.source);
+
+        if (!childIdsByParent.has(e.source)) childIdsByParent.set(e.source, []);
+        childIdsByParent.get(e.source)!.push(e.target);
+      } else if (e.type === 'spouse') {
+        if (!spouseIdsByNode.has(e.source)) spouseIdsByNode.set(e.source, []);
+        if (!spouseIdsByNode.has(e.target)) spouseIdsByNode.set(e.target, []);
+        spouseIdsByNode.get(e.source)!.push(e.target);
+        spouseIdsByNode.get(e.target)!.push(e.source);
+      }
+    }
+
+    // Siblings share at least one parent
+    const siblingIdsByNode = new Map<string, Set<string>>();
+    for (const [childId, parents] of parentIdsByChild.entries()) {
+      if (!siblingIdsByNode.has(childId)) siblingIdsByNode.set(childId, new Set());
+      for (const p of parents) {
+        const siblings = childIdsByParent.get(p) || [];
+        for (const s of siblings) {
+          if (s !== childId) {
+            siblingIdsByNode.get(childId)!.add(s);
+          }
+        }
+      }
+    }
+
+    // Cousins: children of parents' siblings
+    const cousinIdsByNode = new Map<string, Set<string>>();
+    for (const [childId, parents] of parentIdsByChild.entries()) {
+      if (!cousinIdsByNode.has(childId)) cousinIdsByNode.set(childId, new Set());
+      for (const p of parents) {
+        const auntsUncles = siblingIdsByNode.get(p) || new Set();
+        for (const au of auntsUncles) {
+          const cousins = childIdsByParent.get(au) || [];
+          for (const c of cousins) {
+            if (c !== childId) {
+              cousinIdsByNode.get(childId)!.add(c);
+            }
+          }
+        }
+      }
+    }
+
+    // Map of resolved orders
+    const resolvedOrders = new Map<string, number>();
+
+    // Seed known orders from nodes with known birth dates
+    for (const n of nodes) {
+      if (n.generationOrder !== null && Number.isInteger(n.generationOrder)) {
+        resolvedOrders.set(n.id, n.generationOrder);
+      }
+    }
+
+    // Iteratively infer orders for unassigned nodes
+    let changed = true;
+    let maxLoops = 25;
+    while (changed && maxLoops-- > 0) {
+      changed = false;
+      for (const n of nodes) {
+        if (resolvedOrders.has(n.id)) continue;
+
+        let inferredOrder: number | null = null;
+
+        // 1. Check spouse (same cohort)
+        const spouses = spouseIdsByNode.get(n.id) || [];
+        for (const sp of spouses) {
+          if (resolvedOrders.has(sp)) {
+            inferredOrder = resolvedOrders.get(sp)!;
+            break;
+          }
+        }
+
+        // 2. Check siblings (same cohort)
+        if (inferredOrder === null) {
+          const siblings = Array.from(siblingIdsByNode.get(n.id) || []);
+          for (const sib of siblings) {
+            if (resolvedOrders.has(sib)) {
+              inferredOrder = resolvedOrders.get(sib)!;
+              break;
+            }
+          }
+        }
+
+        // 3. Check cousins (same cohort)
+        if (inferredOrder === null) {
+          const cousins = Array.from(cousinIdsByNode.get(n.id) || []);
+          for (const c of cousins) {
+            if (resolvedOrders.has(c)) {
+              inferredOrder = resolvedOrders.get(c)!;
+              break;
+            }
+          }
+        }
+
+        // 4. Check parents: if parents are known
+        if (inferredOrder === null) {
+          const parents = parentIdsByChild.get(n.id) || [];
+          for (const p of parents) {
+            // Check if parent has any other children with resolved order
+            const parentChildren = childIdsByParent.get(p) || [];
+            for (const pc of parentChildren) {
+              if (resolvedOrders.has(pc)) {
+                inferredOrder = resolvedOrders.get(pc)!;
+                break;
+              }
+            }
+            if (inferredOrder !== null) break;
+
+            // Check if parent's siblings have children (cousins) with resolved order
+            const auntsUncles = siblingIdsByNode.get(p) || new Set();
+            for (const au of auntsUncles) {
+              const cousins = childIdsByParent.get(au) || [];
+              for (const c of cousins) {
+                if (resolvedOrders.has(c)) {
+                  inferredOrder = resolvedOrders.get(c)!;
+                  break;
+                }
+              }
+              if (inferredOrder !== null) break;
+            }
+            if (inferredOrder !== null) break;
+
+            if (resolvedOrders.has(p)) {
+              const parentOrder = resolvedOrders.get(p)!;
+              inferredOrder = Math.min(7, parentOrder + 2);
+              break;
+            }
+          }
+        }
+
+        // 5. Check children: if this node has children with resolved orders
+        if (inferredOrder === null) {
+          const children = childIdsByParent.get(n.id) || [];
+          for (const ch of children) {
+            // Check if child has other parents with resolved order
+            const otherParents = parentIdsByChild.get(ch) || [];
+            for (const op of otherParents) {
+              if (resolvedOrders.has(op)) {
+                inferredOrder = resolvedOrders.get(op)!;
+                break;
+              }
+            }
+            if (inferredOrder !== null) break;
+
+            if (resolvedOrders.has(ch)) {
+              const childOrder = resolvedOrders.get(ch)!;
+              inferredOrder = Math.max(1, childOrder - 2);
+              break;
+            }
+          }
+        }
+
+        if (inferredOrder !== null) {
+          resolvedOrders.set(n.id, inferredOrder);
+          changed = true;
+        }
+      }
+    }
+
+    // Return nodes with inferred generation metadata
+    return nodes.map((n) => {
+      if (n.generationOrder !== null && Number.isInteger(n.generationOrder)) {
+        return n;
+      }
+      const order = resolvedOrders.get(n.id);
+      if (order !== undefined) {
+        const def = standardDefs.find((d) => d.order === order);
+        return {
+          ...n,
+          generationOrder: order,
+          generationId: def?.id || `gen_order_${order}`,
+          generationName: def?.name || `Generation ${order}`,
+          isInferredGeneration: true,
+        };
+      }
+      return n;
+    });
   }
 
   /**

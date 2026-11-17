@@ -18,6 +18,9 @@ export class LayoutController {
       if (req.query.compactLanes !== undefined) {
         customConfig.compactLanes = compactLanes;
       }
+      if (req.query.inferGenerations !== undefined) {
+        customConfig.inferGenerations = req.query.inferGenerations === 'true';
+      }
       if (typeof req.query.nodeWidth === 'string') {
         const w = parseInt(req.query.nodeWidth, 10);
         if (!isNaN(w) && w > 0) customConfig.nodeWidth = w;

@@ -20,6 +20,7 @@ export interface PositionedNode {
   photoPath?: string | null;
   isLiving?: boolean;
   isArchived?: boolean;
+  isInferredGeneration?: boolean;
 }
 
 export interface PositionedEdge {

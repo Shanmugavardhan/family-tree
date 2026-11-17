@@ -15,6 +15,7 @@ export interface PersonNodeData extends Record<string, unknown> {
   photoPath: string | null;
   isLiving: boolean;
   isArchived: boolean;
+  isInferredGeneration?: boolean;
   isSelected?: boolean;
   isHighlighted?: boolean;
   isPathNode?: boolean;
@@ -79,8 +80,8 @@ export function convertLayoutToReactFlow(
   const hasFocalSelection =
     selectedNodeId !== null || pathNodeIds.size > 0 || highlightedNodeIds.size > 0;
 
-  const bannerLeft = -6000;
-  const bannerWidth = Math.max(layout.width + 12000, 20000);
+  const bannerLeft = -1000000;
+  const bannerWidth = 2000000; // Truly infinite horizontal generation straps
 
   // 1. Generate background cohort lane banner nodes (expansive period texture strips, zero gap)
   const laneNodes: Node<LaneBannerNodeData>[] = layout.lanes.map((lane) => ({
@@ -140,6 +141,7 @@ export function convertLayoutToReactFlow(
         photoPath: n.photoPath ?? null,
         isLiving: n.isLiving ?? true,
         isArchived: n.isArchived ?? false,
+        isInferredGeneration: (n as any).isInferredGeneration ?? false,
         isSelected,
         isHighlighted,
         isPathNode,

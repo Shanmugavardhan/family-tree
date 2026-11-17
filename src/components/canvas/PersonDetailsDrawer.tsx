@@ -8,7 +8,6 @@ import {
   MapPin,
   ExternalLink,
   Edit,
-  Sparkles,
   Users,
   Heart,
   ArrowUpRight,
@@ -113,10 +112,10 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         right: 0,
         bottom: 0,
         width: 380,
-        backgroundColor: isDark ? '#111827' : '#ffffff',
-        boxShadow: isDark ? '-4px 0 24px rgba(0, 0, 0, 0.5)' : '-4px 0 20px rgba(0, 0, 0, 0.12)',
-        borderLeft: `1px solid ${isDark ? '#1f2937' : '#e2e8f0'}`,
-        color: isDark ? '#f9fafb' : '#0f172a',
+        backgroundColor: isDark ? '#111622' : '#fcf8ee',
+        boxShadow: isDark ? '-4px 0 24px rgba(0, 0, 0, 0.7)' : '-4px 0 20px rgba(120, 53, 15, 0.1)',
+        borderLeft: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.35)' : 'rgba(197, 155, 39, 0.4)'}`,
+        color: isDark ? '#f9fafb' : '#1c1917',
         zIndex: 40,
         display: 'flex',
         flexDirection: 'column',
@@ -126,16 +125,16 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
       <div
         style={{
           padding: '16px 20px',
-          borderBottom: `1px solid ${isDark ? '#1f2937' : '#e2e8f0'}`,
+          borderBottom: `1px solid ${isDark ? '#263042' : '#e2d7c3'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+          backgroundColor: isDark ? '#161c26' : '#f6efe2',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.8125rem' }}>
-          <Sparkles size={16} color="#3b82f6" />
-          <span style={{ fontWeight: 600 }}>Person Overview</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#e5c158' : '#78350f', fontSize: '0.85rem', fontFamily: "'Cinzel', serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <span>⚔️</span>
+          <span>Kinship Record</span>
         </div>
         <button
           onClick={onClose}
@@ -144,7 +143,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             background: 'transparent',
             padding: 4,
             cursor: 'pointer',
-            color: isDark ? '#94a3b8' : '#64748b',
+            color: isDark ? '#94a3b8' : '#78716c',
             borderRadius: 6,
           }}
         >
@@ -161,14 +160,15 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               width: 56,
               height: 56,
               borderRadius: '50%',
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
-              border: '2px solid #bfdbfe',
+              backgroundColor: isDark ? '#1a2230' : '#f0e6d2',
+              color: isDark ? '#e5c158' : '#78350f',
+              border: `2px solid ${isDark ? '#d4af37' : '#c59b27'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '1.25rem',
-              fontWeight: 700,
+              fontWeight: 800,
+              fontFamily: "'Cinzel', serif",
               flexShrink: 0,
               overflow: 'hidden',
             }}
@@ -188,11 +188,14 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           <div style={{ minWidth: 0, flex: 1 }}>
             <h3
               style={{
-                fontSize: '1.125rem',
-                fontWeight: 700,
-                color: isDark ? '#f9fafb' : '#0f172a',
+                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+                fontSize: '1.15rem',
+                fontWeight: 800,
+                color: isDark ? '#f8fafc' : '#1c1917',
                 lineHeight: 1.25,
                 wordBreak: 'break-word',
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
               }}
             >
               {fullName}
@@ -200,26 +203,31 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <span
                 style={{
+                  fontFamily: "'Cinzel', serif",
                   fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: '#2563eb',
-                  backgroundColor: '#eff6ff',
+                  fontWeight: 800,
+                  color: isDark ? '#e5c158' : '#78350f',
+                  backgroundColor: isDark ? 'rgba(212, 175, 55, 0.16)' : '#fffbeb',
                   padding: '2px 8px',
                   borderRadius: 6,
-                  border: '1px solid #bfdbfe',
+                  border: isDark ? '1px solid rgba(212, 175, 55, 0.35)' : '1px solid #fde68a',
+                  letterSpacing: '0.04em',
                 }}
               >
-                {activeNode.generationName || 'Unknown Cohort'}
+                {activeNode.generationName || 'House Cohort'}
               </span>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  color: activeNode.isLiving ? '#059669' : '#64748b',
-                  fontWeight: 600,
-                }}
-              >
-                {activeNode.isLiving ? '• Living' : '• Deceased'}
-              </span>
+              {!activeNode.isLiving && (
+                <span
+                  style={{
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: '0.725rem',
+                    color: isDark ? '#94a3b8' : '#78716c',
+                    fontWeight: 700,
+                  }}
+                >
+                  † Deceased
+                </span>
+              )}
             </div>
           </div>
         </div>

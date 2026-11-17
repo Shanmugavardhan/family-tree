@@ -11,6 +11,12 @@ export const layoutApi = {
     if (options?.compactLanes) {
       query.set('compactLanes', 'true');
     }
+    if (options?.inferGenerations !== undefined) {
+      query.set('inferGenerations', options.inferGenerations.toString());
+    } else {
+      // Default to true for family tree UI exploration
+      query.set('inferGenerations', 'true');
+    }
     if (options?.nodeWidth) {
       query.set('nodeWidth', options.nodeWidth.toString());
     }

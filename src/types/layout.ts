@@ -19,6 +19,7 @@ export interface PositionedNode {
   photoPath?: string | null;
   isLiving?: boolean;
   isArchived?: boolean;
+  isInferredGeneration?: boolean;
 }
 
 export interface PositionedEdge {
@@ -63,6 +64,7 @@ export interface FamilyLayout {
 export interface LayoutOptions {
   includeArchived?: boolean;
   compactLanes?: boolean;
+  inferGenerations?: boolean;
   nodeWidth?: number;
   nodeHeight?: number;
   horizontalSpacing?: number;

@@ -1,70 +1,60 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useReactFlow } from '@xyflow/react';
 import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  RotateCcw,
   Search,
-  Map,
-  Archive,
   Layers,
-  ArrowLeft,
-  ArrowRight,
+  Archive,
   Eye,
   Navigation,
+  Compass,
 } from 'lucide-react';
-import { CohortLane, PositionedNode } from '../../types/layout';
+import { PositionedNode } from '../../types/layout';
 import { useTheme } from '../../context/ThemeContext';
 
 interface CanvasControlsProps {
   nodes: PositionedNode[];
-  lanes: CohortLane[];
   includeArchived: boolean;
   onToggleIncludeArchived: (val: boolean) => void;
   compactLanes: boolean;
   onToggleCompactLanes: (val: boolean) => void;
-  showMiniMap: boolean;
-  onToggleMiniMap: () => void;
   onSelectPerson: (personId: string) => void;
-
-  // Milestone 3.5 Interaction & Navigation controls
-  canGoBack: boolean;
-  canGoForward: boolean;
-  onGoBack: () => void;
-  onGoForward: () => void;
   focusMode: boolean;
   onToggleFocusMode: (val: boolean) => void;
   onOpenPathfinder: () => void;
   activePathSummary?: string | null;
   onClearActivePath?: () => void;
+  onZoomActivity?: () => void;
 }
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
   nodes,
-  lanes,
   includeArchived,
   onToggleIncludeArchived,
   compactLanes,
   onToggleCompactLanes,
-  showMiniMap,
-  onToggleMiniMap,
   onSelectPerson,
-  canGoBack,
-  canGoForward,
-  onGoBack,
-  onGoForward,
   focusMode,
   onToggleFocusMode,
   onOpenPathfinder,
   activePathSummary,
   onClearActivePath,
+  onZoomActivity,
 }) => {
   const { isDark } = useTheme();
   const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
+
   const [searchTerm, setSearchTerm] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<PositionedNode[]>([]);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -91,273 +81,186 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
     setCenter(n.x + n.width / 2, n.y + n.height / 2, { duration: 800, zoom: 1.35 });
   };
 
-  const handleJumpToLane = (lane: CohortLane) => {
-    const nodesInLane = nodes.filter((n) =>
-      lane.order !== null ? n.generationOrder === lane.order : n.generationOrder === null
-    );
-    const targetX = nodesInLane.length > 0
-      ? nodesInLane[0].x + nodesInLane[0].width / 2
-      : 300;
-    const targetY = lane.y + lane.height / 2;
-
-    setCenter(targetX, targetY, { duration: 800, zoom: 1.35 });
+  const handleZoomInClick = () => {
+    onZoomActivity?.();
+    zoomIn();
   };
 
+  const handleZoomOutClick = () => {
+    onZoomActivity?.();
+    zoomOut();
+  };
+
+  const searchSlotEl = typeof document !== 'undefined' ? document.getElementById('header-search-slot') : null;
+  const actionsSlotEl = typeof document !== 'undefined' ? document.getElementById('header-canvas-actions') : null;
+
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 76,
-        left: 20,
-        right: 20,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        pointerEvents: 'none',
-        zIndex: 30,
-      }}
-    >
-      {/* Top Bar: Search, Navigation History, View Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        {/* Left Side: Navigation History & Search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
-          {/* History Back & Forward */}
+    <>
+      {/* 1. Injected Header Search Box (Requirement 5) */}
+      {isMounted && searchSlotEl && createPortal(
+        <div style={{ position: 'relative' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: isDark ? '#1e293b' : '#ffffff',
+              gap: 8,
+              backgroundColor: isDark ? 'rgba(18, 24, 34, 0.9)' : '#ffffff',
+              padding: '6px 14px',
               borderRadius: 10,
-              boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.08)',
-              border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-              padding: '2px',
+              boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.4)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
+              border: isDark ? '1px solid rgba(212, 175, 55, 0.35)' : '1px solid rgba(197, 155, 39, 0.35)',
+              width: 210,
+              transition: 'all 0.15s ease-in-out',
             }}
           >
-            <button
-              onClick={onGoBack}
-              disabled={!canGoBack}
-              title="Previous Person (Back)"
-              style={{
-                padding: '6px 8px',
-                border: 'none',
-                background: 'transparent',
-                borderRadius: 8,
-                cursor: canGoBack ? 'pointer' : 'not-allowed',
-                color: canGoBack ? (isDark ? '#f8fafc' : '#0f172a') : (isDark ? '#475569' : '#cbd5e1'),
-                display: 'flex',
-                alignItems: 'center',
+            <Search size={15} color={isDark ? '#d4af37' : '#92400e'} />
+            <input
+              type="text"
+              placeholder="Find family member..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onFocus={() => {
+                if (searchTerm.trim() && searchResults.length > 0) setIsSearchOpen(true);
               }}
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <div style={{ width: 1, height: 16, backgroundColor: isDark ? '#334155' : '#e2e8f0' }} />
-            <button
-              onClick={onGoForward}
-              disabled={!canGoForward}
-              title="Next Person (Forward)"
               style={{
-                padding: '6px 8px',
                 border: 'none',
-                background: 'transparent',
-                borderRadius: 8,
-                cursor: canGoForward ? 'pointer' : 'not-allowed',
-                color: canGoForward ? (isDark ? '#f8fafc' : '#0f172a') : (isDark ? '#475569' : '#cbd5e1'),
-                display: 'flex',
-                alignItems: 'center',
+                outline: 'none',
+                width: '100%',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                color: isDark ? '#f8fafc' : '#1c1917',
+                backgroundColor: 'transparent',
               }}
-            >
-              <ArrowRight size={16} />
-            </button>
+            />
           </div>
 
-          {/* Search Input with dropdown */}
-          <div style={{ position: 'relative' }}>
+          {/* Search Dropdown */}
+          {isSearchOpen && searchResults.length > 0 && (
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                padding: '8px 14px',
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: 6,
+                backgroundColor: isDark ? '#111622' : '#fcf8ee',
                 borderRadius: 10,
-                boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.08)',
-                border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                width: 230,
+                boxShadow: isDark
+                  ? '0 12px 30px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(212, 175, 55, 0.3)'
+                  : '0 8px 24px rgba(120, 53, 15, 0.15), 0 0 1px 1px rgba(197, 155, 39, 0.3)',
+                border: isDark ? '1px solid #2a3342' : '1px solid #e2d7c3',
+                maxHeight: 240,
+                overflowY: 'auto',
+                zIndex: 100,
               }}
             >
-              <Search size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-              <input
-                type="text"
-                placeholder="Find family member..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                onFocus={() => {
-                  if (searchTerm.trim() && searchResults.length > 0) setIsSearchOpen(true);
-                }}
-                style={{
-                  border: 'none',
-                  outline: 'none',
-                  width: '100%',
-                  fontSize: '0.875rem',
-                  color: isDark ? '#f8fafc' : '#0f172a',
-                  backgroundColor: 'transparent',
-                }}
-              />
-            </div>
-
-            {/* Search Dropdown */}
-            {isSearchOpen && searchResults.length > 0 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: 6,
-                  backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                  borderRadius: 10,
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-                  border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                  maxHeight: 220,
-                  overflowY: 'auto',
-                  zIndex: 50,
-                }}
-              >
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    onClick={() => handleSelectSearchResult(result)}
+              {searchResults.map((result) => (
+                <div
+                  key={result.id}
+                  onClick={() => handleSelectSearchResult(result)}
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(197, 155, 39, 0.1)')
+                  }
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <span
                     style={{
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      fontSize: '0.8125rem',
-                      borderBottom: `1px solid ${isDark ? '#334155' : '#f1f5f9'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      fontFamily: "'Cinzel', serif",
+                      fontWeight: 700,
+                      color: isDark ? '#f8fafc' : '#1c1917',
+                      fontSize: '0.825rem',
+                      letterSpacing: '0.02em',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#f8fafc')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#ffffff')}
                   >
-                    <span style={{ fontWeight: 600, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                      {result.firstName} {result.lastName}
-                    </span>
-                    <span style={{ fontSize: '0.6875rem', color: isDark ? '#94a3b8' : '#64748b' }}>
-                      {result.generationName || 'Unknown'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    {result.firstName} {result.lastName}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: '0.785rem',
+                      color: isDark ? '#d4af37' : '#92400e',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {result.generationName || 'Lineage'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>,
+        searchSlotEl
+      )}
 
-          {/* Generation Jump Dropdown */}
-          <select
-            onChange={(e) => {
-              const laneId = e.target.value;
-              const lane = lanes.find((l) => l.id === laneId);
-              if (lane) handleJumpToLane(lane);
-            }}
-            defaultValue=""
-            style={{
-              backgroundColor: isDark ? '#1e293b' : '#ffffff',
-              padding: '8px 12px',
-              borderRadius: 10,
-              boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.08)',
-              border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              color: isDark ? '#f8fafc' : '#334155',
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            <option value="" disabled>Jump to generation...</option>
-            {lanes.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name} ({l.nodeCount})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Right Side: Tools & View Controls */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            padding: '6px 10px',
-            borderRadius: 12,
-            boxShadow: isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.08)',
-            border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-            pointerEvents: 'auto',
-          }}
-        >
+      {/* 2. Injected Header Action Buttons (Requirement 8: Pathfinder, Focus, Timeline, Zoom) */}
+      {isMounted && actionsSlotEl && createPortal(
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Relationship Pathfinder Button */}
           <button
             onClick={onOpenPathfinder}
-            title="Relationship Pathfinder (How are two people related?)"
+            title="Trace Kinship & Relationship Path"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 5,
-              padding: '6px 10px',
+              gap: 6,
+              padding: '6px 12px',
               borderRadius: 8,
-              border: isDark ? '1px solid #78350f' : '1px solid #fde68a',
-              fontSize: '0.75rem',
-              fontWeight: 700,
+              border: isDark ? '1px solid rgba(212, 175, 55, 0.45)' : '1px solid rgba(180, 83, 9, 0.4)',
+              fontFamily: "'Cinzel', Georgia, serif",
+              fontSize: '0.785rem',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
               cursor: 'pointer',
-              backgroundColor: activePathSummary
-                ? '#f59e0b'
-                : isDark
-                ? '#451a03'
-                : '#fffbeb',
-              color: activePathSummary
-                ? '#ffffff'
-                : isDark
-                ? '#fbbf24'
-                : '#b45309',
+              backgroundColor: isDark ? 'rgba(212, 175, 55, 0.16)' : '#fffbeb',
+              color: isDark ? '#e5c158' : '#b45309',
+              boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.05)',
+              transition: 'all 0.15s ease-in-out',
             }}
           >
-            <Navigation size={14} />
+            <Compass size={15} color={isDark ? '#e5c158' : '#b45309'} />
             <span>Pathfinder</span>
           </button>
 
-          {/* Focus Mode Button */}
+          {/* Toggle Focus Mode */}
           <button
             onClick={() => onToggleFocusMode(!focusMode)}
-            title={focusMode ? 'Disable Focus Mode' : 'Enable Focus Mode (isolate selected family branch)'}
+            title={focusMode ? 'Disable Focus Mode' : 'Dim unrelated branches and highlight direct lineage'}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 5,
               padding: '6px 10px',
               borderRadius: 8,
-              border: focusMode ? '1px solid #3b82f6' : 'none',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              border: focusMode
+                ? '1px solid #3b82f6'
+                : isDark
+                ? '1px solid rgba(255, 255, 255, 0.12)'
+                : '1px solid rgba(0, 0, 0, 0.12)',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '0.785rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
               cursor: 'pointer',
               backgroundColor: focusMode
-                ? isDark
-                  ? 'rgba(59, 130, 246, 0.25)'
-                  : '#eff6ff'
-                : isDark
-                ? '#0f172a'
-                : '#f8fafc',
-              color: focusMode
-                ? '#3b82f6'
-                : isDark
-                ? '#94a3b8'
-                : '#64748b',
+                ? isDark ? 'rgba(59, 130, 246, 0.25)' : '#eff6ff'
+                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
+              color: focusMode ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#94a3b8' : '#64748b',
             }}
           >
             <Eye size={14} />
-            <span>{focusMode ? 'Focus On' : 'Focus Mode'}</span>
+            <span>{focusMode ? 'Focus On' : 'Focus'}</span>
           </button>
-
-          <div style={{ width: 1, height: 20, backgroundColor: isDark ? '#334155' : '#e2e8f0', margin: '0 2px' }} />
 
           {/* Toggle Compact Lanes */}
           <button
@@ -369,16 +272,20 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               gap: 5,
               padding: '6px 10px',
               borderRadius: 8,
-              border: 'none',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '0.785rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
               cursor: 'pointer',
-              backgroundColor: compactLanes ? '#eff6ff' : '#f8fafc',
-              color: compactLanes ? '#2563eb' : '#64748b',
+              backgroundColor: compactLanes
+                ? isDark ? 'rgba(212, 175, 55, 0.16)' : '#fef3c7'
+                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
+              color: compactLanes ? (isDark ? '#e5c158' : '#92400e') : isDark ? '#94a3b8' : '#64748b',
             }}
           >
             <Layers size={14} />
-            <span>{compactLanes ? 'Compact' : 'Full Timeline'}</span>
+            <span>{compactLanes ? 'Compact' : 'Timeline'}</span>
           </button>
 
           {/* Toggle Include Archived */}
@@ -391,100 +298,119 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               gap: 5,
               padding: '6px 10px',
               borderRadius: 8,
-              border: 'none',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '0.785rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
               cursor: 'pointer',
-              backgroundColor: includeArchived ? '#fef3c7' : '#f8fafc',
-              color: includeArchived ? '#b45309' : '#64748b',
+              backgroundColor: includeArchived
+                ? isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7'
+                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
+              color: includeArchived ? '#f59e0b' : isDark ? '#94a3b8' : '#64748b',
             }}
           >
             <Archive size={14} />
-            <span>{includeArchived ? 'Archived Visible' : 'Active'}</span>
+            <span>{includeArchived ? 'Archived' : 'Active'}</span>
           </button>
 
-          <div style={{ width: 1, height: 20, backgroundColor: '#e2e8f0', margin: '0 2px' }} />
+          <div style={{ width: 1, height: 18, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#e2e8f0', margin: '0 2px' }} />
 
-          {/* Zoom & Fit View Buttons */}
+          {/* Zoom Buttons (triggers zoom activity for MiniMap) */}
           <button
-            onClick={() => zoomIn()}
+            onClick={handleZoomInClick}
             title="Zoom In"
-            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
+            style={{
+              padding: '6px 8px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              color: isDark ? '#cbd5e1' : '#475569',
+            }}
           >
             <ZoomIn size={16} />
           </button>
           <button
-            onClick={() => zoomOut()}
+            onClick={handleZoomOutClick}
             title="Zoom Out"
-            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
+            style={{
+              padding: '6px 8px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              color: isDark ? '#cbd5e1' : '#475569',
+            }}
           >
             <ZoomOut size={16} />
           </button>
           <button
             onClick={() => {
+              onZoomActivity?.();
               const personNodeRefs = nodes.map((n) => ({ id: n.id }));
               fitView({ nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined, padding: 0.1, duration: 600, maxZoom: 1.35 });
             }}
             title="Fit to View"
-            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
+            style={{
+              padding: '6px 8px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              color: isDark ? '#cbd5e1' : '#475569',
+            }}
           >
             <Maximize2 size={16} />
           </button>
-          <button
-            onClick={() => {
-              const personNodeRefs = nodes.map((n) => ({ id: n.id }));
-              fitView({ nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined, duration: 600, maxZoom: 1.35 });
-            }}
-            title="Reset View"
-            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: isDark ? '#cbd5e1' : '#475569' }}
-          >
-            <RotateCcw size={16} />
-          </button>
-          <button
-            onClick={onToggleMiniMap}
-            title={showMiniMap ? 'Hide MiniMap' : 'Show MiniMap'}
-            style={{
-              padding: 6,
-              borderRadius: 6,
-              border: 'none',
-              background: showMiniMap ? (isDark ? 'rgba(59, 130, 246, 0.25)' : '#eff6ff') : 'transparent',
-              cursor: 'pointer',
-              color: showMiniMap ? '#3b82f6' : (isDark ? '#cbd5e1' : '#475569'),
-            }}
-          >
-            <Map size={16} />
-          </button>
-        </div>
-      </div>
+        </div>,
+        actionsSlotEl
+      )}
 
-      {/* Active Path Banner if pathfinder result active */}
+      {/* 3. Sleek Floating Active Path Banner (Only when pathfinder result is active) */}
       {activePathSummary && (
         <div
           style={{
-            alignSelf: 'center',
-            backgroundColor: isDark ? '#451a03' : '#fffbeb',
-            border: `1.5px solid ${isDark ? '#78350f' : '#fde68a'}`,
-            padding: '6px 16px',
-            borderRadius: 20,
-            boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(245, 158, 11, 0.2)',
+            position: 'absolute',
+            top: 72,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: isDark ? 'rgba(22, 28, 38, 0.95)' : '#fffbeb',
+            border: isDark ? '1.5px solid #d4af37' : '1.5px solid #f59e0b',
+            padding: '7px 22px',
+            borderRadius: 30,
+            boxShadow: isDark
+              ? '0 8px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(212, 175, 55, 0.35)'
+              : '0 6px 18px rgba(245, 158, 11, 0.25)',
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 12,
             pointerEvents: 'auto',
+            zIndex: 40,
+            backdropFilter: 'blur(12px)',
           }}
         >
-          <Navigation size={14} color="#b45309" />
-          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#78350f' }}>
-            Active Path: {activePathSummary}
+          <Navigation size={15} color={isDark ? '#e5c158' : '#b45309'} />
+          <span
+            style={{
+              fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              color: isDark ? '#e5c158' : '#92400e',
+            }}
+          >
+            Kinship Lineage: {activePathSummary}
           </span>
           <button
             onClick={onClearActivePath}
             style={{
               border: 'none',
               background: 'transparent',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              color: '#b45309',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '0.785rem',
+              fontWeight: 800,
+              color: isDark ? '#f8fafc' : '#b45309',
               cursor: 'pointer',
               textDecoration: 'underline',
               padding: '0 4px',
@@ -494,6 +420,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 };

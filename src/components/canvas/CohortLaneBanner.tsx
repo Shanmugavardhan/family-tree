@@ -1,6 +1,5 @@
 import React from 'react';
 import { LaneBannerNodeData } from '../../adapters/reactFlowAdapter';
-import { Calendar, Users } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 /**
@@ -65,94 +64,15 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
       style={{
         width,
         height: lane.height,
-        backgroundColor: isDark ? `${bgColor}18` : `${bgColor}0c`,
+        backgroundColor: isDark ? `${bgColor}14` : `${bgColor}0a`,
         backgroundImage: texture,
         backgroundRepeat: 'repeat',
-        borderBottom: `1.5px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : `${bgColor}35`}`,
+        borderBottom: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(197, 155, 39, 0.2)'}`,
         position: 'relative',
         boxSizing: 'border-box',
         userSelect: 'none',
         pointerEvents: 'none',
       }}
-    >
-      {/* Generation Period Label Pill (positioned at canvas x: 40) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 20,
-          left: 6040, // 6000px offset from -6000px left edge places it exactly at x: 40 on canvas
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          padding: '14px 28px',
-          borderRadius: 16,
-          backgroundColor: isDark ? '#1e293b' : '#ffffff',
-          boxShadow: isDark
-            ? '0 6px 18px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)'
-            : '0 4px 14px rgba(0, 0, 0, 0.08)',
-          border: `1px solid ${isDark ? '#334155' : `${bgColor}40`}`,
-          borderLeft: `7px solid ${bgColor}`,
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Generation Name */}
-          <span
-            style={{
-              fontSize: '32px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              color: isDark ? '#f8fafc' : '#0f172a',
-              lineHeight: 1.2,
-            }}
-          >
-            {lane.name}
-          </span>
-
-          {/* Period Years & Member Count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 5 }}>
-            {lane.startYear && lane.endYear ? (
-              <span
-                style={{
-                  fontSize: '25px',
-                  color: isDark ? '#94a3b8' : '#64748b',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <Calendar size={22} />
-                {lane.startYear} – {lane.endYear}
-              </span>
-            ) : (
-              <span
-                style={{
-                  fontSize: '25px',
-                  color: isDark ? '#64748b' : '#94a3b8',
-                  fontStyle: 'italic',
-                }}
-              >
-                Birth dates not recorded
-              </span>
-            )}
-
-            <span
-              style={{
-                fontSize: '25px',
-                color: isDark ? '#94a3b8' : '#64748b',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <Users size={22} />
-              {lane.nodeCount} {lane.nodeCount === 1 ? 'member' : 'members'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    />
   );
 };
