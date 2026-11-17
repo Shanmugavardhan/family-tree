@@ -1,8 +1,10 @@
 import React from 'react';
 import { LaneBannerNodeData } from '../../adapters/reactFlowAdapter';
 import { Calendar, Users } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export const CohortLaneBanner: React.FC<any> = ({ data }) => {
+  const { isDark } = useTheme();
   const { lane, width } = data as LaneBannerNodeData;
   const bgColor = lane.backgroundColor || '#64748b';
 
@@ -11,7 +13,7 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
       style={{
         width,
         height: lane.height,
-        backgroundColor: `${bgColor}08`,
+        backgroundColor: isDark ? `${bgColor}12` : `${bgColor}08`,
         borderTop: `1px solid ${bgColor}25`,
         borderBottom: `1px dashed ${bgColor}30`,
         position: 'relative',
@@ -31,9 +33,9 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
           gap: 12,
           padding: '6px 14px',
           borderRadius: 8,
-          backgroundColor: '#ffffff',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-          border: `1px solid ${bgColor}35`,
+          backgroundColor: isDark ? '#1e293b' : '#ffffff',
+          boxShadow: isDark ? '0 4px 10px rgba(0, 0, 0, 0.4)' : '0 2px 4px rgba(0, 0, 0, 0.05)',
+          border: `1px solid ${isDark ? '#334155' : `${bgColor}35`}`,
           borderLeft: `4px solid ${bgColor}`,
         }}
       >
@@ -44,7 +46,7 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
               fontWeight: 800,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#0f172a',
+              color: isDark ? '#f8fafc' : '#0f172a',
             }}
           >
             {lane.name}
@@ -54,35 +56,39 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
               <span
                 style={{
                   fontSize: '0.6875rem',
-                  color: '#64748b',
+                  color: isDark ? '#94a3b8' : '#64748b',
                   fontWeight: 600,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 3,
+                  gap: 4,
                 }}
               >
-                <Calendar size={11} color={bgColor} />
+                <Calendar size={11} />
                 {lane.startYear} – {lane.endYear}
               </span>
             ) : (
-              <span style={{ fontSize: '0.6875rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                Unclassified timeline lane
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  color: isDark ? '#64748b' : '#94a3b8',
+                  fontStyle: 'italic',
+                }}
+              >
+                Birth dates not recorded
               </span>
             )}
+
             <span
               style={{
                 fontSize: '0.6875rem',
-                backgroundColor: `${bgColor}18`,
-                color: bgColor,
-                fontWeight: 700,
-                padding: '1px 6px',
-                borderRadius: 4,
+                color: isDark ? '#94a3b8' : '#64748b',
+                fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 3,
+                gap: 4,
               }}
             >
-              <Users size={10} />
+              <Users size={11} />
               {lane.nodeCount} {lane.nodeCount === 1 ? 'member' : 'members'}
             </span>
           </div>

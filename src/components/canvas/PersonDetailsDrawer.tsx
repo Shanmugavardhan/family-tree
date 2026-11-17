@@ -19,6 +19,7 @@ import { PositionedNode } from '../../types/layout';
 import { personApi } from '../../services/personApi';
 import { Person } from '../../types/person';
 import { DerivedRelativesResponse, RelativeItem } from '../../types/relative';
+import { useTheme } from '../../context/ThemeContext';
 
 interface PersonDetailsDrawerProps {
   personId: string | null;
@@ -39,6 +40,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   onTraceDescendants,
   onOpenPathfinder,
 }) => {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const { setCenter } = useReactFlow();
 
@@ -111,9 +113,10 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         right: 0,
         bottom: 0,
         width: 380,
-        backgroundColor: '#ffffff',
-        boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.12)',
-        borderLeft: '1px solid #e2e8f0',
+        backgroundColor: isDark ? '#111827' : '#ffffff',
+        boxShadow: isDark ? '-4px 0 24px rgba(0, 0, 0, 0.5)' : '-4px 0 20px rgba(0, 0, 0, 0.12)',
+        borderLeft: `1px solid ${isDark ? '#1f2937' : '#e2e8f0'}`,
+        color: isDark ? '#f9fafb' : '#0f172a',
         zIndex: 40,
         display: 'flex',
         flexDirection: 'column',
@@ -123,14 +126,14 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
       <div
         style={{
           padding: '16px 20px',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: `1px solid ${isDark ? '#1f2937' : '#e2e8f0'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#f8fafc',
+          backgroundColor: isDark ? '#1e293b' : '#f8fafc',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontSize: '0.8125rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.8125rem' }}>
           <Sparkles size={16} color="#3b82f6" />
           <span style={{ fontWeight: 600 }}>Person Overview</span>
         </div>
@@ -141,7 +144,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             background: 'transparent',
             padding: 4,
             cursor: 'pointer',
-            color: '#64748b',
+            color: isDark ? '#94a3b8' : '#64748b',
             borderRadius: 6,
           }}
         >
@@ -187,7 +190,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               style={{
                 fontSize: '1.125rem',
                 fontWeight: 700,
-                color: '#0f172a',
+                color: isDark ? '#f9fafb' : '#0f172a',
                 lineHeight: 1.25,
                 wordBreak: 'break-word',
               }}

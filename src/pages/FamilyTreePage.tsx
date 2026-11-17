@@ -4,39 +4,40 @@ import { GitFork } from 'lucide-react';
 
 export const FamilyTreePage: React.FC = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 65px)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
       {/* Header bar */}
       <div
         style={{
-          padding: '12px 24px',
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
+          padding: '10px 24px',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
+          transition: 'background-color 0.2s ease, border-color 0.2s ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             style={{
-              width: 34,
-              height: 34,
+              width: 32,
+              height: 32,
               borderRadius: 8,
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
+              backgroundColor: 'var(--color-primary-light)',
+              color: 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <GitFork size={18} />
+            <GitFork size={17} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+            <h1 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>
               Chronological Family Tree
             </h1>
-            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
               Interactive multi-generational canvas ordered by birth cohorts
             </p>
           </div>
@@ -50,4 +51,3 @@ export const FamilyTreePage: React.FC = () => {
     </div>
   );
 };
-

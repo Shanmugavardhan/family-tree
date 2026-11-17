@@ -2,8 +2,10 @@ import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { User, Sparkles, Navigation } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 export const PersonNode: React.FC<any> = ({ data, selected }) => {
+  const { isDark } = useTheme();
   const nodeData = data as PersonNodeData;
   const isSelected = selected || nodeData.isSelected;
   const isPathNode = nodeData.isPathNode;
@@ -30,9 +32,9 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
     : '#64748b';
 
   // Determine card border & shadow based on selection / pathfinding state
-  let borderColor = '#e2e8f0';
+  let borderColor = isDark ? '#334155' : '#e2e8f0';
   let borderWidth = '1px';
-  let boxShadow = '0 2px 6px -1px rgba(0, 0, 0, 0.08)';
+  let boxShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 2px 6px -1px rgba(0, 0, 0, 0.08)';
 
   if (isPathNode) {
     borderColor = '#f59e0b';
@@ -53,7 +55,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
       style={{
         width: 220,
         height: 100,
-        backgroundColor: '#ffffff',
+        backgroundColor: isDark ? '#1e293b' : '#ffffff',
         borderRadius: 12,
         border: `${borderWidth} solid ${borderColor}`,
         boxShadow,
@@ -198,7 +200,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             style={{
               fontWeight: 700,
               fontSize: '0.875rem',
-              color: '#0f172a',
+              color: isDark ? '#f8fafc' : '#0f172a',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -210,7 +212,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           <div
             style={{
               fontSize: '0.75rem',
-              color: '#64748b',
+              color: isDark ? '#94a3b8' : '#64748b',
               marginTop: 2,
               fontWeight: 500,
               display: 'flex',
@@ -221,7 +223,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             {nodeData.birthYear ? (
               <span>Born {nodeData.birthYear}</span>
             ) : (
-              <span style={{ fontStyle: 'italic', color: '#94a3b8' }}>Year Unknown</span>
+              <span style={{ fontStyle: 'italic', color: isDark ? '#64748b' : '#94a3b8' }}>Year Unknown</span>
             )}
           </div>
         </div>

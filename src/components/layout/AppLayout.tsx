@@ -1,21 +1,17 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
+import React from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 
 export const AppLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isCanvasPage = location.pathname === '/tree';
 
   return (
     <div className="app-container">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="main-content">
-        <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
-        <main className="page-body">
-          <Outlet />
-        </main>
-      </div>
+      <Header />
+      <main className={`page-body ${isCanvasPage ? 'canvas-page' : ''}`}>
+        <Outlet />
+      </main>
     </div>
   );
 };
-

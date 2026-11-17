@@ -3,6 +3,7 @@ import { X, Navigation, ArrowRight, Sparkles, RefreshCw } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { personApi } from '../../services/personApi';
 import { PerspectiveRelationshipResult } from '../../types/relative';
+import { useTheme } from '../../context/ThemeContext';
 
 interface RelationshipPathfinderModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
   onClearPath,
   activeResult,
 }) => {
+  const { isDark } = useTheme();
   const [sourceId, setSourceId] = React.useState<string>(initialSourceId || '');
   const [targetId, setTargetId] = React.useState<string>('');
   const [loading, setLoading] = React.useState(false);
@@ -90,27 +92,28 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
         style={{
           width: '100%',
           maxWidth: 520,
-          backgroundColor: '#ffffff',
+          backgroundColor: isDark ? '#1e293b' : '#ffffff',
           borderRadius: 16,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          border: '1px solid #e2e8f0',
+          boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.6)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          color: isDark ? '#f8fafc' : '#0f172a',
         }}
       >
         {/* Header */}
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: `1px solid ${isDark ? '#78350f' : '#e2e8f0'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: '#fffbeb',
+            backgroundColor: isDark ? '#451a03' : '#fffbeb',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#b45309' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isDark ? '#fbbf24' : '#b45309' }}>
             <Navigation size={18} />
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
               Relationship Pathfinder
@@ -123,7 +126,7 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
               background: 'transparent',
               padding: 4,
               cursor: 'pointer',
-              color: '#94a3b8',
+              color: isDark ? '#fbbf24' : '#94a3b8',
               borderRadius: 6,
             }}
           >

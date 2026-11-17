@@ -33,6 +33,7 @@ import { FamilyEdge } from './FamilyEdge';
 import { CanvasControls } from './CanvasControls';
 import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
+import { useTheme } from '../../context/ThemeContext';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 
 const nodeTypes: NodeTypes = {
@@ -101,6 +102,7 @@ function findGraphPath(
 }
 
 const FamilyCanvasInternal: React.FC = () => {
+  const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setCenter, fitView } = useReactFlow();
 
@@ -503,7 +505,7 @@ const FamilyCanvasInternal: React.FC = () => {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#0b0f19' : '#f8fafc' }}>
       {/* Floating Canvas Controls with Navigation, Focus, and Pathfinder */}
       <CanvasControls
         nodes={layout?.nodes || []}
@@ -555,23 +557,23 @@ const FamilyCanvasInternal: React.FC = () => {
         minZoom={0.1}
         maxZoom={2.5}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#cbd5e1" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#334155' : '#cbd5e1'} />
 
         {showMiniMap && (
           <MiniMap
             nodeColor={getMiniMapNodeColor}
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
-            maskColor="rgba(241, 245, 249, 0.7)"
+            maskColor={isDark ? 'rgba(11, 15, 25, 0.75)' : 'rgba(241, 245, 249, 0.7)'}
             style={{
               position: 'absolute',
               bottom: 20,
               right: 20,
               borderRadius: 12,
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.08)',
+              border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+              boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.5)' : '0 4px 14px rgba(0, 0, 0, 0.08)',
               overflow: 'hidden',
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1e293b' : '#ffffff',
             }}
           />
         )}
