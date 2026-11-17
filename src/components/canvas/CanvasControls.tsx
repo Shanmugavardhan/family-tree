@@ -107,9 +107,9 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
     <div
       style={{
         position: 'absolute',
-        top: 16,
-        left: 16,
-        right: 16,
+        top: 76,
+        left: 20,
+        right: 20,
         display: 'flex',
         flexDirection: 'column',
         gap: 10,

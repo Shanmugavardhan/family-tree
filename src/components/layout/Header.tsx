@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  isCanvasPage?: boolean;
+}
+
+export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
   const { toggleTheme, isDark } = useTheme();
 
   const navItems = [
@@ -46,7 +50,25 @@ export const Header: React.FC = () => {
   ];
 
   return (
-    <header className="header">
+    <header
+      className={`header ${isCanvasPage ? 'canvas-header' : ''}`}
+      style={
+        isCanvasPage
+          ? {
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 50,
+              backgroundColor: isDark ? 'rgba(11, 15, 25, 0.55)' : 'rgba(255, 255, 255, 0.65)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.07)',
+              boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.35)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
+            }
+          : undefined
+      }
+    >
       {/* Left: Brand Identity */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Link

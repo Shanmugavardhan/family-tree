@@ -33,33 +33,33 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
 
   // Determine card border & shadow based on selection / pathfinding state
   let borderColor = isDark ? '#334155' : '#e2e8f0';
-  let borderWidth = '1px';
-  let boxShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 2px 6px -1px rgba(0, 0, 0, 0.08)';
+  let borderWidth = '1.5px';
+  let boxShadow = isDark ? '0 6px 16px rgba(0, 0, 0, 0.45)' : '0 4px 12px -2px rgba(0, 0, 0, 0.08)';
 
   if (isPathNode) {
     borderColor = '#f59e0b';
-    borderWidth = '2.5px';
-    boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.25), 0 8px 20px -4px rgba(245, 158, 11, 0.35)';
+    borderWidth = '3px';
+    boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.28), 0 10px 25px -4px rgba(245, 158, 11, 0.45)';
   } else if (isSelected) {
     borderColor = '#2563eb';
-    borderWidth = '2px';
-    boxShadow = '0 10px 25px -5px rgba(37, 99, 235, 0.35), 0 0 0 2px rgba(59, 130, 246, 0.2)';
+    borderWidth = '2.5px';
+    boxShadow = '0 12px 28px -5px rgba(37, 99, 235, 0.38), 0 0 0 3px rgba(59, 130, 246, 0.25)';
   } else if (isHighlighted) {
     borderColor = '#38bdf8';
-    borderWidth = '2px';
-    boxShadow = '0 8px 20px -4px rgba(56, 189, 248, 0.3)';
+    borderWidth = '2.5px';
+    boxShadow = '0 10px 24px -4px rgba(56, 189, 248, 0.35)';
   }
 
   return (
     <div
       style={{
-        width: 220,
-        height: 100,
+        width: 320,
+        height: 150,
         backgroundColor: isDark ? '#1e293b' : '#ffffff',
-        borderRadius: 12,
+        borderRadius: 14,
         border: `${borderWidth} solid ${borderColor}`,
         boxShadow,
-        padding: '10px 12px',
+        padding: '12px 16px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -76,11 +76,11 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         position={Position.Top}
         id="child-top"
         style={{
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           background: isPathNode ? '#f59e0b' : '#475569',
           border: '2px solid #ffffff',
-          top: -4,
+          top: -5,
         }}
       />
 
@@ -90,11 +90,11 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         position={Position.Left}
         id="spouse-left"
         style={{
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           background: isPathNode ? '#f59e0b' : '#e11d48',
           border: '2px solid #ffffff',
-          left: -4,
+          left: -5,
         }}
       />
       <Handle
@@ -102,11 +102,11 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         position={Position.Right}
         id="spouse-right"
         style={{
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           background: isPathNode ? '#f59e0b' : '#e11d48',
           border: '2px solid #ffffff',
-          right: -4,
+          right: -5,
         }}
       />
 
@@ -116,59 +116,59 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         position={Position.Bottom}
         id="parent-bottom"
         style={{
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           background: isPathNode ? '#f59e0b' : '#475569',
           border: '2px solid #ffffff',
-          bottom: -4,
+          bottom: -5,
         }}
       />
 
-      {/* Card Header: Cohort Badge and Living Status */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+      {/* Card Header: Cohort Badge (+10px -> 20px) and Living Status (+10px -> 21px) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span
           style={{
-            fontSize: '0.6875rem',
+            fontSize: '20px',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
             color: isPathNode ? '#b45309' : genColor,
-            backgroundColor: isPathNode ? '#fef3c7' : `${genColor}15`,
-            padding: '2px 6px',
-            borderRadius: 6,
+            backgroundColor: isPathNode ? '#fef3c7' : `${genColor}18`,
+            padding: '3px 10px',
+            borderRadius: 8,
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 3,
+            gap: 6,
+            lineHeight: 1.2,
             whiteSpace: 'nowrap',
           }}
         >
-          {isPathNode ? <Navigation size={10} /> : <Sparkles size={10} />}
+          {isPathNode ? <Navigation size={16} /> : <Sparkles size={16} />}
           {isPathNode ? 'Path Link' : nodeData.generationName || 'Unknown Cohort'}
         </span>
 
-        {/* Living / Deceased Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span
+        {/* Living / Deceased Indicator (+10px -> 21px) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div
             style={{
-              width: 7,
-              height: 7,
+              width: 9,
+              height: 9,
               borderRadius: '50%',
               backgroundColor: nodeData.isLiving ? '#10b981' : '#94a3b8',
-              display: 'inline-block',
             }}
           />
-          <span style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>
+          <span style={{ fontSize: '21px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
             {nodeData.isLiving ? 'Living' : 'Deceased'}
           </span>
         </div>
       </div>
 
-      {/* Card Body: Photo Avatar + Full Name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+      {/* Card Body: Photo Avatar + Full Name (+10px -> 24px) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 4 }}>
         <div
           style={{
-            width: 38,
-            height: 38,
+            width: 56,
+            height: 56,
             borderRadius: '50%',
             backgroundColor: `${genColor}20`,
             color: genColor,
@@ -176,10 +176,10 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 700,
-            fontSize: '0.875rem',
+            fontSize: '22px',
             flexShrink: 0,
             overflow: 'hidden',
-            border: `1.5px solid ${genColor}40`,
+            border: `2px solid ${genColor}45`,
           }}
         >
           {nodeData.photoPath && !imageFailed ? (
@@ -190,7 +190,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
               onError={() => setImageFailed(true)}
             />
           ) : (
-            initials || <User size={18} />
+            initials || <User size={26} />
           )}
         </div>
 
@@ -199,25 +199,25 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             title={fullName}
             style={{
               fontWeight: 700,
-              fontSize: '0.875rem',
+              fontSize: '24px',
               color: isDark ? '#f8fafc' : '#0f172a',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              lineHeight: 1.25,
+              lineHeight: 1.2,
             }}
           >
             {fullName}
           </div>
           <div
             style={{
-              fontSize: '0.75rem',
+              fontSize: '22px',
               color: isDark ? '#94a3b8' : '#64748b',
-              marginTop: 2,
+              marginTop: 4,
               fontWeight: 500,
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 6,
             }}
           >
             {nodeData.birthYear ? (
@@ -237,7 +237,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             bottom: 0,
             left: 0,
             right: 0,
-            height: 3,
+            height: 4,
             backgroundColor: isPathNode ? '#f59e0b' : '#2563eb',
           }}
         />

@@ -7,8 +7,8 @@ export const AppLayout: React.FC = () => {
   const isCanvasPage = location.pathname === '/tree';
 
   return (
-    <div className="app-container">
-      <Header />
+    <div className={`app-container ${isCanvasPage ? 'canvas-layout' : ''}`}>
+      <Header isCanvasPage={isCanvasPage} />
       <main className={`page-body ${isCanvasPage ? 'canvas-page' : ''}`}>
         <Outlet />
       </main>

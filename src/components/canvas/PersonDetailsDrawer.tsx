@@ -109,7 +109,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
     <div
       style={{
         position: 'absolute',
-        top: 0,
+        top: 64,
         right: 0,
         bottom: 0,
         width: 380,

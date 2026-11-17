@@ -79,15 +79,16 @@ export function convertLayoutToReactFlow(
   const hasFocalSelection =
     selectedNodeId !== null || pathNodeIds.size > 0 || highlightedNodeIds.size > 0;
 
-  const canvasWidth = Math.max(layout.width, 1400);
+  const bannerLeft = -6000;
+  const bannerWidth = Math.max(layout.width + 12000, 20000);
 
-  // 1. Generate background cohort lane banner nodes
+  // 1. Generate background cohort lane banner nodes (expansive period texture strips, zero gap)
   const laneNodes: Node<LaneBannerNodeData>[] = layout.lanes.map((lane) => ({
     id: `lane-banner-${lane.id}`,
     type: 'laneBanner',
-    position: { x: 0, y: lane.y },
+    position: { x: bannerLeft, y: lane.y },
     style: {
-      width: canvasWidth,
+      width: bannerWidth,
       height: lane.height,
       zIndex: -1,
       pointerEvents: 'none',
@@ -96,7 +97,7 @@ export function convertLayoutToReactFlow(
     },
     data: {
       lane,
-      width: canvasWidth,
+      width: bannerWidth,
       isDimmed: focusMode && hasFocalSelection,
     },
     draggable: false,
@@ -231,7 +232,7 @@ export function convertLayoutToReactFlow(
   return {
     nodes: allNodes,
     edges: flowEdges,
-    width: canvasWidth,
+    width: bannerWidth,
     height: layout.height,
   };
 }
