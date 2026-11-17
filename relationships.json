@@ -1,0 +1,235 @@
+{
+  "relationships": [
+    {
+      "id": "b0c1eb01-d90d-4207-a45b-f152367c719d",
+      "person_id": "867842c1-b8a2-45ad-8d9c-89150e68eb16",
+      "related_person_id": "4a80001b-76bf-4e13-963b-89b2aafbb413",
+      "relationship_type": "spouse",
+      "parent_type": null,
+      "start_date": null,
+      "end_date": "2009-12-25",
+      "notes": "Spouses; marriage ended upon Murthy Chetty's death on 2009-12-25.",
+      "created_at": "2026-11-16T06:53:00Z"
+    },
+    {
+      "id": "a137db28-fd09-4e02-a3e7-1f40a709dd99",
+      "person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "related_person_id": "867842c1-b8a2-45ad-8d9c-89150e68eb16",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "b96a5d67-643f-44eb-82f7-08d8d87f092a",
+      "person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "related_person_id": "4a80001b-76bf-4e13-963b-89b2aafbb413",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "17254dad-0f64-4cd3-acab-e9ec2dca6c58",
+      "person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
+      "related_person_id": "867842c1-b8a2-45ad-8d9c-89150e68eb16",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "27ffdc32-97f1-4cf5-8ea0-c364d3768602",
+      "person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
+      "related_person_id": "4a80001b-76bf-4e13-963b-89b2aafbb413",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "d05d90d6-f86d-4fb4-85ea-ce1eb0c75737",
+      "person_id": "e2c91ec9-622d-4679-9b06-367754f3b15d",
+      "related_person_id": "867842c1-b8a2-45ad-8d9c-89150e68eb16",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "0a5085eb-f81a-449b-a61a-de89b420b377",
+      "person_id": "e2c91ec9-622d-4679-9b06-367754f3b15d",
+      "related_person_id": "4a80001b-76bf-4e13-963b-89b2aafbb413",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "1d3a3c71-b521-49ff-8ba2-93503a33fd7b",
+      "person_id": "f265d0e1-7cea-4273-b907-7dbf3bc907e8",
+      "related_person_id": "867842c1-b8a2-45ad-8d9c-89150e68eb16",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "9460cce1-17bb-4d05-88f8-d4c6dad6c918",
+      "person_id": "f265d0e1-7cea-4273-b907-7dbf3bc907e8",
+      "related_person_id": "4a80001b-76bf-4e13-963b-89b2aafbb413",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "7909aa20-8ff5-4b58-a2fa-73b7c245aabc",
+      "person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "related_person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "relationship_type": "spouse",
+      "parent_type": null,
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "b633e446-49cc-4f12-b78f-8424ea7e6583",
+      "person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
+      "related_person_id": "823f9028-8094-4480-b87f-716b4ad6d8a9",
+      "relationship_type": "spouse",
+      "parent_type": null,
+      "start_date": null,
+      "end_date": null,
+      "notes": "Marriage ended upon Chandra Babu's death.",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "53a61337-c269-43ac-85a5-2811f8bf10b4",
+      "person_id": "e2c91ec9-622d-4679-9b06-367754f3b15d",
+      "related_person_id": "b5ccf67d-6b37-425e-878c-b82f548a7689",
+      "relationship_type": "spouse",
+      "parent_type": null,
+      "start_date": null,
+      "end_date": "2026-01-01",
+      "notes": "Marriage ended upon Giri Babu's death on 2026-01-01.",
+      "created_at": "2026-11-16T07:08:00Z"
+    },
+    {
+      "id": "87c54be4-8e28-4235-b50d-d86d299aec61",
+      "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "related_person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "e845a74b-b3d6-430e-946e-c9d291c2818c",
+      "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "related_person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "259f2af5-0166-469c-846e-7af316f5aab7",
+      "person_id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "related_person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "8b5669bb-fcc0-4dec-96ca-d2ec37e43ed1",
+      "person_id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "related_person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "90a4e620-dc9b-4568-bed3-0b2dde1d6be9",
+      "person_id": "3a50c542-2fe5-4cd2-a99d-10f17afd9b81",
+      "related_person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "67d621b9-9ccb-42b4-a917-033d79a17b05",
+      "person_id": "3a50c542-2fe5-4cd2-a99d-10f17afd9b81",
+      "related_person_id": "823f9028-8094-4480-b87f-716b4ad6d8a9",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "499c2e80-830b-498a-a333-be51182b2d22",
+      "person_id": "c859d115-b121-4ea7-819f-74313b0c2834",
+      "related_person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "c8f68d38-9e91-4c57-b857-da7888fcff00",
+      "person_id": "c859d115-b121-4ea7-819f-74313b0c2834",
+      "related_person_id": "823f9028-8094-4480-b87f-716b4ad6d8a9",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    },
+    {
+      "id": "d6c7c3f1-75cf-425c-9cea-72c08de1ee40",
+      "person_id": "fee87ccc-4f6c-4437-b6f5-4719d067e104",
+      "related_person_id": "f265d0e1-7cea-4273-b907-7dbf3bc907e8",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": "",
+      "created_at": "2026-11-16T07:18:00Z"
+    }
+  ]
+}

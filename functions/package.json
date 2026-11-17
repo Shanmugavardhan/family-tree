@@ -1,0 +1,33 @@
+{
+  "name": "family-tree-functions",
+  "version": "1.0.0",
+  "description": "Family Tree Firebase Cloud Functions & Express API",
+  "main": "lib/index.js",
+  "scripts": {
+    "dev": "tsx watch src/local.ts",
+    "build": "tsc",
+    "test": "tsx src/__tests__/test_milestone_2_2_and_2_3.ts && tsx src/__tests__/test_person_crud_api.ts && tsx src/__tests__/test_relationship_api.ts && tsx src/__tests__/test_relative_derivation.ts && tsx src/__tests__/test_photo_api.ts && tsx src/__tests__/test_frontend_api_integration.ts && tsx src/__tests__/test_generation_engine.ts",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^6.1.1",
+    "multer": "^2.5.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "private": true
+}

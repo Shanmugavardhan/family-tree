@@ -1,0 +1,340 @@
+/* Modern CSS Design System for Family Tree Management */
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-primary-border: #bfdbfe;
+  
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: #f8fafc;
+  color: var(--color-slate-800);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* App Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid var(--color-slate-200);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  transition: transform 0.2s ease;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+}
+
+.header {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--color-slate-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.page-body {
+  padding: 32px 28px;
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Nav links */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  color: var(--color-slate-600);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+  margin-bottom: 4px;
+}
+
+.nav-link:hover {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-900);
+}
+
+.nav-link.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Common Card */
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-slate-200);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--color-slate-300);
+  color: var(--color-slate-700);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-slate-50);
+  border-color: var(--color-slate-400);
+}
+
+.btn-danger {
+  background-color: var(--color-rose-50);
+  color: var(--color-rose-700);
+  border-color: var(--color-rose-100);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-rose-100);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-living {
+  background-color: var(--color-emerald-50);
+  color: var(--color-emerald-700);
+  border: 1px solid var(--color-emerald-100);
+}
+
+.badge-deceased {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-600);
+  border: 1px solid var(--color-slate-200);
+}
+
+.badge-archived {
+  background-color: var(--color-amber-50);
+  color: var(--color-amber-700);
+  border: 1px solid var(--color-amber-100);
+}
+
+.badge-male {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-female {
+  background-color: #fce7f3;
+  color: #be185d;
+}
+
+.badge-relationship {
+  background-color: var(--color-indigo-50);
+  color: var(--color-indigo-700);
+  border: 1px solid var(--color-indigo-100);
+  font-weight: 600;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-slate-700);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-slate-300);
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  color: var(--color-slate-800);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.form-error {
+  color: var(--color-rose-600);
+  font-size: 0.8125rem;
+  margin-top: 5px;
+}
+
+/* Responsive grid */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Responsive breakpoint */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0;
+  }
+}
+

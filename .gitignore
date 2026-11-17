@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Production builds & artifacts
+dist/
+functions/lib/
+*.tsbuildinfo
+
+# Uploaded / runtime storage & temporary test directories
+storage/
+functions/storage/
+data/__*
+
+# Environment and local configs
+.env
+.env.local
+.env.*.local
+.firebase/
+
+# Operating system files
+.DS_Store
+Thumbs.db
