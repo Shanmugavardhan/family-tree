@@ -21,3 +21,4 @@ export const graphApi = {
     return request<FamilyGraphNode>(`/graph/nodes/${personId}${queryString ? `?${queryString}` : ''}`);
   },
 };
+

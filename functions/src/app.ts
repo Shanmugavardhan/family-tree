@@ -3,6 +3,7 @@ import cors from 'cors';
 import { personRoutes } from './routes/person.routes';
 import { relationshipRoutes } from './routes/relationship.routes';
 import { graphRoutes } from './routes/graph.routes';
+import { layoutRoutes } from './routes/layout.routes';
 
 export const app = express();
 
@@ -30,6 +31,9 @@ app.use('/api/relationships', relationshipRoutes);
 
 // Chronological Graph Transformation routes (Milestone 3.2)
 app.use('/api/graph', graphRoutes);
+
+// Chronological Layout Engine routes (Milestone 3.3)
+app.use('/api/layout', layoutRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

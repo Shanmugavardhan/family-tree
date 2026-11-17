@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/local.ts",
     "build": "tsc",
-    "test": "tsx src/__tests__/test_milestone_2_2_and_2_3.ts && tsx src/__tests__/test_person_crud_api.ts && tsx src/__tests__/test_relationship_api.ts && tsx src/__tests__/test_relative_derivation.ts && tsx src/__tests__/test_photo_api.ts && tsx src/__tests__/test_frontend_api_integration.ts && tsx src/__tests__/test_generation_engine.ts && tsx src/__tests__/test_graph_transformation.ts",
+    "test": "tsx src/__tests__/test_milestone_2_2_and_2_3.ts && tsx src/__tests__/test_person_crud_api.ts && tsx src/__tests__/test_relationship_api.ts && tsx src/__tests__/test_relative_derivation.ts && tsx src/__tests__/test_photo_api.ts && tsx src/__tests__/test_frontend_api_integration.ts && tsx src/__tests__/test_generation_engine.ts && tsx src/__tests__/test_graph_transformation.ts && tsx src/__tests__/test_layout_engine.ts",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",

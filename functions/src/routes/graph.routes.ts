@@ -11,3 +11,4 @@ export function createGraphRoutes(graphController = new GraphController()): Rout
 }
 
 export const graphRoutes = createGraphRoutes();
+
