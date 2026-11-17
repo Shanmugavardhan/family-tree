@@ -85,6 +85,7 @@ export class GraphService {
         generationName: gen ? gen.name : null,
         generationOrder: gen ? gen.order : null,
         photoPath: person.profile_photo ?? null,
+        gender: person.gender,
         isLiving: person.is_living,
         isArchived: person.is_archived,
       };

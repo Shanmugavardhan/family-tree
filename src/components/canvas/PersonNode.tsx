@@ -1,8 +1,189 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
-import { User, Sparkles, Navigation } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+
+/**
+ * Noble Lady / Princess Avatar (Game of Thrones Targaryen / Westeros Aesthetic)
+ */
+const FemaleNobleAvatar: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
+    <defs>
+      <radialGradient id="fem-bg" cx="50%" cy="38%" r="62%">
+        <stop offset="0%" stopColor="#4a0e14" />
+        <stop offset="65%" stopColor="#24070a" />
+        <stop offset="100%" stopColor="#0f0204" />
+      </radialGradient>
+      <linearGradient id="fem-hair" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fef08a" />
+        <stop offset="40%" stopColor="#e2d4a8" />
+        <stop offset="100%" stopColor="#a38243" />
+      </linearGradient>
+      <linearGradient id="fem-tiara" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#d4af37" />
+        <stop offset="50%" stopColor="#fef08a" />
+        <stop offset="100%" stopColor="#b45309" />
+      </linearGradient>
+      <linearGradient id="fem-robe" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#881337" />
+        <stop offset="100%" stopColor="#4c0519" />
+      </linearGradient>
+    </defs>
+    {/* Background Disc */}
+    <circle cx="50" cy="50" r="49" fill="url(#fem-bg)" />
+
+    {/* Back Hair Cascades */}
+    <path
+      d="M24 50 C20 68 28 88 34 98 C36 84 32 68 34 52 Z M76 50 C80 68 72 88 66 98 C64 84 68 68 66 52 Z"
+      fill="url(#fem-hair)"
+      opacity="0.9"
+    />
+
+    {/* Robe / Gown Shoulders */}
+    <path
+      d="M18 100 C20 84 35 76 50 78 C65 76 80 84 82 100 Z"
+      fill="url(#fem-robe)"
+    />
+    <path
+      d="M38 80 L50 88 L62 80 L50 78 Z"
+      fill="#d4af37"
+      opacity="0.8"
+    />
+
+    {/* Elegant Neck & Delicate Face Profile */}
+    <path d="M43 62 L43 78 C46 80 54 80 57 78 L57 62 Z" fill="#fde2d0" />
+    <path
+      d="M36 40 C36 28 42 22 50 22 C58 22 64 28 64 40 C64 54 58 64 50 64 C42 64 36 54 36 40 Z"
+      fill="#fed7aa"
+    />
+
+    {/* Facial Features (Serene Noble Eyes, Lips, Brows) */}
+    <path d="M42 38 Q45 36 48 38" stroke="#78350f" strokeWidth="1" fill="none" />
+    <path d="M52 38 Q55 36 58 38" stroke="#78350f" strokeWidth="1" fill="none" />
+    <path d="M43 42 Q45.5 44 47 42" stroke="#451a03" strokeWidth="1.2" fill="none" />
+    <path d="M53 42 Q54.5 44 57 42" stroke="#451a03" strokeWidth="1.2" fill="none" />
+    <path d="M50 43 L49 49 L51 49" stroke="#ea580c" strokeWidth="0.8" fill="none" opacity="0.6" />
+    <path d="M46 54 Q50 57 54 54" stroke="#be123c" strokeWidth="1.4" fill="none" />
+
+    {/* Royal Braided Hair Framing Face */}
+    <path
+      d="M34 38 C32 24 40 16 50 16 C60 16 68 24 66 38 C64 34 60 27 50 27 C40 27 36 34 34 38 Z"
+      fill="url(#fem-hair)"
+    />
+    <path
+      d="M34 38 C35 50 38 60 41 68 C39 62 36 52 35 44 Z M66 38 C65 50 62 60 59 68 C61 62 64 52 65 44 Z"
+      fill="url(#fem-hair)"
+    />
+
+    {/* Golden Royal Tiara / Circlet */}
+    <path
+      d="M38 27 Q50 23 62 27 L64 25 Q50 21 36 25 Z"
+      fill="url(#fem-tiara)"
+    />
+    <polygon points="50,19 53,24 47,24" fill="url(#fem-tiara)" />
+    <circle cx="50" cy="22" r="1.5" fill="#e11d48" />
+  </svg>
+);
+
+/**
+ * Noble Lord / Knight Avatar (Game of Thrones Stark / Baratheon Aesthetic)
+ */
+const MaleNobleAvatar: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
+    <defs>
+      <radialGradient id="male-bg" cx="50%" cy="38%" r="62%">
+        <stop offset="0%" stopColor="#1e293b" />
+        <stop offset="65%" stopColor="#0f172a" />
+        <stop offset="100%" stopColor="#040711" />
+      </radialGradient>
+      <linearGradient id="male-hair" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#475569" />
+        <stop offset="100%" stopColor="#1e293b" />
+      </linearGradient>
+      <linearGradient id="male-armor" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#334155" />
+        <stop offset="50%" stopColor="#64748b" />
+        <stop offset="100%" stopColor="#1e293b" />
+      </linearGradient>
+    </defs>
+    {/* Background Disc */}
+    <circle cx="50" cy="50" r="49" fill="url(#male-bg)" />
+
+    {/* Valyrian Steel / Dark Leather Mantle */}
+    <path
+      d="M14 100 C16 80 32 72 50 74 C68 72 84 80 86 100 Z"
+      fill="url(#male-armor)"
+    />
+    {/* Fur Collar Trim */}
+    <path
+      d="M26 84 C32 74 44 76 50 78 C56 76 68 74 74 84 C66 90 56 88 50 88 C44 88 34 90 26 84 Z"
+      fill="#1e293b"
+      stroke="#64748b"
+      strokeWidth="1.2"
+    />
+    {/* Gorget Clasp */}
+    <circle cx="50" cy="84" r="3.5" fill="#d4af37" stroke="#92400e" strokeWidth="1" />
+
+    {/* Strong Neck & Jaw */}
+    <path d="M41 58 L41 76 C45 78 55 78 59 76 L59 58 Z" fill="#e2c5ad" />
+    <path
+      d="M34 38 C34 26 40 22 50 22 C60 22 66 26 66 38 C66 52 60 62 50 62 C40 62 34 52 34 38 Z"
+      fill="#fed7aa"
+    />
+
+    {/* Noble Hair (Swept Back) */}
+    <path
+      d="M32 36 C30 22 38 15 50 15 C62 15 70 22 68 36 C64 26 58 22 50 22 C42 22 36 26 32 36 Z"
+      fill="url(#male-hair)"
+    />
+
+    {/* Distinguished Medieval Beard & Mustache */}
+    <path
+      d="M38 46 C38 58 44 67 50 67 C56 67 62 58 62 46 C60 52 56 56 50 56 C44 56 40 52 38 46 Z"
+      fill="#334155"
+    />
+    <path
+      d="M42 50 Q50 53 58 50 Q50 48 42 50 Z"
+      fill="#1e293b"
+    />
+
+    {/* Commanding Facial Features */}
+    <path d="M40 37 Q44 35 48 37" stroke="#1e293b" strokeWidth="1.4" fill="none" />
+    <path d="M52 37 Q56 35 60 37" stroke="#1e293b" strokeWidth="1.4" fill="none" />
+    <circle cx="45" cy="40" r="1.5" fill="#0f172a" />
+    <circle cx="55" cy="40" r="1.5" fill="#0f172a" />
+    <path d="M50 39 L49 47 L52 47" stroke="#9a3412" strokeWidth="1" fill="none" opacity="0.7" />
+  </svg>
+);
+
+/**
+ * Royal House Sigil Avatar (Fallback for neutral / other / unknown)
+ */
+const RoyalSigilAvatar: React.FC = () => (
+  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
+    <defs>
+      <radialGradient id="sigil-bg" cx="50%" cy="50%" r="55%">
+        <stop offset="0%" stopColor="#350608" />
+        <stop offset="60%" stopColor="#1a0203" />
+        <stop offset="100%" stopColor="#080001" />
+      </radialGradient>
+      <linearGradient id="sigil-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbbf24" />
+        <stop offset="50%" stopColor="#d4af37" />
+        <stop offset="100%" stopColor="#92400e" />
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="49" fill="url(#sigil-bg)" />
+    {/* Westeros Royal Dragon / Crown Sigil */}
+    <path
+      d="M50 20 L58 36 L74 26 L66 48 L84 52 L66 62 L74 80 L50 70 L26 80 L34 62 L16 52 L34 48 L26 26 L42 36 Z"
+      fill="url(#sigil-gold)"
+      opacity="0.9"
+    />
+    <circle cx="50" cy="48" r="8" fill="#7f1d1d" stroke="url(#sigil-gold)" strokeWidth="1.5" />
+    <polygon points="50,42 53,52 47,52" fill="#fbbf24" />
+  </svg>
+);
 
 export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const { isDark } = useTheme();
@@ -16,87 +197,75 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
     .filter(Boolean)
     .join(' ');
 
-  const initials = `${nodeData.firstName?.[0] || ''}${nodeData.lastName?.[0] || ''}`.toUpperCase() || 'P';
-
-  // Cohort badge color (Westeros House color accents)
-  const genColor = nodeData.generationId === 'gen_z'
-    ? (isDark ? '#34d399' : '#047857')
-    : nodeData.generationId === 'gen_x'
-    ? (isDark ? '#60a5fa' : '#1d4ed8')
-    : nodeData.generationId === 'baby_boomers'
-    ? (isDark ? '#2dd4bf' : '#0f766e')
-    : nodeData.generationId === 'millennials'
-    ? (isDark ? '#c084fc' : '#6d28d9')
-    : nodeData.generationId === 'silent'
-    ? (isDark ? '#d4af37' : '#92400e')
-    : (isDark ? '#cbd5e1' : '#78716c');
-
-  // Determine card border & shadow based on Game of Thrones aesthetics
-  let borderColor = isDark ? 'rgba(212, 175, 55, 0.4)' : 'rgba(197, 155, 39, 0.55)';
-  let borderWidth = '1.5px';
+  // Border & Glow styling matching Game of Thrones Targaryen family tree
+  let borderColor = isDark ? '#14171f' : '#292524';
+  let borderWidth = '3.5px';
   let boxShadow = isDark
-    ? '0 8px 24px rgba(0, 0, 0, 0.65), 0 0 1px 1px rgba(212, 175, 55, 0.2)'
-    : '0 6px 18px rgba(120, 53, 15, 0.08), 0 0 1px 1px rgba(197, 155, 39, 0.2)';
+    ? '0 6px 16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(212, 175, 55, 0.25)'
+    : '0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(180, 83, 9, 0.2)';
 
   if (isPathNode) {
     borderColor = '#f59e0b';
-    borderWidth = '3px';
-    boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.35), 0 12px 30px rgba(245, 158, 11, 0.55)';
+    borderWidth = '4px';
+    boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.35), 0 0 25px rgba(245, 158, 11, 0.85)';
   } else if (isSelected) {
     borderColor = '#d4af37';
-    borderWidth = '2.5px';
-    boxShadow = '0 12px 32px rgba(212, 175, 55, 0.45), 0 0 0 3px rgba(212, 175, 55, 0.25)';
+    borderWidth = '4px';
+    boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.35), 0 0 22px rgba(212, 175, 55, 0.8)';
   } else if (isHighlighted) {
-    borderColor = isDark ? '#93c5fd' : '#2563eb';
-    borderWidth = '2.5px';
-    boxShadow = '0 10px 24px rgba(37, 99, 235, 0.35)';
+    borderColor = '#60a5fa';
+    borderWidth = '3.5px';
+    boxShadow = '0 0 0 2px rgba(96, 165, 250, 0.35), 0 0 18px rgba(96, 165, 250, 0.7)';
   }
+
+  const gender = (nodeData as any).gender?.toLowerCase();
 
   return (
     <div
       style={{
-        width: 380,
-        height: 180,
-        backgroundColor: isDark ? '#111622' : '#fcf8ee',
-        borderRadius: 14,
-        border: `${borderWidth} solid ${borderColor}`,
-        boxShadow,
-        padding: '14px 18px',
+        width: 190,
+        height: 160,
+        backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
         position: 'relative',
-        transition: 'all 0.15s ease-in-out',
         cursor: 'pointer',
         boxSizing: 'border-box',
-        overflow: 'hidden',
+        userSelect: 'none',
       }}
     >
-      {/* Target handle for incoming parent-child connections */}
+      {/* Target handle for incoming parent-child connection (at top of circle) */}
       <Handle
         type="target"
         position={Position.Top}
         id="child-top"
         style={{
-          width: 10,
-          height: 10,
-          background: isPathNode ? '#f59e0b' : '#d4af37',
-          border: '2px solid #111622',
-          top: -5,
+          width: 8,
+          height: 8,
+          background: isPathNode ? '#f59e0b' : '#8b1e22',
+          border: '1.5px solid #111622',
+          top: -2,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 5,
         }}
       />
 
-      {/* Handles for horizontal spouse connections */}
+      {/* Handles for horizontal spouse connection (aligned to middle of circle) */}
       <Handle
         type="target"
         position={Position.Left}
         id="spouse-left"
         style={{
-          width: 10,
-          height: 10,
+          width: 8,
+          height: 8,
           background: isPathNode ? '#f59e0b' : '#b91c1c',
-          border: '2px solid #111622',
-          left: -5,
+          border: '1.5px solid #111622',
+          left: 43,
+          top: 48,
+          zIndex: 5,
         }}
       />
       <Handle
@@ -104,159 +273,116 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         position={Position.Right}
         id="spouse-right"
         style={{
-          width: 10,
-          height: 10,
+          width: 8,
+          height: 8,
           background: isPathNode ? '#f59e0b' : '#b91c1c',
-          border: '2px solid #111622',
-          right: -5,
+          border: '1.5px solid #111622',
+          right: 43,
+          top: 48,
+          zIndex: 5,
         }}
       />
 
-      {/* Source handle for outgoing parent-child connections */}
+      {/* Circular Portrait Medallion exactly as in Game of Thrones screenshot */}
+      <div
+        style={{
+          width: 96,
+          height: 96,
+          borderRadius: '50%',
+          border: `${borderWidth} solid ${borderColor}`,
+          boxShadow,
+          overflow: 'hidden',
+          position: 'relative',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          backgroundColor: '#0c0f17',
+          flexShrink: 0,
+        }}
+      >
+        {nodeData.photoPath && !imageFailed ? (
+          <img
+            src={nodeData.photoPath}
+            alt={fullName}
+            onError={() => setImageFailed(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        ) : gender === 'female' ? (
+          <FemaleNobleAvatar />
+        ) : gender === 'male' ? (
+          <MaleNobleAvatar />
+        ) : (
+          <RoyalSigilAvatar />
+        )}
+      </div>
+
+      {/* Person Name centered below the circle */}
+      <div
+        style={{
+          marginTop: 9,
+          textAlign: 'center',
+          width: '100%',
+          maxWidth: 180,
+          fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+          fontSize: '17px',
+          fontWeight: 700,
+          lineHeight: 1.22,
+          letterSpacing: '0.02em',
+          color: isSelected
+            ? '#e5c158'
+            : isPathNode
+            ? '#fbbf24'
+            : isDark
+            ? '#f8fafc'
+            : '#1c1917',
+          textShadow: isDark
+            ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.8)'
+            : '0 1px 3px rgba(255, 255, 255, 0.9)',
+          transition: 'color 0.15s ease-in-out',
+          wordBreak: 'break-word',
+        }}
+      >
+        {fullName}
+      </div>
+
+      {/* Deceased status ONLY (Living status, dates, and badges omitted per requirements) */}
+      {!nodeData.isLiving && (
+        <div
+          style={{
+            marginTop: 3,
+            textAlign: 'center',
+            fontFamily: "'Cormorant Garamond', 'Cinzel', Georgia, serif",
+            fontSize: '14px',
+            fontStyle: 'italic',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            color: isDark ? '#94a3b8' : '#78716c',
+            textShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.9)' : 'none',
+          }}
+        >
+          † Deceased
+        </div>
+      )}
+
+      {/* Source handle for outgoing parent-child connection (at bottom below name/status) */}
       <Handle
         type="source"
         position={Position.Bottom}
         id="parent-bottom"
         style={{
-          width: 10,
-          height: 10,
-          background: isPathNode ? '#f59e0b' : '#d4af37',
-          border: '2px solid #111622',
-          bottom: -5,
+          width: 8,
+          height: 8,
+          background: isPathNode ? '#f59e0b' : '#8b1e22',
+          border: '1.5px solid #111622',
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 5,
         }}
       />
-
-      {/* Card Header: Cohort Badge and Deceased-only indicator (Living indication removed) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span
-          style={{
-            fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-            fontSize: '20px',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            color: isPathNode ? '#b45309' : genColor,
-            backgroundColor: isPathNode ? '#fef3c7' : `${genColor}18`,
-            padding: '3px 10px',
-            borderRadius: 6,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-            border: `1px solid ${isPathNode ? '#f59e0b' : `${genColor}40`}`,
-          }}
-        >
-          {isPathNode ? <Navigation size={16} /> : <Sparkles size={16} />}
-          {isPathNode ? 'Path Link' : nodeData.generationName || 'House Cohort'}
-        </span>
-
-        {/* Deceased Indicator (Alive indication is strictly omitted per Requirement 7) */}
-        {!nodeData.isLiving && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span
-              style={{
-                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-                fontSize: '19px',
-                color: isDark ? '#94a3b8' : '#78716c',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-              }}
-            >
-              † Deceased
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Card Body: Medallion Avatar + Full Name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: '50%',
-            backgroundColor: isDark ? '#1a2230' : '#f0e6d2',
-            color: isDark ? '#e5c158' : '#78350f',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Cinzel', serif",
-            fontWeight: 900,
-            fontSize: '26px',
-            flexShrink: 0,
-            overflow: 'hidden',
-            border: `2px solid ${isDark ? '#d4af37' : '#c59b27'}`,
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)',
-          }}
-        >
-          {nodeData.photoPath && !imageFailed ? (
-            <img
-              src={`/api/persons/${nodeData.personId}/photo`}
-              alt={fullName}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            initials || <User size={32} />
-          )}
-        </div>
-
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div
-            title={fullName}
-            style={{
-              fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-              fontWeight: 800,
-              fontSize: '26px',
-              color: isDark ? '#f8fafc' : '#1c1917',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              lineHeight: 1.2,
-              letterSpacing: '0.02em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {fullName}
-          </div>
-          <div
-            style={{
-              fontFamily: "'Cormorant Garamond', 'Cinzel', Georgia, serif",
-              fontSize: '23px',
-              color: isDark ? '#cbd5e1' : '#57534e',
-              marginTop: 4,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            {nodeData.birthYear ? (
-              <span>Born {nodeData.birthYear}</span>
-            ) : (
-              <span style={{ fontStyle: 'italic', color: isDark ? '#d4af37' : '#92400e' }}>
-                Kinship of {nodeData.generationName || 'House'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom selection bar */}
-      {(isSelected || isPathNode) && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 5,
-            backgroundColor: isPathNode ? '#f59e0b' : '#d4af37',
-            boxShadow: '0 -2px 8px rgba(212, 175, 55, 0.5)',
-          }}
-        />
-      )}
     </div>
   );
 };

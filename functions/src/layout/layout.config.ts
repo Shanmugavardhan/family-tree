@@ -15,10 +15,10 @@ export interface LayoutConfig {
 }
 
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
-  nodeWidth: 380,
-  nodeHeight: 180,
-  horizontalSpacing: 80,
-  spouseSpacing: 50,
+  nodeWidth: 190,
+  nodeHeight: 160,
+  horizontalSpacing: 90,
+  spouseSpacing: 60,
   laneHeight: 420, // Vertically wider strips as requested
   laneGap: 0, // Zero gap between horizontal generation strips
   laneMarginX: 80,

@@ -436,3 +436,18 @@ button, input, select, textarea {
   color: var(--text-main);
   transition: background-color 0.2s ease;
 }
+
+/* Smooth Canvas Scrolling & Drag Interactions */
+html {
+  scroll-behavior: smooth;
+}
+
+.react-flow__pane {
+  cursor: grab !important;
+}
+
+.react-flow__pane:active,
+.react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+

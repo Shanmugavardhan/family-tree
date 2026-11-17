@@ -13,6 +13,7 @@ export interface PersonNodeData extends Record<string, unknown> {
   generationName: string | null;
   generationOrder: number | null;
   photoPath: string | null;
+  gender?: string;
   isLiving: boolean;
   isArchived: boolean;
   isInferredGeneration?: boolean;
@@ -139,6 +140,7 @@ export function convertLayoutToReactFlow(
         generationName: n.generationName ?? null,
         generationOrder: n.generationOrder ?? null,
         photoPath: n.photoPath ?? null,
+        gender: (n as any).gender || 'unknown',
         isLiving: n.isLiving ?? true,
         isArchived: n.isArchived ?? false,
         isInferredGeneration: (n as any).isInferredGeneration ?? false,
@@ -167,8 +169,8 @@ export function convertLayoutToReactFlow(
       : isHighlighted
       ? '#2563eb'
       : e.type === 'spouse'
-      ? '#e11d48'
-      : '#475569';
+      ? '#b91c1c'
+      : '#8b1e22';
 
     if (e.type === 'parent_child') {
       return {

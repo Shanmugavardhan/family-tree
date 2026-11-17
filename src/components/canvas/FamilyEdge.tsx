@@ -40,10 +40,10 @@ export const FamilyEdge: React.FC<any> = ({
     : isHighlighted
     ? '#2563eb'
     : isSpouse
-    ? '#e11d48'
-    : '#475569';
+    ? '#b91c1c'
+    : '#8b1e22';
 
-  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : isSpouse ? 2.5 : 2;
+  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : isSpouse ? 2.5 : 2.5;
   const strokeDasharray = isSpouse && !isPathEdge ? '5,5' : undefined;
 
   return (

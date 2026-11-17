@@ -17,6 +17,7 @@ export interface PositionedNode {
   birthYear?: number | null;
   generationName?: string | null;
   photoPath?: string | null;
+  gender?: string;
   isLiving?: boolean;
   isArchived?: boolean;
   isInferredGeneration?: boolean;

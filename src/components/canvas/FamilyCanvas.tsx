@@ -14,6 +14,7 @@ import {
   NodeMouseHandler,
   NodeTypes,
   EdgeTypes,
+  PanOnScrollMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -536,6 +537,12 @@ const FamilyCanvasInternal: React.FC = () => {
         elementsSelectable={true}
         minZoom={0.2}
         maxZoom={4.0}
+        panOnScroll={true}
+        panOnScrollSpeed={0.9}
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnPinch={true}
+        zoomActivationKeyCode={['Meta', 'Control']}
+        preventScrolling={true}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#263042' : '#cbd5e1'} />
 

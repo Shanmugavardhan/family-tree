@@ -83,12 +83,12 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
 
   const handleZoomInClick = () => {
     onZoomActivity?.();
-    zoomIn();
+    zoomIn({ duration: 400 });
   };
 
   const handleZoomOutClick = () => {
     onZoomActivity?.();
-    zoomOut();
+    zoomOut({ duration: 400 });
   };
 
   const searchSlotEl = typeof document !== 'undefined' ? document.getElementById('header-search-slot') : null;

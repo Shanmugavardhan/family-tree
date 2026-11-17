@@ -425,6 +425,7 @@ export class LayoutService {
             birthYear: n.birthYear,
             generationName: n.generationName,
             photoPath: n.photoPath,
+            gender: (n as any).gender,
             isLiving: n.isLiving,
             isArchived: n.isArchived,
             isInferredGeneration: (n as any).isInferredGeneration ?? false,

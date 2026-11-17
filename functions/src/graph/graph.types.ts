@@ -14,6 +14,7 @@ export interface FamilyGraphNode {
   generationOrder: number | null;
 
   photoPath: string | null;
+  gender?: string;
   isLiving: boolean;
   isArchived: boolean;
 }
