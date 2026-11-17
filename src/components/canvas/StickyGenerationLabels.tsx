@@ -51,35 +51,35 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
             transition: 'opacity 0.2s ease-in-out',
           }}
         >
-          {/* Game of Thrones Style Noble Generation Title (No Box) */}
+          {/* Royal Heritage Generation Title (Cormorant Garamond 700) */}
           <div
             style={{
-              fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-              fontSize: '28px',
-              fontWeight: 900,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: '32px',
+              fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.14em',
+              letterSpacing: '0.1em',
               lineHeight: 1.15,
-              color: isDark ? '#e5c158' : '#78350f',
+              color: isDark ? '#D6B15C' : '#854d0e',
               textShadow: isDark
-                ? '0 2px 10px rgba(0, 0, 0, 0.95), 0 0 16px rgba(229, 193, 88, 0.35)'
-                : '0 1px 4px rgba(255, 255, 255, 0.95), 0 1px 8px rgba(120, 53, 15, 0.2)',
+                ? '0 2px 12px rgba(0, 0, 0, 0.95), 0 0 16px rgba(214, 177, 92, 0.25)'
+                : '0 1px 4px rgba(255, 255, 255, 0.95)',
             }}
           >
             {lane.name}
           </div>
 
-          {/* Timeline Period ONLY (People count removed per Request 4) */}
+          {/* Timeline Period ONLY (Cormorant Garamond / DM Sans) */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              marginTop: 6,
-              fontFamily: "'Cormorant Garamond', 'Cinzel', Georgia, serif",
-              fontSize: '20px',
-              fontWeight: 700,
-              color: isDark ? '#cbd5e1' : '#57534e',
-              letterSpacing: '0.06em',
+              marginTop: 4,
+              fontFamily: "'Cormorant Garamond', 'DM Sans', Georgia, serif",
+              fontSize: '22px',
+              fontWeight: 600,
+              color: isDark ? '#9BA3AF' : '#57534e',
+              letterSpacing: '0.04em',
               textShadow: isDark ? '0 1px 6px rgba(0, 0, 0, 0.9)' : 'none',
             }}
           >

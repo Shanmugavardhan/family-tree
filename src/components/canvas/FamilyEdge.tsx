@@ -38,12 +38,12 @@ export const FamilyEdge: React.FC<any> = ({
   const strokeColor = isPathEdge
     ? '#f59e0b'
     : isHighlighted
-    ? '#2563eb'
+    ? '#D6B15C'
     : isSpouse
-    ? '#b91c1c'
-    : '#8b1e22';
+    ? '#D18B91'
+    : '#A94747';
 
-  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : isSpouse ? 2.5 : 2.5;
+  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : isSpouse ? 2.2 : 2.2;
   const strokeDasharray = isSpouse && !isPathEdge ? '5,5' : undefined;
 
   return (

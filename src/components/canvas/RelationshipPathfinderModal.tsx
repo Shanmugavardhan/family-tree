@@ -92,30 +92,31 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
         style={{
           width: '100%',
           maxWidth: 520,
-          backgroundColor: isDark ? '#1e293b' : '#ffffff',
+          backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,
-          boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.6)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+          boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.75)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          color: isDark ? '#f8fafc' : '#0f172a',
+          color: isDark ? '#F1E9D7' : '#0f172a',
+          fontFamily: "'Inter', sans-serif",
         }}
       >
         {/* Header */}
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: `1px solid ${isDark ? '#78350f' : '#e2e8f0'}`,
+            borderBottom: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: isDark ? '#451a03' : '#fffbeb',
+            backgroundColor: isDark ? '#1D2633' : '#fffbeb',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isDark ? '#fbbf24' : '#b45309' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isDark ? '#D6B15C' : '#b45309' }}>
             <Navigation size={18} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
+            <h3 style={{ fontSize: '1.2rem', fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, margin: 0 }}>
               Relationship Pathfinder
             </h3>
           </div>
@@ -126,7 +127,7 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
               background: 'transparent',
               padding: 4,
               cursor: 'pointer',
-              color: isDark ? '#fbbf24' : '#94a3b8',
+              color: isDark ? '#D6B15C' : '#94a3b8',
               borderRadius: 6,
             }}
           >

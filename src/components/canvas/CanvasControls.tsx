@@ -247,15 +247,14 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
                 : isDark
                 ? '1px solid rgba(255, 255, 255, 0.12)'
                 : '1px solid rgba(0, 0, 0, 0.12)',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '0.785rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.8rem',
+              fontWeight: 500,
               cursor: 'pointer',
               backgroundColor: focusMode
                 ? isDark ? 'rgba(59, 130, 246, 0.25)' : '#eff6ff'
-                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
-              color: focusMode ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#94a3b8' : '#64748b',
+                : isDark ? '#151922' : '#f8fafc',
+              color: focusMode ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#9BA3AF' : '#64748b',
             }}
           >
             <Eye size={14} />
@@ -272,16 +271,15 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               gap: 5,
               padding: '6px 10px',
               borderRadius: 8,
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '0.785rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
+              border: isDark ? '1px solid #343D49' : '1px solid rgba(0, 0, 0, 0.12)',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.8rem',
+              fontWeight: 500,
               cursor: 'pointer',
               backgroundColor: compactLanes
-                ? isDark ? 'rgba(212, 175, 55, 0.16)' : '#fef3c7'
-                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
-              color: compactLanes ? (isDark ? '#e5c158' : '#92400e') : isDark ? '#94a3b8' : '#64748b',
+                ? isDark ? 'rgba(214, 177, 92, 0.2)' : '#fef3c7'
+                : isDark ? '#151922' : '#f8fafc',
+              color: compactLanes ? (isDark ? '#D6B15C' : '#92400e') : isDark ? '#9BA3AF' : '#64748b',
             }}
           >
             <Layers size={14} />
@@ -298,16 +296,15 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               gap: 5,
               padding: '6px 10px',
               borderRadius: 8,
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '0.785rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
+              border: isDark ? '1px solid #343D49' : '1px solid rgba(0, 0, 0, 0.12)',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.8rem',
+              fontWeight: 500,
               cursor: 'pointer',
               backgroundColor: includeArchived
-                ? isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7'
-                : isDark ? 'rgba(22, 28, 38, 0.7)' : '#f8fafc',
-              color: includeArchived ? '#f59e0b' : isDark ? '#94a3b8' : '#64748b',
+                ? isDark ? 'rgba(214, 177, 92, 0.2)' : '#fef3c7'
+                : isDark ? '#151922' : '#f8fafc',
+              color: includeArchived ? '#D6B15C' : isDark ? '#9BA3AF' : '#64748b',
             }}
           >
             <Archive size={14} />

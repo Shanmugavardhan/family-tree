@@ -1,35 +1,50 @@
 /* Modern CSS Design System for Family Tree Management */
 :root {
-  --font-family: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Book Antiqua', 'Georgia', serif;
-  --font-body: 'Cormorant Garamond', 'Georgia', serif;
+  /* Typography - Option 1: Heritage & Modern */
+  --font-brand: "Cormorant Garamond", Georgia, serif;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-meta: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: var(--font-body);
+
+  /* Application - Royal Heritage: Midnight Edition */
+  --bg-primary: #101318;
+  --bg-navigation: #151922;
+  --bg-card: #1D2633;
+  --bg-elevated: #252E3A;
+
+  /* Gold */
+  --gold-primary: #D6B15C;
+  --gold-muted: #A88A4B;
+
+  /* Text */
+  --text-primary: #F1E9D7;
+  --text-secondary: #9BA3AF;
+
+  /* Relationships */
+  --line-parent: #A94747;
+  --line-marriage: #D18B91;
+  --line-highlight: #D6B15C;
+  --line-inactive: #59616C;
+
+  /* Borders */
+  --border-default: #343D49;
   
-  /* Game of Thrones Noble House Brand Palette */
-  --color-got-gold: #c59b27;
-  --color-got-gold-light: #e5c158;
-  --color-got-gold-glow: rgba(197, 155, 39, 0.35);
-  --color-got-crimson: #8b1e22;
-  --color-got-valyrian: #1a202c;
-  --color-got-slate: #3a4756;
-  --color-got-parchment: #fdfaf3;
-  --color-got-parchment-dark: #f4ede0;
+  /* Brand Compatibility Palette */
+  --color-primary: #D6B15C;
+  --color-primary-hover: #E5C158;
+  --color-primary-light: rgba(214, 177, 92, 0.15);
+  --color-primary-border: rgba(214, 177, 92, 0.35);
 
-  --color-primary: #c59b27;
-  --color-primary-hover: #b3891d;
-  --color-primary-light: rgba(197, 155, 39, 0.12);
-  --color-primary-border: #c59b2760;
+  --bg-app: #101318;
+  --bg-surface: #151922;
+  --bg-surface-elevated: #252E3A;
+  --bg-surface-subtle: #1D2633;
+  --border-color: #343D49;
+  --border-subtle: #242B35;
 
-  /* Theme Surfaces & Backgrounds (Light Mode Default) */
-  --bg-app: #fcf9f2;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #ffffff;
-  --bg-surface-subtle: #f6efe2;
-  --border-color: #e2d7c3;
-  --border-subtle: #c8baa0;
-
-  /* Text Colors */
-  --text-main: #1c1917;
-  --text-secondary: #44403c;
-  --text-muted: #78716c;
+  --text-main: #F1E9D7;
+  --text-muted: #9BA3AF;
   
   /* Slate Scale */
   --color-slate-50: #f8fafc;
@@ -81,21 +96,27 @@
    ========================================================================== */
 [data-theme="dark"],
 .dark {
-  --color-primary: #d4af37;
-  --color-primary-hover: #e5c158;
-  --color-primary-light: rgba(212, 175, 55, 0.16);
-  --color-primary-border: #d4af3780;
+  --color-primary: #D6B15C;
+  --color-primary-hover: #E5C158;
+  --color-primary-light: rgba(214, 177, 92, 0.16);
+  --color-primary-border: rgba(214, 177, 92, 0.4);
 
-  --bg-app: #080a0f;
-  --bg-surface: #0f131a;
-  --bg-surface-elevated: #161c26;
-  --bg-surface-subtle: #1a2230;
-  --border-color: #263042;
-  --border-subtle: #334155;
+  --bg-primary: #101318;
+  --bg-navigation: #151922;
+  --bg-card: #1D2633;
+  --bg-elevated: #252E3A;
 
-  --text-main: #f8fafc;
-  --text-secondary: #e2e8f0;
-  --text-muted: #94a3b8;
+  --bg-app: #101318;
+  --bg-surface: #151922;
+  --bg-surface-elevated: #252E3A;
+  --bg-surface-subtle: #1D2633;
+  --border-color: #343D49;
+  --border-subtle: #242B35;
+
+  --text-primary: #F1E9D7;
+  --text-secondary: #9BA3AF;
+  --text-main: #F1E9D7;
+  --text-muted: #9BA3AF;
 
   --color-slate-50: #0f172a;
   --color-slate-100: #1e293b;

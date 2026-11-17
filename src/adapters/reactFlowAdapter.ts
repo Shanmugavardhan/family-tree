@@ -167,10 +167,10 @@ export function convertLayoutToReactFlow(
     const strokeColor = isPathEdge
       ? '#f59e0b'
       : isHighlighted
-      ? '#2563eb'
+      ? '#D6B15C'
       : e.type === 'spouse'
-      ? '#b91c1c'
-      : '#8b1e22';
+      ? '#D18B91'
+      : '#A94747';
 
     if (e.type === 'parent_child') {
       return {

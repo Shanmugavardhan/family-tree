@@ -64,10 +64,10 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
       style={{
         width,
         height: lane.height,
-        backgroundColor: isDark ? `${bgColor}14` : `${bgColor}0a`,
+        backgroundColor: isDark ? `${bgColor}2c` : `${bgColor}18`,
         backgroundImage: texture,
         backgroundRepeat: 'repeat',
-        borderBottom: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(197, 155, 39, 0.2)'}`,
+        borderBottom: `1px solid ${isDark ? 'rgba(52, 61, 73, 0.5)' : 'rgba(52, 61, 73, 0.25)'}`,
         position: 'relative',
         boxSizing: 'border-box',
         userSelect: 'none',

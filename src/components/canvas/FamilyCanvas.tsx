@@ -14,7 +14,6 @@ import {
   NodeMouseHandler,
   NodeTypes,
   EdgeTypes,
-  PanOnScrollMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -490,7 +489,7 @@ const FamilyCanvasInternal: React.FC = () => {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#080a0f' : '#fcf9f2' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#101318' : '#fcf9f2' }}>
       {/* Sticky Noble Generation Labels (Requirement 4: Sticky on left, no box) */}
       <StickyGenerationLabels lanes={layout?.lanes || []} />
 
@@ -537,14 +536,13 @@ const FamilyCanvasInternal: React.FC = () => {
         elementsSelectable={true}
         minZoom={0.2}
         maxZoom={4.0}
-        panOnScroll={true}
-        panOnScrollSpeed={0.9}
-        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll={true} // Mouse scroll zooms in and out
+        panOnScroll={false} // Mouse scroll does not pan
+        panOnDrag={true} // Navigation is ONLY using click and drag
         zoomOnPinch={true}
-        zoomActivationKeyCode={['Meta', 'Control']}
         preventScrolling={true}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#263042' : '#cbd5e1'} />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color={isDark ? '#252E3A' : '#cbd5e1'} />
 
         {/* MiniMap: Automatically visible ONLY during zoom activity (Requirement 9) */}
         <div

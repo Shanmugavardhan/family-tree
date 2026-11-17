@@ -104,13 +104,12 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
           <div>
             <h1
               style={{
-                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-                fontSize: '1.15rem',
-                fontWeight: 900,
-                color: isDark ? '#e5c158' : '#78350f',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '1.35rem',
+                fontWeight: 700,
+                color: isDark ? '#D6B15C' : '#854d0e',
                 lineHeight: 1.15,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
                 textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.8)' : 'none',
               }}
             >
@@ -119,10 +118,11 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             <p
               style={{
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: '0.825rem',
-                color: isDark ? '#cbd5e1' : '#78716c',
+                fontSize: '0.9rem',
+                color: isDark ? '#9BA3AF' : '#78716c',
                 fontWeight: 600,
-                letterSpacing: '0.04em',
+                letterSpacing: '0.02em',
+                fontStyle: 'italic',
               }}
             >
               Chronicles of the Lineage
@@ -162,15 +162,15 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                 gap: 7,
                 padding: '6px 12px',
                 borderRadius: 8,
-                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-                fontSize: '0.825rem',
-                fontWeight: isActive ? 700 : 600,
-                letterSpacing: '0.04em',
+                fontFamily: "'Inter', -apple-system, sans-serif",
+                fontSize: '0.85rem',
+                fontWeight: isActive ? 600 : 500,
+                letterSpacing: '0.01em',
                 color: isActive
-                  ? isDark ? '#e5c158' : '#78350f'
-                  : isDark ? '#94a3b8' : '#78716c',
+                  ? isDark ? '#D6B15C' : '#854d0e'
+                  : isDark ? '#9BA3AF' : '#78716c',
                 backgroundColor: isActive
-                  ? isDark ? 'rgba(212, 175, 55, 0.15)' : '#ffffff'
+                  ? isDark ? 'rgba(214, 177, 92, 0.16)' : '#ffffff'
                   : 'transparent',
                 boxShadow: isActive
                   ? isDark ? '0 1px 4px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.08)'

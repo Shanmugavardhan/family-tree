@@ -1,5 +1,5 @@
 import React from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useViewport } from '@xyflow/react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -187,35 +187,41 @@ const RoyalSigilAvatar: React.FC = () => (
 
 export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const { isDark } = useTheme();
+  const { zoom } = useViewport();
   const nodeData = data as PersonNodeData;
   const isSelected = selected || nodeData.isSelected;
   const isPathNode = nodeData.isPathNode;
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
+  // Requirement 1: Proportional zoom sizing (1:3 ratio where size:scroll)
+  // When zooming out (zoom < 1.0), tiles proportionately increase relative size
+  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 1.26; at zoom=0.25 -> 1.59; at zoom=1.5 -> 0.87
+  const scaleFactor = Math.min(1.85, Math.max(0.75, Math.pow(1 / Math.max(0.1, zoom), 1 / 3)));
+
   const fullName = [nodeData.firstName, nodeData.middleName, nodeData.lastName]
     .filter(Boolean)
     .join(' ');
 
-  // Border & Glow styling matching Game of Thrones Targaryen family tree
-  let borderColor = isDark ? '#14171f' : '#292524';
+  // Royal Heritage — Midnight Edition styling
+  let borderColor = isDark ? '#343D49' : '#cbd5e1';
   let borderWidth = '3.5px';
   let boxShadow = isDark
-    ? '0 6px 16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(212, 175, 55, 0.25)'
-    : '0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(180, 83, 9, 0.2)';
+    ? '0 6px 16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(214, 177, 92, 0.25)'
+    : '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(168, 138, 75, 0.2)';
 
   if (isPathNode) {
-    borderColor = '#f59e0b';
+    borderColor = '#D6B15C';
     borderWidth = '4px';
-    boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.35), 0 0 25px rgba(245, 158, 11, 0.85)';
+    boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.4), 0 0 25px rgba(214, 177, 92, 0.85)';
   } else if (isSelected) {
-    borderColor = '#d4af37';
+    borderColor = '#D6B15C';
     borderWidth = '4px';
-    boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.35), 0 0 22px rgba(212, 175, 55, 0.8)';
+    boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.4), 0 0 22px rgba(214, 177, 92, 0.8)';
   } else if (isHighlighted) {
-    borderColor = '#60a5fa';
+    borderColor = '#D6B15C';
     borderWidth = '3.5px';
-    boxShadow = '0 0 0 2px rgba(96, 165, 250, 0.35), 0 0 18px rgba(96, 165, 250, 0.7)';
+    boxShadow = '0 0 0 2px rgba(214, 177, 92, 0.35), 0 0 18px rgba(214, 177, 92, 0.7)';
   }
 
   const gender = (nodeData as any).gender?.toLowerCase();
@@ -244,8 +250,8 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         style={{
           width: 8,
           height: 8,
-          background: isPathNode ? '#f59e0b' : '#8b1e22',
-          border: '1.5px solid #111622',
+          background: isPathNode ? '#D6B15C' : '#A94747',
+          border: '1.5px solid #101318',
           top: -2,
           left: '50%',
           transform: 'translateX(-50%)',
@@ -261,8 +267,8 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         style={{
           width: 8,
           height: 8,
-          background: isPathNode ? '#f59e0b' : '#b91c1c',
-          border: '1.5px solid #111622',
+          background: isPathNode ? '#D6B15C' : '#D18B91',
+          border: '1.5px solid #101318',
           left: 43,
           top: 48,
           zIndex: 5,
@@ -275,97 +281,110 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         style={{
           width: 8,
           height: 8,
-          background: isPathNode ? '#f59e0b' : '#b91c1c',
-          border: '1.5px solid #111622',
+          background: isPathNode ? '#D6B15C' : '#D18B91',
+          border: '1.5px solid #101318',
           right: 43,
           top: 48,
           zIndex: 5,
         }}
       />
 
-      {/* Circular Portrait Medallion exactly as in Game of Thrones screenshot */}
+      {/* Proportional Scaled Container (Requirement 1: 1:3 ratio with zoom out) */}
       <div
         style={{
-          width: 96,
-          height: 96,
-          borderRadius: '50%',
-          border: `${borderWidth} solid ${borderColor}`,
-          boxShadow,
-          overflow: 'hidden',
-          position: 'relative',
-          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-          backgroundColor: '#0c0f17',
-          flexShrink: 0,
-        }}
-      >
-        {nodeData.photoPath && !imageFailed ? (
-          <img
-            src={nodeData.photoPath}
-            alt={fullName}
-            onError={() => setImageFailed(true)}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-            }}
-          />
-        ) : gender === 'female' ? (
-          <FemaleNobleAvatar />
-        ) : gender === 'male' ? (
-          <MaleNobleAvatar />
-        ) : (
-          <RoyalSigilAvatar />
-        )}
-      </div>
-
-      {/* Person Name centered below the circle */}
-      <div
-        style={{
-          marginTop: 9,
-          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           width: '100%',
-          maxWidth: 180,
-          fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-          fontSize: '17px',
-          fontWeight: 700,
-          lineHeight: 1.22,
-          letterSpacing: '0.02em',
-          color: isSelected
-            ? '#e5c158'
-            : isPathNode
-            ? '#fbbf24'
-            : isDark
-            ? '#f8fafc'
-            : '#1c1917',
-          textShadow: isDark
-            ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.8)'
-            : '0 1px 3px rgba(255, 255, 255, 0.9)',
-          transition: 'color 0.15s ease-in-out',
-          wordBreak: 'break-word',
+          transform: `scale(${scaleFactor})`,
+          transformOrigin: 'top center',
+          transition: 'transform 0.08s ease-out',
         }}
       >
-        {fullName}
-      </div>
-
-      {/* Deceased status ONLY (Living status, dates, and badges omitted per requirements) */}
-      {!nodeData.isLiving && (
+        {/* Circular Portrait Medallion */}
         <div
           style={{
-            marginTop: 3,
-            textAlign: 'center',
-            fontFamily: "'Cormorant Garamond', 'Cinzel', Georgia, serif",
-            fontSize: '14px',
-            fontStyle: 'italic',
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            color: isDark ? '#94a3b8' : '#78716c',
-            textShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.9)' : 'none',
+            width: 96,
+            height: 96,
+            borderRadius: '50%',
+            border: `${borderWidth} solid ${borderColor}`,
+            boxShadow,
+            overflow: 'hidden',
+            position: 'relative',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            backgroundColor: '#151922',
+            flexShrink: 0,
           }}
         >
-          † Deceased
+          {nodeData.photoPath && !imageFailed ? (
+            <img
+              src={nodeData.photoPath}
+              alt={fullName}
+              onError={() => setImageFailed(true)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          ) : gender === 'female' ? (
+            <FemaleNobleAvatar />
+          ) : gender === 'male' ? (
+            <MaleNobleAvatar />
+          ) : (
+            <RoyalSigilAvatar />
+          )}
         </div>
-      )}
+
+        {/* Person Name centered below the circle (Option 1: Inter 650) */}
+        <div
+          style={{
+            marginTop: 8,
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: 180,
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            fontSize: '15.5px',
+            fontWeight: 650,
+            lineHeight: 1.25,
+            letterSpacing: '-0.01em',
+            color: isSelected
+              ? '#D6B15C'
+              : isPathNode
+              ? '#D6B15C'
+              : isDark
+              ? '#F1E9D7'
+              : '#1D2633',
+            textShadow: isDark
+              ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8)'
+              : '0 1px 3px rgba(255, 255, 255, 0.9)',
+            transition: 'color 0.15s ease-in-out',
+            wordBreak: 'break-word',
+          }}
+        >
+          {fullName}
+        </div>
+
+        {/* Deceased status ONLY (Inter 400 italic, Silver Grey) */}
+        {!nodeData.isLiving && (
+          <div
+            style={{
+              marginTop: 3,
+              textAlign: 'center',
+              fontFamily: "'Inter', -apple-system, sans-serif",
+              fontSize: '13px',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              letterSpacing: '0.02em',
+              color: isDark ? '#9BA3AF' : '#78716c',
+              textShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.9)' : 'none',
+            }}
+          >
+            † Deceased
+          </div>
+        )}
+      </div>
 
       {/* Source handle for outgoing parent-child connection (at bottom below name/status) */}
       <Handle
@@ -375,8 +394,8 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         style={{
           width: 8,
           height: 8,
-          background: isPathNode ? '#f59e0b' : '#8b1e22',
-          border: '1.5px solid #111622',
+          background: isPathNode ? '#D6B15C' : '#A94747',
+          border: '1.5px solid #101318',
           bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',

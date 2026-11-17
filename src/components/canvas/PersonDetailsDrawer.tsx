@@ -112,10 +112,10 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         right: 0,
         bottom: 0,
         width: 380,
-        backgroundColor: isDark ? '#111622' : '#fcf8ee',
+        backgroundColor: isDark ? '#151922' : '#fcf8ee',
         boxShadow: isDark ? '-4px 0 24px rgba(0, 0, 0, 0.7)' : '-4px 0 20px rgba(120, 53, 15, 0.1)',
-        borderLeft: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.35)' : 'rgba(197, 155, 39, 0.4)'}`,
-        color: isDark ? '#f9fafb' : '#1c1917',
+        borderLeft: `1.5px solid ${isDark ? '#343D49' : 'rgba(197, 155, 39, 0.4)'}`,
+        color: isDark ? '#F1E9D7' : '#1c1917',
         zIndex: 40,
         display: 'flex',
         flexDirection: 'column',
@@ -125,14 +125,14 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
       <div
         style={{
           padding: '16px 20px',
-          borderBottom: `1px solid ${isDark ? '#263042' : '#e2d7c3'}`,
+          borderBottom: `1px solid ${isDark ? '#343D49' : '#e2d7c3'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: isDark ? '#161c26' : '#f6efe2',
+          backgroundColor: isDark ? '#1D2633' : '#f6efe2',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#e5c158' : '#78350f', fontSize: '0.85rem', fontFamily: "'Cinzel', serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#D6B15C' : '#78350f', fontSize: '0.95rem', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <span>⚔️</span>
           <span>Kinship Record</span>
         </div>
@@ -188,14 +188,13 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           <div style={{ minWidth: 0, flex: 1 }}>
             <h3
               style={{
-                fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
-                fontSize: '1.15rem',
-                fontWeight: 800,
-                color: isDark ? '#f8fafc' : '#1c1917',
+                fontFamily: "'Inter', -apple-system, sans-serif",
+                fontSize: '1.2rem',
+                fontWeight: 650,
+                color: isDark ? '#F1E9D7' : '#1c1917',
                 lineHeight: 1.25,
                 wordBreak: 'break-word',
-                textTransform: 'uppercase',
-                letterSpacing: '0.02em',
+                letterSpacing: '-0.01em',
               }}
             >
               {fullName}
@@ -203,15 +202,15 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <span
                 style={{
-                  fontFamily: "'Cinzel', serif",
-                  fontSize: '0.6875rem',
-                  fontWeight: 800,
-                  color: isDark ? '#e5c158' : '#78350f',
-                  backgroundColor: isDark ? 'rgba(212, 175, 55, 0.16)' : '#fffbeb',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: isDark ? '#D6B15C' : '#78350f',
+                  backgroundColor: isDark ? 'rgba(214, 177, 92, 0.16)' : '#fffbeb',
                   padding: '2px 8px',
                   borderRadius: 6,
-                  border: isDark ? '1px solid rgba(212, 175, 55, 0.35)' : '1px solid #fde68a',
-                  letterSpacing: '0.04em',
+                  border: isDark ? '1px solid rgba(214, 177, 92, 0.35)' : '1px solid #fde68a',
+                  letterSpacing: '0.02em',
                 }}
               >
                 {activeNode.generationName || 'House Cohort'}
@@ -219,10 +218,11 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               {!activeNode.isLiving && (
                 <span
                   style={{
-                    fontFamily: "'Cinzel', serif",
-                    fontSize: '0.725rem',
-                    color: isDark ? '#94a3b8' : '#78716c',
-                    fontWeight: 700,
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.75rem',
+                    color: isDark ? '#9BA3AF' : '#78716c',
+                    fontStyle: 'italic',
+                    fontWeight: 500,
                   }}
                 >
                   † Deceased
