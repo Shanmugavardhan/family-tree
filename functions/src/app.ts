@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { personRoutes } from './routes/person.routes';
 import { relationshipRoutes } from './routes/relationship.routes';
+import { graphRoutes } from './routes/graph.routes';
 
 export const app = express();
 
@@ -26,6 +27,9 @@ app.use('/api/persons', personRoutes);
 
 // Relationship Management routes (Milestone 2.5)
 app.use('/api/relationships', relationshipRoutes);
+
+// Chronological Graph Transformation routes (Milestone 3.2)
+app.use('/api/graph', graphRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
