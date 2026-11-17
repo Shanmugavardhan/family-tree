@@ -11,7 +11,8 @@
     "build:server": "npm --prefix functions run build",
     "build": "npm run build:client && npm run build:server",
     "test:canvas": "./functions/node_modules/.bin/tsx test/test_react_flow_adapter.ts",
-    "test": "npm --prefix functions test && npm run test:canvas"
+    "test:interaction": "./functions/node_modules/.bin/tsx test/test_interaction_and_navigation.ts",
+    "test": "npm --prefix functions test && npm run test:canvas && npm run test:interaction"
   },
   "dependencies": {
     "@xyflow/react": "^13.0.1",

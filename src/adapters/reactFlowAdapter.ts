@@ -17,17 +17,31 @@ export interface PersonNodeData extends Record<string, unknown> {
   isArchived: boolean;
   isSelected?: boolean;
   isHighlighted?: boolean;
+  isPathNode?: boolean;
+  isDimmed?: boolean;
 }
 
 export interface LaneBannerNodeData extends Record<string, unknown> {
   lane: CohortLane;
   width: number;
+  isDimmed?: boolean;
 }
 
 export interface FamilyEdgeData extends Record<string, unknown> {
   edgeType: 'parent_child' | 'spouse';
   parentType?: string | null;
   isHighlighted?: boolean;
+  isPathEdge?: boolean;
+  isDimmed?: boolean;
+}
+
+export interface ConvertLayoutOptions {
+  selectedNodeId?: string | null;
+  highlightedNodeIds?: Set<string>;
+  highlightedEdgeIds?: Set<string>;
+  pathNodeIds?: Set<string>;
+  pathEdgeIds?: Set<string>;
+  focusMode?: boolean;
 }
 
 export interface ReactFlowGraphData {
@@ -45,14 +59,11 @@ export interface ReactFlowGraphData {
  * 2. Draggable is locked to false (prevents accidental chronological corruption).
  * 3. Separate visual treatment for parent_child vs spouse edges.
  * 4. Generates background cohort lane banners with chronological boundaries.
+ * 5. Supports Focus Mode (dimming unrelated branches), Relationship Highlighting, and Pathfinding.
  */
 export function convertLayoutToReactFlow(
   layout: FamilyLayout,
-  options?: {
-    selectedNodeId?: string | null;
-    highlightedNodeIds?: Set<string>;
-    highlightedEdgeIds?: Set<string>;
-  }
+  options?: ConvertLayoutOptions
 ): ReactFlowGraphData {
   if (!layout) {
     return { nodes: [], edges: [], width: 1200, height: 800 };
@@ -61,6 +72,12 @@ export function convertLayoutToReactFlow(
   const selectedNodeId = options?.selectedNodeId || null;
   const highlightedNodeIds = options?.highlightedNodeIds || new Set<string>();
   const highlightedEdgeIds = options?.highlightedEdgeIds || new Set<string>();
+  const pathNodeIds = options?.pathNodeIds || new Set<string>();
+  const pathEdgeIds = options?.pathEdgeIds || new Set<string>();
+  const focusMode = options?.focusMode || false;
+
+  const hasFocalSelection =
+    selectedNodeId !== null || pathNodeIds.size > 0 || highlightedNodeIds.size > 0;
 
   const canvasWidth = Math.max(layout.width, 1400);
 
@@ -74,10 +91,13 @@ export function convertLayoutToReactFlow(
       height: lane.height,
       zIndex: -1,
       pointerEvents: 'none',
+      opacity: focusMode && hasFocalSelection ? 0.35 : 1,
+      transition: 'opacity 0.2s ease-in-out',
     },
     data: {
       lane,
       width: canvasWidth,
+      isDimmed: focusMode && hasFocalSelection,
     },
     draggable: false,
     selectable: false,
@@ -88,7 +108,11 @@ export function convertLayoutToReactFlow(
   // 2. Generate person card nodes (strictly locked draggable=false)
   const personNodes: Node<PersonNodeData>[] = layout.nodes.map((n) => {
     const isSelected = selectedNodeId === n.id;
+    const isPathNode = pathNodeIds.has(n.id);
     const isHighlighted = highlightedNodeIds.has(n.id);
+
+    const isInFocalSet = isSelected || isPathNode || isHighlighted;
+    const isDimmed = focusMode && hasFocalSelection && !isInFocalSet;
 
     return {
       id: n.id,
@@ -97,6 +121,9 @@ export function convertLayoutToReactFlow(
       style: {
         width: n.width,
         height: n.height,
+        opacity: isDimmed ? 0.2 : 1,
+        transition: 'opacity 0.2s ease-in-out, transform 0.15s ease-in-out',
+        pointerEvents: isDimmed ? 'none' : 'auto',
       },
       data: {
         id: n.id,
@@ -114,6 +141,8 @@ export function convertLayoutToReactFlow(
         isArchived: n.isArchived ?? false,
         isSelected,
         isHighlighted,
+        isPathNode,
+        isDimmed,
       },
       draggable: false, // Locked to preserve chronological layout integrity
       selectable: true,
@@ -122,9 +151,21 @@ export function convertLayoutToReactFlow(
 
   // 3. Generate distinct edges
   const flowEdges: Edge<FamilyEdgeData>[] = layout.edges.map((e) => {
+    const isPathEdge = pathEdgeIds.has(e.id);
     const isHighlighted =
       highlightedEdgeIds.has(e.id) ||
       (selectedNodeId !== null && (e.source === selectedNodeId || e.target === selectedNodeId));
+
+    const isConnectedToFocal = isPathEdge || isHighlighted;
+    const isDimmed = focusMode && hasFocalSelection && !isConnectedToFocal;
+
+    const strokeColor = isPathEdge
+      ? '#f59e0b'
+      : isHighlighted
+      ? '#2563eb'
+      : e.type === 'spouse'
+      ? '#e11d48'
+      : '#475569';
 
     if (e.type === 'parent_child') {
       return {
@@ -134,19 +175,27 @@ export function convertLayoutToReactFlow(
         sourceHandle: 'parent-bottom',
         targetHandle: 'child-top',
         type: 'familyEdge',
-        animated: isHighlighted,
+        animated: isHighlighted || isPathEdge,
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 14,
           height: 14,
-          color: isHighlighted ? '#3b82f6' : '#475569',
+          color: strokeColor,
+        },
+        style: {
+          stroke: strokeColor,
+          strokeWidth: isPathEdge ? 3.5 : isHighlighted ? 2.5 : 1.5,
+          opacity: isDimmed ? 0.1 : 1,
+          transition: 'opacity 0.2s ease-in-out, stroke 0.2s ease-in-out',
         },
         data: {
           edgeType: 'parent_child',
           parentType: e.parentType || 'biological',
           isHighlighted,
+          isPathEdge,
+          isDimmed,
         },
-        zIndex: isHighlighted ? 20 : 1,
+        zIndex: isPathEdge ? 30 : isHighlighted ? 20 : 1,
       };
     } else {
       // Spouse edge: horizontal connection
@@ -157,13 +206,21 @@ export function convertLayoutToReactFlow(
         sourceHandle: 'spouse-right',
         targetHandle: 'spouse-left',
         type: 'familyEdge',
-        animated: false,
+        animated: isHighlighted || isPathEdge,
+        style: {
+          stroke: strokeColor,
+          strokeWidth: isPathEdge ? 3.5 : isHighlighted ? 2.5 : 1.5,
+          opacity: isDimmed ? 0.1 : 1,
+          transition: 'opacity 0.2s ease-in-out, stroke 0.2s ease-in-out',
+        },
         data: {
           edgeType: 'spouse',
           parentType: null,
           isHighlighted,
+          isPathEdge,
+          isDimmed,
         },
-        zIndex: isHighlighted ? 20 : 2,
+        zIndex: isPathEdge ? 30 : isHighlighted ? 20 : 2,
       };
     }
   });

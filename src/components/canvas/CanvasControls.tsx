@@ -9,6 +9,10 @@ import {
   Map,
   Archive,
   Layers,
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  Navigation,
 } from 'lucide-react';
 import { CohortLane, PositionedNode } from '../../types/layout';
 
@@ -22,6 +26,17 @@ interface CanvasControlsProps {
   showMiniMap: boolean;
   onToggleMiniMap: () => void;
   onSelectPerson: (personId: string) => void;
+
+  // Milestone 3.5 Interaction & Navigation controls
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onGoBack: () => void;
+  onGoForward: () => void;
+  focusMode: boolean;
+  onToggleFocusMode: (val: boolean) => void;
+  onOpenPathfinder: () => void;
+  activePathSummary?: string | null;
+  onClearActivePath?: () => void;
 }
 
 export const CanvasControls: React.FC<CanvasControlsProps> = ({
@@ -34,6 +49,15 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   showMiniMap,
   onToggleMiniMap,
   onSelectPerson,
+  canGoBack,
+  canGoForward,
+  onGoBack,
+  onGoForward,
+  focusMode,
+  onToggleFocusMode,
+  onOpenPathfinder,
+  activePathSummary,
+  onClearActivePath,
 }) => {
   const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -62,12 +86,10 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
     onSelectPerson(n.id);
     setSearchTerm(`${n.firstName || ''} ${n.lastName || ''}`.trim());
     setIsSearchOpen(false);
-    // Center canvas smoothly on the selected node
     setCenter(n.x + n.width / 2, n.y + n.height / 2, { duration: 800, zoom: 1.1 });
   };
 
   const handleJumpToLane = (lane: CohortLane) => {
-    // Find average X or first node in lane
     const nodesInLane = nodes.filter((n) =>
       lane.order !== null ? n.generationOrder === lane.order : n.generationOrder === null
     );
@@ -87,258 +109,365 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         left: 16,
         right: 16,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 10,
         pointerEvents: 'none',
         zIndex: 30,
       }}
     >
-      {/* Left: Quick Search & Generation Jump */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
-        {/* Search Input with dropdown */}
-        <div style={{ position: 'relative' }}>
+      {/* Top Bar: Search, Navigation History, View Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        {/* Left Side: Navigation History & Search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
+          {/* History Back & Forward */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
               backgroundColor: '#ffffff',
-              padding: '8px 14px',
               borderRadius: 10,
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
               border: '1px solid #e2e8f0',
-              width: 240,
+              padding: '2px',
             }}
           >
-            <Search size={16} color="#64748b" />
-            <input
-              type="text"
-              placeholder="Find family member..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onFocus={() => {
-                if (searchTerm.trim() && searchResults.length > 0) setIsSearchOpen(true);
-              }}
+            <button
+              onClick={onGoBack}
+              disabled={!canGoBack}
+              title="Previous Person (Back)"
               style={{
+                padding: '6px 8px',
                 border: 'none',
-                outline: 'none',
-                width: '100%',
-                fontSize: '0.875rem',
-                color: '#0f172a',
-                backgroundColor: 'transparent',
-              }}
-            />
-          </div>
-
-          {/* Search Dropdown */}
-          {isSearchOpen && searchResults.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                marginTop: 6,
-                backgroundColor: '#ffffff',
-                borderRadius: 10,
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15)',
-                border: '1px solid #e2e8f0',
-                maxHeight: 220,
-                overflowY: 'auto',
-                zIndex: 50,
+                background: 'transparent',
+                borderRadius: 8,
+                cursor: canGoBack ? 'pointer' : 'not-allowed',
+                color: canGoBack ? '#0f172a' : '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
-              {searchResults.map((result) => (
-                <div
-                  key={result.id}
-                  onClick={() => handleSelectSearchResult(result)}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    fontSize: '0.8125rem',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
-                >
-                  <span style={{ fontWeight: 600, color: '#0f172a' }}>
-                    {result.firstName} {result.lastName}
-                  </span>
-                  <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                    {result.generationName || 'Unknown'}
-                  </span>
-                </div>
-              ))}
+              <ArrowLeft size={16} />
+            </button>
+            <div style={{ width: 1, height: 16, backgroundColor: '#e2e8f0' }} />
+            <button
+              onClick={onGoForward}
+              disabled={!canGoForward}
+              title="Next Person (Forward)"
+              style={{
+                padding: '6px 8px',
+                border: 'none',
+                background: 'transparent',
+                borderRadius: 8,
+                cursor: canGoForward ? 'pointer' : 'not-allowed',
+                color: canGoForward ? '#0f172a' : '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+
+          {/* Search Input with dropdown */}
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: '#ffffff',
+                padding: '8px 14px',
+                borderRadius: 10,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                border: '1px solid #e2e8f0',
+                width: 230,
+              }}
+            >
+              <Search size={16} color="#64748b" />
+              <input
+                type="text"
+                placeholder="Find family member..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onFocus={() => {
+                  if (searchTerm.trim() && searchResults.length > 0) setIsSearchOpen(true);
+                }}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  width: '100%',
+                  fontSize: '0.875rem',
+                  color: '#0f172a',
+                  backgroundColor: 'transparent',
+                }}
+              />
             </div>
-          )}
+
+            {/* Search Dropdown */}
+            {isSearchOpen && searchResults.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: 6,
+                  backgroundColor: '#ffffff',
+                  borderRadius: 10,
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid #e2e8f0',
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                  zIndex: 50,
+                }}
+              >
+                {searchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    onClick={() => handleSelectSearchResult(result)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      fontSize: '0.8125rem',
+                      borderBottom: '1px solid #f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                  >
+                    <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                      {result.firstName} {result.lastName}
+                    </span>
+                    <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                      {result.generationName || 'Unknown'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Generation Jump Dropdown */}
+          <select
+            onChange={(e) => {
+              const laneId = e.target.value;
+              const lane = lanes.find((l) => l.id === laneId);
+              if (lane) handleJumpToLane(lane);
+            }}
+            defaultValue=""
+            style={{
+              backgroundColor: '#ffffff',
+              padding: '8px 12px',
+              borderRadius: 10,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+              border: '1px solid #e2e8f0',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: '#334155',
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            <option value="" disabled>Jump to generation...</option>
+            {lanes.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name} ({l.nodeCount})
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Generation Jump Dropdown */}
-        <select
-          onChange={(e) => {
-            const laneId = e.target.value;
-            const lane = lanes.find((l) => l.id === laneId);
-            if (lane) handleJumpToLane(lane);
-          }}
-          defaultValue=""
+        {/* Right Side: Tools & View Controls */}
+        <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             backgroundColor: '#ffffff',
-            padding: '8px 12px',
-            borderRadius: 10,
+            padding: '6px 10px',
+            borderRadius: 12,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
             border: '1px solid #e2e8f0',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            color: '#334155',
-            cursor: 'pointer',
-            outline: 'none',
+            pointerEvents: 'auto',
           }}
         >
-          <option value="" disabled>Jump to generation...</option>
-          {lanes.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name} ({l.nodeCount})
-            </option>
-          ))}
-        </select>
+          {/* Relationship Pathfinder Button */}
+          <button
+            onClick={onOpenPathfinder}
+            title="Relationship Pathfinder (How are two people related?)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '6px 10px',
+              borderRadius: 8,
+              border: '1px solid #fde68a',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              backgroundColor: activePathSummary ? '#f59e0b' : '#fffbeb',
+              color: activePathSummary ? '#ffffff' : '#b45309',
+            }}
+          >
+            <Navigation size={14} />
+            <span>Pathfinder</span>
+          </button>
+
+          {/* Focus Mode Button */}
+          <button
+            onClick={() => onToggleFocusMode(!focusMode)}
+            title={focusMode ? 'Disable Focus Mode' : 'Enable Focus Mode (isolate selected family branch)'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '6px 10px',
+              borderRadius: 8,
+              border: focusMode ? '1px solid #bfdbfe' : 'none',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              backgroundColor: focusMode ? '#eff6ff' : '#f8fafc',
+              color: focusMode ? '#2563eb' : '#64748b',
+            }}
+          >
+            <Eye size={14} />
+            <span>{focusMode ? 'Focus On' : 'Focus Mode'}</span>
+          </button>
+
+          <div style={{ width: 1, height: 20, backgroundColor: '#e2e8f0', margin: '0 2px' }} />
+
+          {/* Toggle Compact Lanes */}
+          <button
+            onClick={() => onToggleCompactLanes(!compactLanes)}
+            title={compactLanes ? 'Showing only represented cohorts' : 'Showing all timeline cohorts'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '6px 10px',
+              borderRadius: 8,
+              border: 'none',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              backgroundColor: compactLanes ? '#eff6ff' : '#f8fafc',
+              color: compactLanes ? '#2563eb' : '#64748b',
+            }}
+          >
+            <Layers size={14} />
+            <span>{compactLanes ? 'Compact' : 'Full Timeline'}</span>
+          </button>
+
+          {/* Toggle Include Archived */}
+          <button
+            onClick={() => onToggleIncludeArchived(!includeArchived)}
+            title={includeArchived ? 'Hide archived records' : 'Show archived records'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '6px 10px',
+              borderRadius: 8,
+              border: 'none',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              backgroundColor: includeArchived ? '#fef3c7' : '#f8fafc',
+              color: includeArchived ? '#b45309' : '#64748b',
+            }}
+          >
+            <Archive size={14} />
+            <span>{includeArchived ? 'Archived Visible' : 'Active'}</span>
+          </button>
+
+          <div style={{ width: 1, height: 20, backgroundColor: '#e2e8f0', margin: '0 2px' }} />
+
+          {/* Zoom & Fit View Buttons */}
+          <button
+            onClick={() => zoomIn()}
+            title="Zoom In"
+            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#475569' }}
+          >
+            <ZoomIn size={16} />
+          </button>
+          <button
+            onClick={() => zoomOut()}
+            title="Zoom Out"
+            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#475569' }}
+          >
+            <ZoomOut size={16} />
+          </button>
+          <button
+            onClick={() => fitView({ padding: 0.15, duration: 600 })}
+            title="Fit to View"
+            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#475569' }}
+          >
+            <Maximize2 size={16} />
+          </button>
+          <button
+            onClick={() => fitView({ duration: 600 })}
+            title="Reset View"
+            style={{ padding: 6, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#475569' }}
+          >
+            <RotateCcw size={16} />
+          </button>
+          <button
+            onClick={onToggleMiniMap}
+            title={showMiniMap ? 'Hide MiniMap' : 'Show MiniMap'}
+            style={{
+              padding: 6,
+              borderRadius: 6,
+              border: 'none',
+              background: showMiniMap ? '#eff6ff' : 'transparent',
+              cursor: 'pointer',
+              color: showMiniMap ? '#2563eb' : '#475569',
+            }}
+          >
+            <Map size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Right: View & Filter Controls */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          backgroundColor: '#ffffff',
-          padding: '6px 10px',
-          borderRadius: 12,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e2e8f0',
-          pointerEvents: 'auto',
-        }}
-      >
-        {/* Toggle Compact Lanes */}
-        <button
-          onClick={() => onToggleCompactLanes(!compactLanes)}
-          title={compactLanes ? 'Showing only represented cohorts' : 'Showing all timeline cohorts'}
+      {/* Active Path Banner if pathfinder result active */}
+      {activePathSummary && (
+        <div
           style={{
+            alignSelf: 'center',
+            backgroundColor: '#fffbeb',
+            border: '1.5px solid #fde68a',
+            padding: '6px 16px',
+            borderRadius: 20,
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
             display: 'flex',
             alignItems: 'center',
-            gap: 5,
-            padding: '6px 10px',
-            borderRadius: 8,
-            border: 'none',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            backgroundColor: compactLanes ? '#eff6ff' : '#f8fafc',
-            color: compactLanes ? '#2563eb' : '#64748b',
+            gap: 10,
+            pointerEvents: 'auto',
           }}
         >
-          <Layers size={14} />
-          <span>{compactLanes ? 'Compact Lanes' : 'Full Timeline'}</span>
-        </button>
-
-        {/* Toggle Include Archived */}
-        <button
-          onClick={() => onToggleIncludeArchived(!includeArchived)}
-          title={includeArchived ? 'Hide archived records' : 'Show archived records'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '6px 10px',
-            borderRadius: 8,
-            border: 'none',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            backgroundColor: includeArchived ? '#fef3c7' : '#f8fafc',
-            color: includeArchived ? '#b45309' : '#64748b',
-          }}
-        >
-          <Archive size={14} />
-          <span>{includeArchived ? 'Archived Visible' : 'Active Only'}</span>
-        </button>
-
-        <div style={{ width: 1, height: 20, backgroundColor: '#e2e8f0', margin: '0 4px' }} />
-
-        {/* Zoom & Fit View Buttons */}
-        <button
-          onClick={() => zoomIn()}
-          title="Zoom In"
-          style={{
-            padding: 6,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: '#475569',
-          }}
-        >
-          <ZoomIn size={16} />
-        </button>
-        <button
-          onClick={() => zoomOut()}
-          title="Zoom Out"
-          style={{
-            padding: 6,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: '#475569',
-          }}
-        >
-          <ZoomOut size={16} />
-        </button>
-        <button
-          onClick={() => fitView({ padding: 0.15, duration: 600 })}
-          title="Fit to View"
-          style={{
-            padding: 6,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: '#475569',
-          }}
-        >
-          <Maximize2 size={16} />
-        </button>
-        <button
-          onClick={() => fitView({ duration: 600 })}
-          title="Reset View"
-          style={{
-            padding: 6,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: '#475569',
-          }}
-        >
-          <RotateCcw size={16} />
-        </button>
-        <button
-          onClick={onToggleMiniMap}
-          title={showMiniMap ? 'Hide MiniMap' : 'Show MiniMap'}
-          style={{
-            padding: 6,
-            borderRadius: 6,
-            border: 'none',
-            background: showMiniMap ? '#eff6ff' : 'transparent',
-            cursor: 'pointer',
-            color: showMiniMap ? '#2563eb' : '#475569',
-          }}
-        >
-          <Map size={16} />
-        </button>
-      </div>
+          <Navigation size={14} color="#b45309" />
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#78350f' }}>
+            Active Path: {activePathSummary}
+          </span>
+          <button
+            onClick={onClearActivePath}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: '#b45309',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: '0 4px',
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
     </div>
   );
 };

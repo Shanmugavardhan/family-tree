@@ -11,6 +11,9 @@ import {
   Sparkles,
   Users,
   Heart,
+  ArrowUpRight,
+  ArrowDownRight,
+  Navigation,
 } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { personApi } from '../../services/personApi';
@@ -22,6 +25,9 @@ interface PersonDetailsDrawerProps {
   onClose: () => void;
   allNodes: PositionedNode[];
   onSelectPerson: (id: string) => void;
+  onTraceAncestors?: (id: string) => void;
+  onTraceDescendants?: (id: string) => void;
+  onOpenPathfinder?: (sourceId: string) => void;
 }
 
 export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
@@ -29,6 +35,9 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   onClose,
   allNodes,
   onSelectPerson,
+  onTraceAncestors,
+  onTraceDescendants,
+  onOpenPathfinder,
 }) => {
   const navigate = useNavigate();
   const { setCenter } = useReactFlow();
@@ -36,10 +45,12 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   const [person, setPerson] = React.useState<Person | null>(null);
   const [relatives, setRelatives] = React.useState<DerivedRelativesResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [imageFailed, setImageFailed] = React.useState(false);
 
   const activeNode = allNodes.find((n) => n.id === personId);
 
   React.useEffect(() => {
+    setImageFailed(false);
     if (!personId) {
       setPerson(null);
       setRelatives(null);
@@ -78,6 +89,8 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   const fullName = [activeNode.firstName, activeNode.middleName, activeNode.lastName]
     .filter(Boolean)
     .join(' ');
+
+  const initials = `${activeNode.firstName?.[0] || ''}${activeNode.lastName?.[0] || ''}`.toUpperCase() || 'P';
 
   const handleFocusRelative = (relPersonId: string) => {
     const targetNode = allNodes.find((n) => n.id === relPersonId);
@@ -157,14 +170,15 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               overflow: 'hidden',
             }}
           >
-            {activeNode.photoPath ? (
+            {activeNode.photoPath && !imageFailed ? (
               <img
                 src={`/api/persons/${activeNode.personId}/photo`}
                 alt={fullName}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={() => setImageFailed(true)}
               />
             ) : (
-              <User size={28} />
+              initials || <User size={28} />
             )}
           </div>
 
@@ -221,6 +235,78 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               <span>Place: {person.birth_place}</span>
             </div>
           )}
+        </div>
+
+        {/* Tree Exploration Quick Actions */}
+        <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Tree Exploration
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button
+              onClick={() => onTraceAncestors?.(personId)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 8,
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                color: '#1d4ed8',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowUpRight size={14} />
+              <span>Trace Ancestors</span>
+            </button>
+
+            <button
+              onClick={() => onTraceDescendants?.(personId)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 8,
+                backgroundColor: '#ecfdf5',
+                border: '1px solid #a7f3d0',
+                color: '#047857',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowDownRight size={14} />
+              <span>Trace Descendants</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => onOpenPathfinder?.(personId)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 8,
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fde68a',
+              color: '#b45309',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              marginTop: 2,
+            }}
+          >
+            <Navigation size={14} />
+            <span>Find Relationship To...</span>
+          </button>
         </div>
 
         {/* Biography */}

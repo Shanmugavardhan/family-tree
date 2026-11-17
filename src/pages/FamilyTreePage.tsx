@@ -50,3 +50,4 @@ export const FamilyTreePage: React.FC = () => {
     </div>
   );
 };
+

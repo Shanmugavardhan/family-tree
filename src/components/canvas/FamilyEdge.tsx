@@ -5,7 +5,7 @@ import {
   EdgeLabelRenderer,
 } from '@xyflow/react';
 import { FamilyEdgeData } from '../../adapters/reactFlowAdapter';
-import { Heart } from 'lucide-react';
+import { Heart, Navigation } from 'lucide-react';
 
 export const FamilyEdge: React.FC<any> = ({
   id,
@@ -22,6 +22,7 @@ export const FamilyEdge: React.FC<any> = ({
   const edgeData = data as FamilyEdgeData;
   const isSpouse = edgeData?.edgeType === 'spouse';
   const isHighlighted = edgeData?.isHighlighted;
+  const isPathEdge = edgeData?.isPathEdge;
   const parentType = edgeData?.parentType;
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
@@ -34,14 +35,16 @@ export const FamilyEdge: React.FC<any> = ({
     borderRadius: 16,
   });
 
-  const strokeColor = isHighlighted
+  const strokeColor = isPathEdge
+    ? '#f59e0b'
+    : isHighlighted
     ? '#2563eb'
     : isSpouse
     ? '#e11d48'
     : '#475569';
 
-  const strokeWidth = isHighlighted ? 3 : isSpouse ? 2.5 : 2;
-  const strokeDasharray = isSpouse ? '5,5' : undefined;
+  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : isSpouse ? 2.5 : 2;
+  const strokeDasharray = isSpouse && !isPathEdge ? '5,5' : undefined;
 
   return (
     <>
@@ -58,18 +61,36 @@ export const FamilyEdge: React.FC<any> = ({
         }}
       />
 
-      {/* Render edge labels for spouse connections or non-biological parent relations */}
-      {(isSpouse || (parentType && parentType !== 'biological')) && (
+      {/* Render edge labels for pathfinder, spouse, or non-biological parent relations */}
+      {(isPathEdge || isSpouse || (parentType && parentType !== 'biological')) && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
-              zIndex: 10,
+              zIndex: isPathEdge ? 35 : 10,
             }}
           >
-            {isSpouse ? (
+            {isPathEdge ? (
+              <div
+                title="Relationship Path Step"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  backgroundColor: '#ffffff',
+                  border: '2px solid #f59e0b',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#f59e0b',
+                }}
+              >
+                <Navigation size={11} fill="#f59e0b" />
+              </div>
+            ) : isSpouse ? (
               <div
                 title="Spouse Connection"
                 style={{
