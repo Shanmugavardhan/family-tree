@@ -189,10 +189,10 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
-  // Requirement 1: Proportional zoom sizing (1:3 ratio where size:scroll)
-  // When zooming out (zoom < 1.0), tiles proportionately increase relative size
-  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 1.26; at zoom=0.25 -> 1.59; at zoom=1.5 -> 0.87
-  const baseScale = Math.min(1.85, Math.max(0.75, Math.pow(1 / Math.max(0.1, zoom), 1 / 3)));
+  // Proportional zoom sizing (1:2 ratio where size:scroll)
+  // When zooming out (zoom < 1.0), tiles and text proportionately increase relative size
+  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 1.41; at zoom=0.25 -> 2.0; at zoom=2.0 -> 0.71
+  const baseScale = Math.min(2.25, Math.max(0.68, Math.pow(1 / Math.max(0.1, zoom), 1 / 2)));
   // Requirement 1: Enlarge smoothly on hover
   const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
 

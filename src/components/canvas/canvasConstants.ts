@@ -12,3 +12,4 @@ export const HEADER_AWARE_FIT_PADDING = {
 };
 
 export const CANVAS_VIEWPORT_STORAGE_KEY = 'family_tree_canvas_viewport';
+
