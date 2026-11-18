@@ -34,6 +34,7 @@ import { CanvasControls } from './CanvasControls';
 import { StickyGenerationLabels } from './StickyGenerationLabels';
 import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
+import { FloatingPersonEditModal } from './FloatingPersonEditModal';
 import { useTheme } from '../../context/ThemeContext';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 
@@ -150,6 +151,9 @@ const FamilyCanvasInternal: React.FC = () => {
   // Pathfinder Modal State
   const [isPathfinderOpen, setIsPathfinderOpen] = React.useState(false);
   const [pathfinderSourceId, setPathfinderSourceId] = React.useState<string | null>(null);
+
+  // Floating Person Edit Window State
+  const [editingPersonId, setEditingPersonId] = React.useState<string | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<PersonNodeData | LaneBannerNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<FamilyEdgeData>>([]);
@@ -271,6 +275,7 @@ const FamilyCanvasInternal: React.FC = () => {
       pathNodeIds,
       pathEdgeIds,
       focusMode,
+      onEditPerson: (id: string) => setEditingPersonId(id),
     });
 
     setNodes(flowData.nodes);
@@ -597,6 +602,7 @@ const FamilyCanvasInternal: React.FC = () => {
         onTraceAncestors={handleTraceAncestors}
         onTraceDescendants={handleTraceDescendants}
         onOpenPathfinder={(sourceId) => handleOpenPathfinder(sourceId)}
+        onEditPerson={(id) => setEditingPersonId(id)}
       />
 
       {/* Relationship Pathfinder Modal */}
@@ -608,6 +614,16 @@ const FamilyCanvasInternal: React.FC = () => {
         onApplyPath={handleApplyPath}
         onClearPath={handleClearPath}
         activeResult={activePathResult}
+      />
+
+      {/* Floating Person Edit Window on the Canvas */}
+      <FloatingPersonEditModal
+        isOpen={!!editingPersonId}
+        personId={editingPersonId}
+        onClose={() => setEditingPersonId(null)}
+        onSaveSuccess={(_updatedPerson) => {
+          fetchLayout();
+        }}
       />
     </div>
   );

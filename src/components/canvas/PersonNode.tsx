@@ -358,7 +358,11 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             title={`Edit details of ${fullName}`}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/people/${nodeData.personId}/edit`);
+              if (typeof nodeData.onEdit === 'function') {
+                nodeData.onEdit(nodeData.personId);
+              } else {
+                navigate(`/people/${nodeData.personId}/edit`);
+              }
             }}
             onMouseEnter={() => setIsPencilHovered(true)}
             onMouseLeave={() => setIsPencilHovered(false)}

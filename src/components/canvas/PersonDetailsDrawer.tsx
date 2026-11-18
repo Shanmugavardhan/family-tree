@@ -28,6 +28,7 @@ interface PersonDetailsDrawerProps {
   onTraceAncestors?: (id: string) => void;
   onTraceDescendants?: (id: string) => void;
   onOpenPathfinder?: (sourceId: string) => void;
+  onEditPerson?: (id: string) => void;
 }
 
 export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
@@ -38,6 +39,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   onTraceAncestors,
   onTraceDescendants,
   onOpenPathfinder,
+  onEditPerson,
 }) => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
@@ -460,7 +462,13 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         </button>
 
         <button
-          onClick={() => navigate(`/people/${personId}/edit`)}
+          onClick={() => {
+            if (onEditPerson && personId) {
+              onEditPerson(personId);
+            } else {
+              navigate(`/people/${personId}/edit`);
+            }
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',

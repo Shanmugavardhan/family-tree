@@ -21,6 +21,7 @@ export interface PersonNodeData extends Record<string, unknown> {
   isHighlighted?: boolean;
   isPathNode?: boolean;
   isDimmed?: boolean;
+  onEdit?: (personId: string) => void;
 }
 
 export interface LaneBannerNodeData extends Record<string, unknown> {
@@ -44,6 +45,7 @@ export interface ConvertLayoutOptions {
   pathNodeIds?: Set<string>;
   pathEdgeIds?: Set<string>;
   focusMode?: boolean;
+  onEditPerson?: (personId: string) => void;
 }
 
 export interface ReactFlowGraphData {
@@ -148,6 +150,7 @@ export function convertLayoutToReactFlow(
         isHighlighted,
         isPathNode,
         isDimmed,
+        onEdit: options?.onEditPerson,
       },
       draggable: false, // Locked to preserve chronological layout integrity
       selectable: true,
