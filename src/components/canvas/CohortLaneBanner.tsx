@@ -6,6 +6,8 @@ import babyBoomersStripImg from '../../assets/baby_boomers_strip.jpg';
 import genXStripImg from '../../assets/gen_x_strip.jpg';
 import millennialsStripImg from '../../assets/millennials_strip.jpg';
 import genZStripImg from '../../assets/gen_z_strip.jpg';
+import genAlphaStripImg from '../../assets/gen_alpha_strip.jpg';
+import genBetaStripImg from '../../assets/gen_beta_strip.jpg';
 
 /**
  * Returns a generation period SVG texture pattern URL matching the historical era
@@ -66,7 +68,9 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   const isGenX = lane.id === 'gen_x';
   const isMillennials = lane.id === 'millennials';
   const isGenZ = lane.id === 'gen_z';
-  const hasCustomPanorama = isSilent || isBabyBoomers || isGenX || isMillennials || isGenZ;
+  const isGenAlpha = lane.id === 'gen_alpha';
+  const isGenBeta = lane.id === 'gen_beta';
+  const hasCustomPanorama = isSilent || isBabyBoomers || isGenX || isMillennials || isGenZ || isGenAlpha || isGenBeta;
 
   const bgColor = lane.backgroundColor || '#64748b';
 
@@ -88,6 +92,12 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   } else if (isGenZ) {
     texture = `url("${genZStripImg}")`;
     customBgColor = '#25150f';
+  } else if (isGenAlpha) {
+    texture = `url("${genAlphaStripImg}")`;
+    customBgColor = '#122026';
+  } else if (isGenBeta) {
+    texture = `url("${genBetaStripImg}")`;
+    customBgColor = '#1e141a';
   }
 
   return (
