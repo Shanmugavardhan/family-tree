@@ -1,6 +1,8 @@
 import React from 'react';
 import { LaneBannerNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
+import babyBoomersStripImg from '../../assets/baby_boomers_strip.jpg';
+import genXStripImg from '../../assets/gen_x_strip.jpg';
 import genZStripImg from '../../assets/gen_z_strip.jpg';
 
 /**
@@ -57,23 +59,36 @@ function getGenerationTexture(genId: string | null, isDark: boolean): string {
 export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   const { isDark } = useTheme();
   const { lane, width } = data as LaneBannerNodeData;
+  const isBabyBoomers = lane.id === 'baby_boomers';
+  const isGenX = lane.id === 'gen_x';
   const isGenZ = lane.id === 'gen_z';
+  const hasCustomPanorama = isBabyBoomers || isGenX || isGenZ;
+
   const bgColor = lane.backgroundColor || '#64748b';
-  const texture = isGenZ ? `url("${genZStripImg}")` : getGenerationTexture(lane.id, isDark);
+
+  let texture = getGenerationTexture(lane.id, isDark);
+  let customBgColor = isDark ? `${bgColor}2c` : `${bgColor}18`;
+
+  if (isBabyBoomers) {
+    texture = `url("${babyBoomersStripImg}")`;
+    customBgColor = '#0f221e';
+  } else if (isGenX) {
+    texture = `url("${genXStripImg}")`;
+    customBgColor = '#121a29';
+  } else if (isGenZ) {
+    texture = `url("${genZStripImg}")`;
+    customBgColor = '#25150f';
+  }
 
   return (
     <div
       style={{
         width,
         height: lane.height,
-        backgroundColor: isGenZ
-          ? '#25150f'
-          : isDark
-          ? `${bgColor}2c`
-          : `${bgColor}18`,
+        backgroundColor: customBgColor,
         backgroundImage: texture,
         backgroundRepeat: 'repeat',
-        backgroundSize: isGenZ ? 'auto 100%' : 'auto',
+        backgroundSize: hasCustomPanorama ? 'auto 100%' : 'auto',
         backgroundPosition: 'left center',
         borderBottom: `1px solid ${isDark ? 'rgba(52, 61, 73, 0.5)' : 'rgba(52, 61, 73, 0.25)'}`,
         position: 'relative',
