@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
   GitFork,
   Users,
   UserPlus,
@@ -83,13 +82,6 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
   };
 
   const navItems = [
-    {
-      to: '/',
-      end: true,
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      title: 'Family Dashboard & Overview',
-    },
     {
       to: '/tree',
       end: false,
