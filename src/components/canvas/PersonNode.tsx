@@ -1,5 +1,5 @@
 import React from 'react';
-import { Handle, Position, useViewport } from '@xyflow/react';
+import { Handle, Position, useViewport, useUpdateNodeInternals } from '@xyflow/react';
 import { useNavigate } from 'react-router-dom';
 import { Pencil, User } from 'lucide-react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
@@ -176,14 +176,16 @@ const DefaultUserAvatar: React.FC = () => (
   </div>
 );
 
-export const PersonNode: React.FC<any> = ({ data, selected }) => {
+export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const { isDark } = useTheme();
   const { zoom } = useViewport();
+  const updateNodeInternals = useUpdateNodeInternals();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = React.useState(false);
   const [isPencilHovered, setIsPencilHovered] = React.useState(false);
 
   const nodeData = data as PersonNodeData;
+  const nodeId = (id || nodeData.id) as string;
   const isSelected = selected || nodeData.isSelected;
   const isPathNode = nodeData.isPathNode;
   const isHighlighted = nodeData.isHighlighted;
@@ -195,6 +197,13 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const baseScale = Math.min(3.0, Math.max(0.5, 1 / Math.max(0.2, zoom)));
   // Requirement 1: Enlarge smoothly on hover
   const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
+
+  // Keep handles strictly bound to the name border across all zoom levels and hover states
+  React.useLayoutEffect(() => {
+    if (nodeId) {
+      updateNodeInternals(nodeId);
+    }
+  }, [nodeId, scaleFactor, zoom, isHovered, updateNodeInternals]);
 
   const fullName = [nodeData.firstName, nodeData.middleName, nodeData.lastName]
     .filter(Boolean)
@@ -247,7 +256,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
       }}
       style={{
         width: 190,
-        height: 160,
+        minHeight: Math.max(160, Math.round(180 * scaleFactor)),
         backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
@@ -316,7 +325,11 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           width: '100%',
           transform: `scale(${scaleFactor})`,
           transformOrigin: 'top center',
-          transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: isHovered ? 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+          position: 'relative',
+        }}
+        onTransitionEnd={() => {
+          if (nodeId) updateNodeInternals(nodeId);
         }}
       >
         {/* Relative wrapper holding the Circular Portrait Medallion and the Top-Right Pencil Button */}
@@ -492,24 +505,37 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             † Deceased
           </div>
         )}
-      </div>
 
-      {/* Source handle for outgoing parent-child connection (at bottom below name/status) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="parent-bottom"
-        style={{
-          width: 8,
-          height: 8,
-          background: isPathNode ? '#D6B15C' : '#A94747',
-          border: '1.5px solid #101318',
-          bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 5,
-        }}
-      />
+        {/* Source handle for outgoing parent-child connection: strictly anchored to the bottom border of the name/status */}
+        <div
+          style={{
+            position: 'relative',
+            width: 8,
+            height: 8,
+            marginTop: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="parent-bottom"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              transform: 'none',
+              width: 8,
+              height: 8,
+              background: isPathNode ? '#D6B15C' : '#A94747',
+              border: '1.5px solid #101318',
+              zIndex: 5,
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
