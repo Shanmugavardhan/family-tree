@@ -200,6 +200,17 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
     .filter(Boolean)
     .join(' ');
 
+  // Requirement 1: Make sure the surname comes always in second line with alignment centre for the person tiles
+  let givenName = [nodeData.firstName, nodeData.middleName].filter(Boolean).join(' ').trim();
+  let surname = (nodeData.lastName || '').trim();
+
+  // If surname wasn't separately stored in lastName but givenName has multiple words, split the surname to line 2
+  if (!surname && givenName.includes(' ')) {
+    const parts = givenName.split(/\s+/);
+    surname = parts.pop() || '';
+    givenName = parts.join(' ');
+  }
+
   // Requirement 3: Circle rim & margin exactly matching reference image (Antique Gold #D6B15C ring)
   let borderColor = '#D6B15C';
   let borderWidth = '2.5px';
@@ -399,13 +410,17 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           </button>
         </div>
 
-        {/* Person Name centered below the circle (Option 1: Inter 650) */}
+        {/* Person Name centered below the circle: Given name on Line 1, Surname ALWAYS on Line 2 with center alignment (Requirement 1) */}
         <div
           style={{
             marginTop: 2,
             textAlign: 'center',
             width: '100%',
             maxWidth: 180,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: '15.5px',
             fontWeight: 650,
@@ -427,7 +442,36 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
             wordBreak: 'break-word',
           }}
         >
-          {fullName}
+          {givenName && (
+            <span
+              style={{
+                display: 'block',
+                textAlign: 'center',
+                width: '100%',
+                lineHeight: 1.2,
+              }}
+            >
+              {givenName}
+            </span>
+          )}
+          {surname && (
+            <span
+              style={{
+                display: 'block',
+                textAlign: 'center',
+                width: '100%',
+                marginTop: givenName ? 1 : 0,
+                lineHeight: 1.2,
+              }}
+            >
+              {surname}
+            </span>
+          )}
+          {!givenName && !surname && (
+            <span style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+              Unknown
+            </span>
+          )}
         </div>
 
         {/* Deceased status ONLY (Inter 400 italic, Silver Grey) */}

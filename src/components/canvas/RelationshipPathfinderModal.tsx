@@ -85,12 +85,13 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: 'min(20px, 3vw)',
       }}
     >
       <div
+        className="pathfinder-modal-dialog"
         style={{
-          width: '100%',
+          width: 'min(520px, calc(100vw - 20px))',
           maxWidth: 520,
           backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,

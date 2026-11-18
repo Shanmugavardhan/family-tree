@@ -234,8 +234,9 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
+        className="floating-edit-dialog"
         style={{
-          width: '100%',
+          width: 'min(720px, calc(100vw - 16px))',
           maxWidth: 720,
           maxHeight: '90vh',
           backgroundColor: isDark ? '#151922' : '#ffffff',
