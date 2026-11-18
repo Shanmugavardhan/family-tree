@@ -23,16 +23,24 @@ async function runGenerationEngineTests() {
 
   // --- Section 1: Standard Config Definitions Check ---
   const defs = service.getGenerationDefinitions();
-  assert(defs.length === 7, `Expected 7 standard generation definitions, got ${defs.length}`);
-  assert(defs[0].id === 'silent' && defs[0].startYear === 1928 && defs[0].endYear === 1945, 'Silent Generation defined: 1928–1945');
-  assert(defs[1].id === 'baby_boomers' && defs[1].startYear === 1946 && defs[1].endYear === 1964, 'Baby Boomers defined: 1946–1964');
-  assert(defs[2].id === 'gen_x' && defs[2].startYear === 1965 && defs[2].endYear === 1980, 'Generation X defined: 1965–1980');
-  assert(defs[3].id === 'millennials' && defs[3].startYear === 1981 && defs[3].endYear === 1996, 'Millennials defined: 1981–1996');
-  assert(defs[4].id === 'gen_z' && defs[4].startYear === 1997 && defs[4].endYear === 2012, 'Generation Z defined: 1997–2012');
-  assert(defs[5].id === 'gen_alpha' && defs[5].startYear === 2013 && defs[5].endYear === 2024, 'Generation Alpha defined: 2013–2024');
-  assert(defs[6].id === 'gen_beta' && defs[6].startYear === 2025 && defs[6].endYear === 2039, 'Generation Beta defined: 2025–2039');
+  assert(defs.length === 11, `Expected 11 standard generation definitions, got ${defs.length}`);
+  assert(defs[0].id === 'ancestral_gilded' && defs[0].startYear === 1843 && defs[0].endYear === 1859, 'Gilded Generation defined: 1843–1859');
+  assert(defs[1].id === 'missionary' && defs[1].startYear === 1860 && defs[1].endYear === 1882, 'Missionary Generation defined: 1860–1882');
+  assert(defs[2].id === 'lost' && defs[2].startYear === 1883 && defs[2].endYear === 1900, 'Lost Generation defined: 1883–1900');
+  assert(defs[3].id === 'greatest' && defs[3].startYear === 1901 && defs[3].endYear === 1927, 'Greatest Generation defined: 1901–1927');
+  assert(defs[4].id === 'silent' && defs[4].startYear === 1928 && defs[4].endYear === 1945, 'Silent Generation defined: 1928–1945');
+  assert(defs[5].id === 'baby_boomers' && defs[5].startYear === 1946 && defs[5].endYear === 1964, 'Baby Boomers defined: 1946–1964');
+  assert(defs[6].id === 'gen_x' && defs[6].startYear === 1965 && defs[6].endYear === 1980, 'Generation X defined: 1965–1980');
+  assert(defs[7].id === 'millennials' && defs[7].startYear === 1981 && defs[7].endYear === 1996, 'Millennials defined: 1981–1996');
+  assert(defs[8].id === 'gen_z' && defs[8].startYear === 1997 && defs[8].endYear === 2012, 'Generation Z defined: 1997–2012');
+  assert(defs[9].id === 'gen_alpha' && defs[9].startYear === 2013 && defs[9].endYear === 2024, 'Generation Alpha defined: 2013–2024');
+  assert(defs[10].id === 'gen_beta' && defs[10].startYear === 2025 && defs[10].endYear === 2039, 'Generation Beta defined: 2025–2039');
 
   // --- Section 2: Mandatory Birth Year Range Tests ---
+  assert(service.getGenerationByBirthYear(1850)?.id === 'ancestral_gilded', 'Birth year 1850 -> Gilded Generation');
+  assert(service.getGenerationByBirthYear(1870)?.id === 'missionary', 'Birth year 1870 -> Missionary Generation');
+  assert(service.getGenerationByBirthYear(1890)?.id === 'lost', 'Birth year 1890 -> Lost Generation');
+  assert(service.getGenerationByBirthYear(1910)?.id === 'greatest', 'Birth year 1910 -> Greatest Generation');
   assert(service.getGenerationByBirthYear(1928)?.id === 'silent', 'Birth year 1928 -> Silent Generation');
   assert(service.getGenerationByBirthYear(1945)?.id === 'silent', 'Birth year 1945 -> Silent Generation');
   assert(service.getGenerationByBirthYear(1946)?.id === 'baby_boomers', 'Birth year 1946 -> Baby Boomers');
@@ -49,7 +57,7 @@ async function runGenerationEngineTests() {
   assert(service.getGenerationByBirthYear(2039)?.id === 'gen_beta', 'Birth year 2039 -> Generation Beta');
 
   // --- Section 3: Boundary & Out-of-Range Handling ---
-  assert(service.getGenerationByBirthYear(1927) === null, 'Birth year 1927 -> null (before lowest definition)');
+  assert(service.getGenerationByBirthYear(1842) === null, 'Birth year 1842 -> null (before lowest definition)');
   assert(service.getGenerationByBirthYear(2040) === null, 'Birth year 2040 -> null (after highest definition)');
   assert(service.getGenerationByBirthYear(null) === null, 'Birth year null -> null');
   assert(service.getGenerationByBirthYear(undefined) === null, 'Birth year undefined -> null');

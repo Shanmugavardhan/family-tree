@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  GitFork,
-  Users,
-  UserPlus,
-  Sun,
-  Moon,
   Menu,
   X,
   Search,
@@ -19,7 +14,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
-  const { toggleTheme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -81,30 +76,6 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
     navigate(`/tree?select=${p.id}`);
   };
 
-  const navItems = [
-    {
-      to: '/tree',
-      end: false,
-      label: 'Family Tree',
-      icon: GitFork,
-      title: 'Chronological Interactive Tree Canvas',
-    },
-    {
-      to: '/people',
-      end: true,
-      label: 'Directory',
-      icon: Users,
-      title: 'Family Directory & Kinship Profiles',
-    },
-    {
-      to: '/people/new',
-      end: false,
-      label: 'Add Member',
-      icon: UserPlus,
-      title: 'Add New Family Member',
-    },
-  ];
-
   return (
     <>
       <header
@@ -129,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
         {/* Left: Brand Identity (House of Konukuru) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link
-            to="/tree"
+            to="/"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -197,116 +168,31 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
         {/* Search Slot: Injected for Desktop View */}
         <div id="header-search-slot" className="header-search-container" style={{ display: 'flex', alignItems: 'center' }} />
 
-        {/* Center: Navigation Items (Desktop View Only - Hidden on Mobile via CSS) */}
-        <nav
-          className="header-nav-desktop"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: isDark ? 'rgba(22, 28, 38, 0.75)' : 'rgba(244, 237, 224, 0.85)',
-            padding: '4px 6px',
-            borderRadius: 12,
-            border: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(197, 155, 39, 0.35)',
-          }}
-          aria-label="Main Navigation"
-        >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                title={item.title}
-                className={({ isActive }) => `header-nav-item ${isActive ? 'active' : ''}`}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontFamily: "'Inter', -apple-system, sans-serif",
-                  fontSize: '0.85rem',
-                  fontWeight: isActive ? 600 : 500,
-                  letterSpacing: '0.01em',
-                  color: isActive
-                    ? isDark ? '#D6B15C' : '#854d0e'
-                    : isDark ? '#9BA3AF' : '#78716c',
-                  backgroundColor: isActive
-                    ? isDark ? 'rgba(214, 177, 92, 0.16)' : '#ffffff'
-                    : 'transparent',
-                  boxShadow: isActive
-                    ? isDark ? '0 1px 4px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.08)'
-                    : 'none',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease-in-out',
-                  cursor: 'pointer',
-                })}
-              >
-                <Icon size={16} />
-                <span className="header-nav-label">{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        {/* Right: Desktop Actions & Theme Switcher (Desktop View Only - Hidden on Mobile via CSS) */}
+        {/* Right: Desktop Actions & Member Count (Desktop View Only - Hidden on Mobile via CSS) */}
         <div className="header-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Canvas Actions Slot (Pathfinder, Focus Mode, Timeline, Zoom) */}
           <div id="header-canvas-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }} />
 
-          {/* Active Lineage Count Badge */}
+          {/* Active Lineage Count Badge (Requirement 8: swords removed) */}
           <div
             className="header-lineage-badge"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
               fontFamily: "'Cinzel', Georgia, serif",
               fontSize: '0.785rem',
               fontWeight: 700,
               letterSpacing: '0.04em',
               color: isDark ? '#e5c158' : '#78350f',
-              padding: '5px 12px',
+              padding: '6px 14px',
               borderRadius: 20,
               backgroundColor: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(197, 155, 39, 0.12)',
               border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
             }}
             title="Active House members recorded in lineage"
           >
-            <span>⚔️</span>
             <span>14 Members</span>
           </div>
-
-          {/* Dark / Light Mode Switch Button */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
-              backgroundColor: isDark ? '#161c26' : '#ffffff',
-              color: isDark ? '#fbbf24' : '#78350f',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: isDark
-                ? '0 1px 4px rgba(0, 0, 0, 0.4)'
-                : '0 1px 3px rgba(0, 0, 0, 0.06)',
-              transition: 'all 0.2s ease-in-out',
-            }}
-            title={isDark ? 'Switch to Light Realm' : 'Switch to Dark Realm'}
-            aria-label={isDark ? 'Switch to Light Realm' : 'Switch to Dark Realm'}
-          >
-            {isDark ? (
-              <Sun size={18} color="#fbbf24" fill="#fbbf24" style={{ filter: 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.5))' }} />
-            ) : (
-              <Moon size={18} color="#78350f" fill="#fef3c7" />
-            )}
-          </button>
         </div>
 
         {/* Mobile View: Hamburger Menu Button (Requirement 4) */}
@@ -497,57 +383,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
               )}
             </div>
 
-            {/* Navigation Links list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-              <div
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: isDark ? '#9BA3AF' : '#64748b',
-                  marginBottom: 4,
-                  paddingLeft: 4,
-                }}
-              >
-                Navigation
-              </div>
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.end}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    style={({ isActive }) => ({
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '0.9rem',
-                      fontWeight: isActive ? 600 : 500,
-                      textDecoration: 'none',
-                      color: isActive ? (isDark ? '#D6B15C' : '#854d0e') : isDark ? '#F1E9D7' : '#1e293b',
-                      backgroundColor: isActive
-                        ? isDark ? 'rgba(214, 177, 92, 0.16)' : 'rgba(197, 155, 39, 0.12)'
-                        : 'transparent',
-                      border: isActive
-                        ? isDark ? '1px solid rgba(214, 177, 92, 0.35)' : '1px solid rgba(197, 155, 39, 0.35)'
-                        : '1px solid transparent',
-                      transition: 'all 0.15s ease-in-out',
-                    })}
-                  >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-
-            {/* Bottom Utilities: Theme Switcher & Lineage Badge */}
+            {/* Bottom Utilities: Lineage Badge */}
             <div
               style={{
                 marginTop: 'auto',
@@ -558,42 +394,12 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                 gap: 12,
               }}
             >
-              {/* Theme Toggle Button */}
-              <button
-                onClick={toggleTheme}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
-                  backgroundColor: isDark ? '#1a2230' : '#f8fafc',
-                  color: isDark ? '#fbbf24' : '#78350f',
-                  cursor: 'pointer',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  transition: 'all 0.15s ease-in-out',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {isDark ? (
-                    <Sun size={18} color="#fbbf24" fill="#fbbf24" />
-                  ) : (
-                    <Moon size={18} color="#78350f" fill="#fef3c7" />
-                  )}
-                  <span>{isDark ? 'Switch to Light Realm' : 'Switch to Dark Realm'}</span>
-                </div>
-              </button>
-
-              {/* Lineage Badge */}
+              {/* Lineage Badge (swords removed) */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
                   fontFamily: "'Cinzel', Georgia, serif",
                   fontSize: '0.8rem',
                   fontWeight: 700,
@@ -605,7 +411,6 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
                 }}
               >
-                <span>⚔️</span>
                 <span>14 Active Members in Lineage</span>
               </div>
             </div>

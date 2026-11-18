@@ -17,9 +17,9 @@ export interface LayoutConfig {
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   nodeWidth: 190,
   nodeHeight: 160,
-  horizontalSpacing: 90,
-  spouseSpacing: 60,
-  laneHeight: 420, // Vertically wider strips as requested
+  horizontalSpacing: 220, // Increased spacing to guarantee clean padding gap between tiles at every zoom level
+  spouseSpacing: 130, // Ample spouse spacing with room for heart indicator
+  laneHeight: 440, // Vertically spacious strips
   laneGap: 0, // Zero gap between horizontal generation strips
   laneMarginX: 80,
   laneMarginY: 0, // Seamless continuous canvas

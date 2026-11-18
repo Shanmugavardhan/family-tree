@@ -191,19 +191,18 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
-  // Proportional zoom sizing (1:1 ratio where size:scroll)
-  // Counter-scales 1:1 with canvas zoom so tiles and text maintain constant 1:1 screen size
-  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 2.0; at zoom=0.25 -> 3.0 (clamped); at zoom=2.0 -> 0.5
-  const baseScale = Math.min(3.0, Math.max(0.5, 1 / Math.max(0.2, zoom)));
+  // Requirement 2: Proportional zoom sizing (1:1.5 size:zoom ratio)
+  // At zoom=1.0 -> 1.0; at zoom=0.5 -> (1/0.5)^(1/1.5) = 2^(2/3) ≈ 1.587; at zoom=2.0 -> (1/2)^(2/3) ≈ 0.63
+  const baseScale = Math.min(2.5, Math.max(0.6, Math.pow(1 / Math.max(0.1, zoom), 1 / 1.5)));
   // Requirement 1: Enlarge smoothly on hover
   const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
 
-  // Keep handles strictly bound to the name border across all zoom levels and hover states
+  // Sync handle internals on mount and on hover state change
   React.useLayoutEffect(() => {
     if (nodeId) {
       updateNodeInternals(nodeId);
     }
-  }, [nodeId, scaleFactor, zoom, isHovered, updateNodeInternals]);
+  }, [nodeId, isHovered, updateNodeInternals]);
 
   const fullName = [nodeData.firstName, nodeData.middleName, nodeData.lastName]
     .filter(Boolean)

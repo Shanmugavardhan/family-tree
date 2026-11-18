@@ -216,17 +216,17 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       onClick={handleRequestClose}
       style={{
         position: 'fixed',
-        top: 0,
+        top: '64px', // Requirement 6: Strictly positioned below the header
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(16, 19, 24, 0.75)',
-        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(10, 13, 20, 0.82)',
+        backdropFilter: 'blur(8px)',
         zIndex: 90,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 16px',
+        padding: '16px',
         boxSizing: 'border-box',
       }}
     >
@@ -238,7 +238,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
         style={{
           width: 'min(720px, calc(100vw - 16px))',
           maxWidth: 720,
-          maxHeight: '90vh',
+          maxHeight: 'calc(100vh - 64px - 32px)', // Fits completely within viewport below header
           backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,
           boxShadow: isDark
@@ -506,23 +506,24 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
 
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                      Living Status
+                      Status
                     </label>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 4 }}>
                       <input
                         type="checkbox"
-                        checked={isLiving}
+                        checked={!isLiving}
                         onChange={(e) => {
-                          setIsLiving(e.target.checked);
-                          if (e.target.checked) {
+                          const deceased = e.target.checked;
+                          setIsLiving(!deceased);
+                          if (!deceased) {
                             setDeathDate('');
                             setDeathPlace('');
                           }
                         }}
                         style={{ width: 17, height: 17, accentColor: '#D6B15C' }}
                       />
-                      <span style={{ fontSize: '13.5px', fontWeight: 500, color: isLiving ? (isDark ? '#F1E9D7' : '#1e293b') : (isDark ? '#9BA3AF' : '#64748b') }}>
-                        {isLiving ? 'Currently living' : '† Deceased'}
+                      <span style={{ fontSize: '13.5px', fontWeight: 500, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
+                        {!isLiving ? '† Deceased' : 'Living'}
                       </span>
                     </label>
                   </div>

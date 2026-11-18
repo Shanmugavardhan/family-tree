@@ -17,6 +17,26 @@ function getGenerationTexture(genId: string | null, isDark: boolean): string {
   const fillOpacity = isDark ? 0.18 : 0.1;
 
   switch (genId) {
+    case 'ancestral_gilded': {
+      // 1843-1859: Victorian classical filigree / ornate parchment weave
+      const color = encodeURIComponent(isDark ? '#d4af37' : '#92400e');
+      return `url("data:image/svg+xml,%3Csvg width='36' height='36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 18 0 C 18 9, 9 18, 0 18 C 9 18, 18 27, 18 36 C 18 27, 27 18, 36 18 C 27 18, 18 9, 18 0 Z' fill='none' stroke='${color}' stroke-width='1.2' stroke-opacity='${strokeOpacity}'/%3E%3C/svg%3E")`;
+    }
+    case 'missionary': {
+      // 1860-1882: Industrial letterpress heraldic crosshatch & diamond crests
+      const color = encodeURIComponent(isDark ? '#a78bfa' : '#6d28d9');
+      return `url("data:image/svg+xml,%3Csvg width='32' height='32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 16 L 32 16 M 16 0 L 16 32 M 8 8 L 24 24 M 24 8 L 8 24' stroke='${color}' stroke-width='1' stroke-opacity='${strokeOpacity}'/%3E%3C/svg%3E")`;
+    }
+    case 'lost': {
+      // 1883-1900: Art Nouveau undulating organic curves & vintage wavelets
+      const color = encodeURIComponent(isDark ? '#67e8f9' : '#0891b2');
+      return `url("data:image/svg+xml,%3Csvg width='40' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 10 Q 10 0, 20 10 T 40 10' fill='none' stroke='${color}' stroke-width='1.4' stroke-opacity='${strokeOpacity}'/%3E%3C/svg%3E")`;
+    }
+    case 'greatest': {
+      // 1901-1927: Art Deco geometric chevron fan & brass radiance
+      const color = encodeURIComponent(isDark ? '#fbbf24' : '#b45309');
+      return `url("data:image/svg+xml,%3Csvg width='32' height='32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 32 L 16 0 L 32 32 M 8 32 L 16 16 L 24 32' fill='none' stroke='${color}' stroke-width='1.3' stroke-opacity='${strokeOpacity}'/%3E%3C/svg%3E")`;
+    }
     case 'silent': {
       // 1928-1945: Archival classic diagonal pinstripes
       const color = encodeURIComponent(isDark ? '#94a3b8' : '#475569');
@@ -77,7 +97,15 @@ export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   let texture = getGenerationTexture(lane.id, isDark);
   let customBgColor = isDark ? `${bgColor}2c` : `${bgColor}18`;
 
-  if (isSilent) {
+  if (lane.id === 'ancestral_gilded') {
+    customBgColor = '#161313';
+  } else if (lane.id === 'missionary') {
+    customBgColor = '#19131a';
+  } else if (lane.id === 'lost') {
+    customBgColor = '#13181f';
+  } else if (lane.id === 'greatest') {
+    customBgColor = '#161d17';
+  } else if (isSilent) {
     texture = `url("${silentStripImg}")`;
     customBgColor = '#101715';
   } else if (isBabyBoomers) {

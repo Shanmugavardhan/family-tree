@@ -127,7 +127,7 @@ export function convertLayoutToReactFlow(
         width: n.width,
         height: n.height,
         opacity: isDimmed ? 0.2 : 1,
-        transition: 'opacity 0.2s ease-in-out, transform 0.15s ease-in-out',
+        transition: 'opacity 0.2s ease-in-out',
         pointerEvents: isDimmed ? 'none' : 'auto',
       },
       data: {

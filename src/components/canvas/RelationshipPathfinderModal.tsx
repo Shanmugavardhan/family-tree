@@ -75,7 +75,7 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
     <div
       style={{
         position: 'fixed',
-        top: 0,
+        top: '64px',
         left: 0,
         right: 0,
         bottom: 0,

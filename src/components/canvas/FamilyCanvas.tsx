@@ -35,9 +35,10 @@ import { StickyGenerationLabels } from './StickyGenerationLabels';
 import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
 import { FloatingPersonEditModal } from './FloatingPersonEditModal';
+import { FloatingAddPersonModal } from './FloatingAddPersonModal';
 import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasConstants';
 import { useTheme } from '../../context/ThemeContext';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Pencil } from 'lucide-react';
 
 interface StoredViewport {
   x: number;
@@ -222,6 +223,9 @@ const FamilyCanvasInternal: React.FC = () => {
 
   // Floating Person Edit Window State
   const [editingPersonId, setEditingPersonId] = React.useState<string | null>(null);
+
+  // Requirement 5: Floating Add Member Window State
+  const [isAddMemberOpen, setIsAddMemberOpen] = React.useState(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<PersonNodeData | LaneBannerNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<FamilyEdgeData>>([]);
@@ -695,6 +699,53 @@ const FamilyCanvasInternal: React.FC = () => {
         personId={editingPersonId}
         onClose={() => setEditingPersonId(null)}
         onSaveSuccess={(_updatedPerson) => {
+          fetchLayout();
+        }}
+      />
+
+      {/* Requirement 5: Square floating button on screen with pencil icon for adding a member */}
+      <button
+        onClick={() => setIsAddMemberOpen(true)}
+        className="canvas-floating-add-btn"
+        title="Add Family Member"
+        aria-label="Add Family Member"
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          left: 24,
+          width: 48,
+          height: 48,
+          borderRadius: 12,
+          backgroundColor: '#161c26',
+          border: '1.5px solid #D6B15C',
+          color: '#D6B15C',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.75), 0 0 14px rgba(214, 177, 92, 0.3)',
+          cursor: 'pointer',
+          zIndex: 40,
+          transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.08)';
+          e.currentTarget.style.backgroundColor = '#1d2634';
+          e.currentTarget.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.85), 0 0 18px rgba(214, 177, 92, 0.45)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.backgroundColor = '#161c26';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.75), 0 0 14px rgba(214, 177, 92, 0.3)';
+        }}
+      >
+        <Pencil size={22} />
+      </button>
+
+      {/* Requirement 5: Floating Add Member Window on the Canvas */}
+      <FloatingAddPersonModal
+        isOpen={isAddMemberOpen}
+        onClose={() => setIsAddMemberOpen(false)}
+        onSaveSuccess={(_createdPerson) => {
           fetchLayout();
         }}
       />
