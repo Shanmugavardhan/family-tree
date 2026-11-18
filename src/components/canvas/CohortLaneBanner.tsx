@@ -1,8 +1,10 @@
 import React from 'react';
 import { LaneBannerNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
+import silentStripImg from '../../assets/silent_strip.jpg';
 import babyBoomersStripImg from '../../assets/baby_boomers_strip.jpg';
 import genXStripImg from '../../assets/gen_x_strip.jpg';
+import millennialsStripImg from '../../assets/millennials_strip.jpg';
 import genZStripImg from '../../assets/gen_z_strip.jpg';
 
 /**
@@ -59,22 +61,30 @@ function getGenerationTexture(genId: string | null, isDark: boolean): string {
 export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   const { isDark } = useTheme();
   const { lane, width } = data as LaneBannerNodeData;
+  const isSilent = lane.id === 'silent';
   const isBabyBoomers = lane.id === 'baby_boomers';
   const isGenX = lane.id === 'gen_x';
+  const isMillennials = lane.id === 'millennials';
   const isGenZ = lane.id === 'gen_z';
-  const hasCustomPanorama = isBabyBoomers || isGenX || isGenZ;
+  const hasCustomPanorama = isSilent || isBabyBoomers || isGenX || isMillennials || isGenZ;
 
   const bgColor = lane.backgroundColor || '#64748b';
 
   let texture = getGenerationTexture(lane.id, isDark);
   let customBgColor = isDark ? `${bgColor}2c` : `${bgColor}18`;
 
-  if (isBabyBoomers) {
+  if (isSilent) {
+    texture = `url("${silentStripImg}")`;
+    customBgColor = '#101715';
+  } else if (isBabyBoomers) {
     texture = `url("${babyBoomersStripImg}")`;
     customBgColor = '#0f221e';
   } else if (isGenX) {
     texture = `url("${genXStripImg}")`;
     customBgColor = '#121a29';
+  } else if (isMillennials) {
+    texture = `url("${millennialsStripImg}")`;
+    customBgColor = '#24141e';
   } else if (isGenZ) {
     texture = `url("${genZStripImg}")`;
     customBgColor = '#25150f';
