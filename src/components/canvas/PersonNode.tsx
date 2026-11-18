@@ -1,5 +1,7 @@
 import React from 'react';
 import { Handle, Position, useViewport } from '@xyflow/react';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, User } from 'lucide-react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -157,37 +159,30 @@ const MaleNobleAvatar: React.FC = () => (
 );
 
 /**
- * Royal House Sigil Avatar (Fallback for neutral / other / unknown)
+ * Minimalist Clean User Avatar (matching uploaded design reference)
  */
-const RoyalSigilAvatar: React.FC = () => (
-  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
-    <defs>
-      <radialGradient id="sigil-bg" cx="50%" cy="50%" r="55%">
-        <stop offset="0%" stopColor="#350608" />
-        <stop offset="60%" stopColor="#1a0203" />
-        <stop offset="100%" stopColor="#080001" />
-      </radialGradient>
-      <linearGradient id="sigil-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fbbf24" />
-        <stop offset="50%" stopColor="#d4af37" />
-        <stop offset="100%" stopColor="#92400e" />
-      </linearGradient>
-    </defs>
-    <circle cx="50" cy="50" r="49" fill="url(#sigil-bg)" />
-    {/* Westeros Royal Dragon / Crown Sigil */}
-    <path
-      d="M50 20 L58 36 L74 26 L66 48 L84 52 L66 62 L74 80 L50 70 L26 80 L34 62 L16 52 L34 48 L26 26 L42 36 Z"
-      fill="url(#sigil-gold)"
-      opacity="0.9"
-    />
-    <circle cx="50" cy="48" r="8" fill="#7f1d1d" stroke="url(#sigil-gold)" strokeWidth="1.5" />
-    <polygon points="50,42 53,52 47,52" fill="#fbbf24" />
-  </svg>
+const DefaultUserAvatar: React.FC = () => (
+  <div
+    style={{
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#252E3A',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <User size={46} strokeWidth={1.8} color="#E8D6B2" />
+  </div>
 );
 
 export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const { isDark } = useTheme();
   const { zoom } = useViewport();
+  const navigate = useNavigate();
+  const [isHovered, setIsHovered] = React.useState(false);
+  const [isPencilHovered, setIsPencilHovered] = React.useState(false);
+
   const nodeData = data as PersonNodeData;
   const isSelected = selected || nodeData.isSelected;
   const isPathNode = nodeData.isPathNode;
@@ -197,37 +192,48 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
   // Requirement 1: Proportional zoom sizing (1:3 ratio where size:scroll)
   // When zooming out (zoom < 1.0), tiles proportionately increase relative size
   // At zoom=1.0 -> 1.0; at zoom=0.5 -> 1.26; at zoom=0.25 -> 1.59; at zoom=1.5 -> 0.87
-  const scaleFactor = Math.min(1.85, Math.max(0.75, Math.pow(1 / Math.max(0.1, zoom), 1 / 3)));
+  const baseScale = Math.min(1.85, Math.max(0.75, Math.pow(1 / Math.max(0.1, zoom), 1 / 3)));
+  // Requirement 1: Enlarge smoothly on hover
+  const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
 
   const fullName = [nodeData.firstName, nodeData.middleName, nodeData.lastName]
     .filter(Boolean)
     .join(' ');
 
-  // Royal Heritage — Midnight Edition styling
-  let borderColor = isDark ? '#343D49' : '#cbd5e1';
-  let borderWidth = '3.5px';
+  // Requirement 3: Circle rim & margin exactly matching reference image (Antique Gold #D6B15C ring)
+  let borderColor = '#D6B15C';
+  let borderWidth = '2.5px';
   let boxShadow = isDark
     ? '0 6px 16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(214, 177, 92, 0.25)'
     : '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(168, 138, 75, 0.2)';
 
   if (isPathNode) {
     borderColor = '#D6B15C';
-    borderWidth = '4px';
+    borderWidth = '3.5px';
     boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.4), 0 0 25px rgba(214, 177, 92, 0.85)';
   } else if (isSelected) {
-    borderColor = '#D6B15C';
-    borderWidth = '4px';
-    boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.4), 0 0 22px rgba(214, 177, 92, 0.8)';
+    borderColor = '#fef08a';
+    borderWidth = '3.5px';
+    boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.5), 0 0 24px rgba(214, 177, 92, 0.85)';
   } else if (isHighlighted) {
     borderColor = '#D6B15C';
-    borderWidth = '3.5px';
+    borderWidth = '3px';
     boxShadow = '0 0 0 2px rgba(214, 177, 92, 0.35), 0 0 18px rgba(214, 177, 92, 0.7)';
+  } else if (isHovered) {
+    borderColor = '#fef08a';
+    borderWidth = '2.5px';
+    boxShadow = '0 0 0 3px rgba(214, 177, 92, 0.45), 0 10px 24px rgba(0, 0, 0, 0.8), 0 0 18px rgba(214, 177, 92, 0.6)';
   }
 
   const gender = (nodeData as any).gender?.toLowerCase();
 
   return (
     <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setIsPencilHovered(false);
+      }}
       style={{
         width: 190,
         height: 160,
@@ -240,6 +246,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         cursor: 'pointer',
         boxSizing: 'border-box',
         userSelect: 'none',
+        zIndex: isHovered ? 30 : isSelected ? 15 : 1,
       }}
     >
       {/* Target handle for incoming parent-child connection (at top of circle) */}
@@ -252,7 +259,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           height: 8,
           background: isPathNode ? '#D6B15C' : '#A94747',
           border: '1.5px solid #101318',
-          top: -2,
+          top: 3,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 5,
@@ -270,7 +277,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           background: isPathNode ? '#D6B15C' : '#D18B91',
           border: '1.5px solid #101318',
           left: 43,
-          top: 48,
+          top: 50,
           zIndex: 5,
         }}
       />
@@ -284,12 +291,12 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           background: isPathNode ? '#D6B15C' : '#D18B91',
           border: '1.5px solid #101318',
           right: 43,
-          top: 48,
+          top: 50,
           zIndex: 5,
         }}
       />
 
-      {/* Proportional Scaled Container (Requirement 1: 1:3 ratio with zoom out) */}
+      {/* Proportional Scaled Container (Enlarges on hover + 1:3 ratio with zoom out) */}
       <div
         style={{
           display: 'flex',
@@ -298,49 +305,100 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
           width: '100%',
           transform: `scale(${scaleFactor})`,
           transformOrigin: 'top center',
-          transition: 'transform 0.08s ease-out',
+          transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Circular Portrait Medallion */}
+        {/* Relative wrapper holding the Circular Portrait Medallion and the Top-Right Pencil Button */}
         <div
           style={{
-            width: 96,
-            height: 96,
-            borderRadius: '50%',
-            border: `${borderWidth} solid ${borderColor}`,
-            boxShadow,
-            overflow: 'hidden',
             position: 'relative',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            backgroundColor: '#151922',
-            flexShrink: 0,
+            display: 'inline-block',
+            margin: '6px 0 8px 0',
           }}
         >
-          {nodeData.photoPath && !imageFailed ? (
-            <img
-              src={nodeData.photoPath}
-              alt={fullName}
-              onError={() => setImageFailed(true)}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          ) : gender === 'female' ? (
-            <FemaleNobleAvatar />
-          ) : gender === 'male' ? (
-            <MaleNobleAvatar />
-          ) : (
-            <RoyalSigilAvatar />
-          )}
+          {/* Circular Portrait Medallion (Requirement 3: circle margin & gold rim) */}
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: '50%',
+              border: `${borderWidth} solid ${borderColor}`,
+              boxShadow,
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              backgroundColor: '#252E3A',
+              flexShrink: 0,
+            }}
+          >
+            {nodeData.photoPath && !imageFailed ? (
+              <img
+                src={nodeData.photoPath}
+                alt={fullName}
+                onError={() => setImageFailed(true)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+            ) : gender === 'female' ? (
+              <FemaleNobleAvatar />
+            ) : gender === 'male' ? (
+              <MaleNobleAvatar />
+            ) : (
+              <DefaultUserAvatar />
+            )}
+          </div>
+
+          {/* Requirement 2: Pencil button top right of the circle, visible ONLY on hover */}
+          <button
+            type="button"
+            title={`Edit details of ${fullName}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/people/${nodeData.personId}/edit`);
+            }}
+            onMouseEnter={() => setIsPencilHovered(true)}
+            onMouseLeave={() => setIsPencilHovered(false)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              backgroundColor: isPencilHovered ? '#fef08a' : '#D6B15C',
+              color: '#101318',
+              border: '2px solid #101318',
+              boxShadow: isPencilHovered
+                ? '0 0 12px rgba(214, 177, 92, 0.95), 0 3px 8px rgba(0, 0, 0, 0.7)'
+                : '0 2px 8px rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              zIndex: 10,
+              opacity: isHovered ? 1 : 0,
+              transform: isHovered
+                ? isPencilHovered
+                  ? 'scale(1.15)'
+                  : 'scale(1)'
+                : 'scale(0.6)',
+              pointerEvents: isHovered ? 'auto' : 'none',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
+            <Pencil size={13} strokeWidth={2.4} />
+          </button>
         </div>
 
         {/* Person Name centered below the circle (Option 1: Inter 650) */}
         <div
           style={{
-            marginTop: 8,
+            marginTop: 2,
             textAlign: 'center',
             width: '100%',
             maxWidth: 180,
@@ -353,6 +411,8 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
               ? '#D6B15C'
               : isPathNode
               ? '#D6B15C'
+              : isHovered
+              ? '#fef08a'
               : isDark
               ? '#F1E9D7'
               : '#1D2633',
