@@ -189,10 +189,10 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
-  // Proportional zoom sizing (1:2 ratio where size:scroll)
-  // When zooming out (zoom < 1.0), tiles and text proportionately increase relative size
-  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 1.41; at zoom=0.25 -> 2.0; at zoom=2.0 -> 0.71
-  const baseScale = Math.min(2.25, Math.max(0.68, Math.pow(1 / Math.max(0.1, zoom), 1 / 2)));
+  // Proportional zoom sizing (1:1 ratio where size:scroll)
+  // Counter-scales 1:1 with canvas zoom so tiles and text maintain constant 1:1 screen size
+  // At zoom=1.0 -> 1.0; at zoom=0.5 -> 2.0; at zoom=0.25 -> 3.0 (clamped); at zoom=2.0 -> 0.5
+  const baseScale = Math.min(3.0, Math.max(0.5, 1 / Math.max(0.2, zoom)));
   // Requirement 1: Enlarge smoothly on hover
   const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
 
@@ -296,7 +296,7 @@ export const PersonNode: React.FC<any> = ({ data, selected }) => {
         }}
       />
 
-      {/* Proportional Scaled Container (Enlarges on hover + 1:3 ratio with zoom out) */}
+      {/* Proportional Scaled Container (Enlarges on hover + 1:1 ratio with zoom out) */}
       <div
         style={{
           display: 'flex',
