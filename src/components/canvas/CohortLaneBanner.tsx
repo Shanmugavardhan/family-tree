@@ -1,6 +1,7 @@
 import React from 'react';
 import { LaneBannerNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
+import genZStripImg from '../../assets/gen_z_strip.jpg';
 
 /**
  * Returns a generation period SVG texture pattern URL matching the historical era
@@ -56,17 +57,24 @@ function getGenerationTexture(genId: string | null, isDark: boolean): string {
 export const CohortLaneBanner: React.FC<any> = ({ data }) => {
   const { isDark } = useTheme();
   const { lane, width } = data as LaneBannerNodeData;
+  const isGenZ = lane.id === 'gen_z';
   const bgColor = lane.backgroundColor || '#64748b';
-  const texture = getGenerationTexture(lane.id, isDark);
+  const texture = isGenZ ? `url("${genZStripImg}")` : getGenerationTexture(lane.id, isDark);
 
   return (
     <div
       style={{
         width,
         height: lane.height,
-        backgroundColor: isDark ? `${bgColor}2c` : `${bgColor}18`,
+        backgroundColor: isGenZ
+          ? '#25150f'
+          : isDark
+          ? `${bgColor}2c`
+          : `${bgColor}18`,
         backgroundImage: texture,
         backgroundRepeat: 'repeat',
+        backgroundSize: isGenZ ? 'auto 100%' : 'auto',
+        backgroundPosition: 'left center',
         borderBottom: `1px solid ${isDark ? 'rgba(52, 61, 73, 0.5)' : 'rgba(52, 61, 73, 0.25)'}`,
         position: 'relative',
         boxSizing: 'border-box',
