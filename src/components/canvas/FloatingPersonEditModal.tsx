@@ -833,3 +833,4 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     </div>
   );
 };
+

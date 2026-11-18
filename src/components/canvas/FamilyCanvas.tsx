@@ -35,8 +35,45 @@ import { StickyGenerationLabels } from './StickyGenerationLabels';
 import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
 import { FloatingPersonEditModal } from './FloatingPersonEditModal';
+import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+
+interface StoredViewport {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+const loadStoredViewport = (): StoredViewport | null => {
+  try {
+    const raw = localStorage.getItem(CANVAS_VIEWPORT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed?.x === 'number' &&
+      typeof parsed?.y === 'number' &&
+      typeof parsed?.zoom === 'number' &&
+      !isNaN(parsed.x) &&
+      !isNaN(parsed.y) &&
+      !isNaN(parsed.zoom) &&
+      parsed.zoom > 0
+    ) {
+      return { x: parsed.x, y: parsed.y, zoom: parsed.zoom };
+    }
+  } catch {
+    // ignore corrupted localStorage
+  }
+  return null;
+};
+
+const persistViewport = (viewport: StoredViewport) => {
+  try {
+    localStorage.setItem(CANVAS_VIEWPORT_STORAGE_KEY, JSON.stringify(viewport));
+  } catch {
+    // ignore storage errors
+  }
+};
 
 const nodeTypes: NodeTypes = {
   personCard: PersonNode,
@@ -106,7 +143,10 @@ function findGraphPath(
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setCenter, fitView } = useReactFlow();
+  const { setCenter, fitView, setViewport } = useReactFlow();
+
+  const initialSavedViewport = React.useMemo(() => loadStoredViewport(), []);
+  const saveViewportTimerRef = React.useRef<any>(null);
 
   const [layout, setLayout] = React.useState<FamilyLayout | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -128,14 +168,42 @@ const FamilyCanvasInternal: React.FC = () => {
     }, 1800);
   }, []);
 
+  const handleSaveViewport = React.useCallback((viewport: { x: number; y: number; zoom: number }) => {
+    if (
+      typeof viewport?.x === 'number' &&
+      typeof viewport?.y === 'number' &&
+      typeof viewport?.zoom === 'number' &&
+      !isNaN(viewport.x) &&
+      !isNaN(viewport.y) &&
+      !isNaN(viewport.zoom) &&
+      viewport.zoom > 0
+    ) {
+      persistViewport({ x: viewport.x, y: viewport.y, zoom: viewport.zoom });
+    }
+  }, []);
+
   const handleCanvasMove = React.useCallback(
     (_event: any, viewport: { x: number; y: number; zoom: number }) => {
       if (lastZoomRef.current !== null && Math.abs(viewport.zoom - lastZoomRef.current) > 0.001) {
         handleZoomActivity();
       }
       lastZoomRef.current = viewport.zoom;
+
+      // Debounced save during active dragging or mouse scrolling
+      if (saveViewportTimerRef.current) clearTimeout(saveViewportTimerRef.current);
+      saveViewportTimerRef.current = setTimeout(() => {
+        handleSaveViewport(viewport);
+      }, 300);
     },
-    [handleZoomActivity]
+    [handleZoomActivity, handleSaveViewport]
+  );
+
+  const handleCanvasMoveEnd = React.useCallback(
+    (_event: any, viewport: { x: number; y: number; zoom: number }) => {
+      if (saveViewportTimerRef.current) clearTimeout(saveViewportTimerRef.current);
+      handleSaveViewport(viewport);
+    },
+    [handleSaveViewport]
   );
 
   // Milestone 3.5: Person Interaction & Exploration states
@@ -232,20 +300,23 @@ const FamilyCanvasInternal: React.FC = () => {
           });
         }, 150);
       }
+    } else if (initialSavedViewport) {
+      // Requirement 2: Restore user's saved navigation position and zoom level
+      setViewport(initialSavedViewport, { duration: 0 });
     } else {
-      // Default: Focus directly on family member cards at a closer, readable zoom level
+      // First-time visit: Focus directly on family member cards with header-aware padding (Requirement 1)
       const personNodeRefs = layout.nodes.map((n) => ({ id: n.id }));
       setTimeout(() => {
         fitView({
           nodes: personNodeRefs,
-          padding: 0.1,
+          padding: HEADER_AWARE_FIT_PADDING,
           duration: 700,
           maxZoom: 1.35,
           minZoom: 0.85,
         });
       }, 150);
     }
-  }, [layout, searchParams, selectPerson, setCenter, fitView]);
+  }, [layout, searchParams, selectPerson, setCenter, fitView, setViewport, initialSavedViewport]);
 
   // When selection, focusMode, or active path changes, recalculate React Flow nodes/edges
   React.useEffect(() => {
@@ -324,10 +395,10 @@ const FamilyCanvasInternal: React.FC = () => {
       setActivePathSummary(`Ancestors of ${name} (${count} direct ${count === 1 ? 'ancestor' : 'ancestors'} traced)`);
       setActivePathResult(null);
 
-      // Smoothly fit view to highlight all ancestors
+      // Smoothly fit view to highlight all ancestors (Requirement 1: Header-aware padding)
       setTimeout(() => {
         const nodesToFit = Array.from(ancestors).map((id) => ({ id }));
-        fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
+        fitView({ nodes: nodesToFit, padding: HEADER_AWARE_FIT_PADDING, duration: 800, maxZoom: 1.35 });
       }, 100);
     },
     [layout, fitView]
@@ -365,10 +436,10 @@ const FamilyCanvasInternal: React.FC = () => {
       setActivePathSummary(`Descendants of ${name} (${count} direct ${count === 1 ? 'descendant' : 'descendants'} traced)`);
       setActivePathResult(null);
 
-      // Smoothly fit view to highlight all descendants
+      // Smoothly fit view to highlight all descendants (Requirement 1: Header-aware padding)
       setTimeout(() => {
         const nodesToFit = Array.from(descendants).map((id) => ({ id }));
-        fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
+        fitView({ nodes: nodesToFit, padding: HEADER_AWARE_FIT_PADDING, duration: 800, maxZoom: 1.35 });
       }, 100);
     },
     [layout, fitView]
@@ -386,11 +457,11 @@ const FamilyCanvasInternal: React.FC = () => {
       setActivePathResult(result);
       setActivePathSummary(`${result.from_person.full_name} is ${result.relationship} to ${result.to_person.full_name}`);
 
-      // Smoothly fit view to path nodes
+      // Smoothly fit view to path nodes (Requirement 1: Header-aware boundary and padding)
       if (pathData.nodeIds.size > 0) {
         setTimeout(() => {
           const nodesToFit = Array.from(pathData.nodeIds).map((id) => ({ id }));
-          fitView({ nodes: nodesToFit, padding: 0.12, duration: 800, maxZoom: 1.35 });
+          fitView({ nodes: nodesToFit, padding: HEADER_AWARE_FIT_PADDING, duration: 800, maxZoom: 1.35 });
         }, 100);
       }
     },
@@ -532,6 +603,8 @@ const FamilyCanvasInternal: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onMove={handleCanvasMove}
+        onMoveEnd={handleCanvasMoveEnd}
+        defaultViewport={initialSavedViewport || undefined}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={handleNodeClick}

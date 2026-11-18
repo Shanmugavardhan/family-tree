@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { useTheme } from '../../context/ThemeContext';
+import { HEADER_AWARE_FIT_PADDING } from './canvasConstants';
 
 interface CanvasControlsProps {
   nodes: PositionedNode[];
@@ -346,7 +347,12 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             onClick={() => {
               onZoomActivity?.();
               const personNodeRefs = nodes.map((n) => ({ id: n.id }));
-              fitView({ nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined, padding: 0.1, duration: 600, maxZoom: 1.35 });
+              fitView({
+                nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined,
+                padding: HEADER_AWARE_FIT_PADDING,
+                duration: 600,
+                maxZoom: 1.35,
+              });
             }}
             title="Fit to View"
             style={{
