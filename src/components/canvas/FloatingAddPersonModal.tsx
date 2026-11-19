@@ -21,7 +21,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   // Form Field States
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
-  const [lastName, setLastName] = useState('Konukuru');
+  const [lastName, setLastName] = useState('');
   const [alias, setAlias] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [isLiving, setIsLiving] = useState<boolean>(true);
@@ -56,7 +56,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
     setFirstName('');
     setMiddleName('');
-    setLastName('Konukuru');
+    setLastName('');
     setAlias('');
     setGender('male');
     setIsLiving(true);
@@ -89,7 +89,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     return (
       firstName.trim() !== '' ||
       middleName.trim() !== '' ||
-      lastName.trim() !== 'Konukuru' ||
+      lastName.trim() !== '' ||
       alias.trim() !== '' ||
       gender !== 'male' ||
       !isLiving ||
@@ -379,7 +379,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="e.g. Ramesh"
+                    placeholder="e.g. Arthur"
                     required
                   />
                   {clientErrors.first_name && (
@@ -396,7 +396,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
-                    placeholder="e.g. Kumar"
+                    placeholder="e.g. James"
                   />
                 </div>
 
@@ -409,7 +409,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="e.g. Konukuru"
+                    placeholder="e.g. Miller"
                   />
                 </div>
               </div>
@@ -424,7 +424,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={alias}
                     onChange={(e) => setAlias(e.target.value)}
-                    placeholder="e.g. Chitti"
+                    placeholder="e.g. Artie"
                   />
                 </div>
 
@@ -504,7 +504,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
-                    placeholder="YYYY or YYYY-MM-DD (e.g. 1947)"
+                    placeholder="YYYY or YYYY-MM-DD (e.g. 1965)"
                   />
                 </div>
 
@@ -517,7 +517,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     className="form-input"
                     value={birthPlace}
                     onChange={(e) => setBirthPlace(e.target.value)}
-                    placeholder="e.g. Gangupalli, Tirupati"
+                    placeholder="e.g. Greenfield, Bristol"
                   />
                 </div>
               </div>
@@ -534,7 +534,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                       className="form-input"
                       value={deathDate}
                       onChange={(e) => setDeathDate(e.target.value)}
-                      placeholder="YYYY or YYYY-MM-DD (e.g. 2022)"
+                      placeholder="YYYY or YYYY-MM-DD (e.g. 2018)"
                     />
                     {clientErrors.death_date && (
                       <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.death_date}</p>
@@ -550,7 +550,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                       className="form-input"
                       value={deathPlace}
                       onChange={(e) => setDeathPlace(e.target.value)}
-                      placeholder="e.g. Tirupati"
+                      placeholder="e.g. Riverdale"
                     />
                   </div>
                 </div>

@@ -134,7 +134,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="e.g. Shanmuga"
+              placeholder="e.g. Arthur"
               required
             />
             {clientErrors.first_name && <p className="form-error">{clientErrors.first_name}</p>}
@@ -147,7 +147,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={middleName}
               onChange={(e) => setMiddleName(e.target.value)}
-              placeholder="e.g. Vardhan"
+              placeholder="e.g. James"
             />
           </div>
 
@@ -158,7 +158,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="e.g. Konukuru"
+              placeholder="e.g. Miller"
             />
           </div>
         </div>
@@ -171,7 +171,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
-              placeholder="e.g. Chitti priya"
+              placeholder="e.g. Artie"
             />
           </div>
 
@@ -225,7 +225,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              placeholder="YYYY or YYYY-MM-DD (e.g. 1947)"
+              placeholder="YYYY or YYYY-MM-DD (e.g. 1965)"
             />
           </div>
 
@@ -236,7 +236,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
-              placeholder="e.g. Madanapalli, Tirupati"
+              placeholder="e.g. Greenfield, Bristol"
             />
           </div>
         </div>
@@ -250,7 +250,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
                 className="form-input"
                 value={deathDate}
                 onChange={(e) => setDeathDate(e.target.value)}
-                placeholder="YYYY or YYYY-MM-DD (e.g. 2022)"
+                placeholder="YYYY or YYYY-MM-DD (e.g. 2018)"
               />
               {clientErrors.death_date && <p className="form-error">{clientErrors.death_date}</p>}
             </div>
@@ -262,7 +262,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
                 className="form-input"
                 value={deathPlace}
                 onChange={(e) => setDeathPlace(e.target.value)}
-                placeholder="e.g. Tirupati"
+                placeholder="e.g. Riverdale"
               />
             </div>
           </div>
