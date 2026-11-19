@@ -134,7 +134,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="e.g. Arthur"
+              placeholder="e.g. Vikram"
               required
             />
             {clientErrors.first_name && <p className="form-error">{clientErrors.first_name}</p>}
@@ -147,7 +147,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={middleName}
               onChange={(e) => setMiddleName(e.target.value)}
-              placeholder="e.g. James"
+              placeholder="e.g. Prasad"
             />
           </div>
 
@@ -158,7 +158,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="e.g. Miller"
+              placeholder="e.g. Sharma"
             />
           </div>
         </div>
@@ -171,7 +171,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
-              placeholder="e.g. Artie"
+              placeholder="e.g. Raju"
             />
           </div>
 
@@ -236,7 +236,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               className="form-input"
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
-              placeholder="e.g. Greenfield, Bristol"
+              placeholder="e.g. Bengaluru"
             />
           </div>
         </div>
@@ -262,7 +262,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
                 className="form-input"
                 value={deathPlace}
                 onChange={(e) => setDeathPlace(e.target.value)}
-                placeholder="e.g. Riverdale"
+                placeholder="e.g. Hyderabad"
               />
             </div>
           </div>

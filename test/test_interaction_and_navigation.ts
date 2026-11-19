@@ -400,10 +400,10 @@ export async function runInteractionAndNavigationTests(): Promise<{ passed: numb
     const persons = Array.isArray(personsData) ? personsData : personsData.persons;
     const relationships = Array.isArray(relationshipsData) ? relationshipsData : relationshipsData.relationships;
 
-    assert(Array.isArray(persons) && persons.length === 16, `Original 16 persons preserved (actual: ${persons?.length})`);
+    assert(Array.isArray(persons) && persons.length === 17, `Original 17 persons preserved (actual: ${persons?.length})`);
     assert(
-      Array.isArray(relationships) && relationships.length === 24,
-      `Original 24 relationships preserved (actual: ${relationships?.length})`
+      Array.isArray(relationships) && relationships.length === 26,
+      `Original 26 relationships preserved (actual: ${relationships?.length})`
     );
   }
 

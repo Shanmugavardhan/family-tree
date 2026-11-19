@@ -170,18 +170,18 @@ async function runAll() {
   });
 
   // Section 5: Canonical DB Immutability
-  await it('Canonical persons.json database has exactly 16 persons (14 Konukuru + 2 Paradarami parents)', () => {
+  await it('Canonical persons.json database has exactly 17 persons (14 Konukuru + 2 Paradarami parents + 1 Rada Galeti)', () => {
     const personsPath = path.join(projectRoot, 'data', 'persons.json');
     const data = JSON.parse(fs.readFileSync(personsPath, 'utf8'));
     const list = Array.isArray(data) ? data : data.persons;
-    assert.strictEqual(list.length, 16);
+    assert.strictEqual(list.length, 17);
   });
 
-  await it('Canonical relationships.json database has exactly 24 relationships', () => {
+  await it('Canonical relationships.json database has exactly 26 relationships', () => {
     const relPath = path.join(projectRoot, 'data', 'relationships.json');
     const data = JSON.parse(fs.readFileSync(relPath, 'utf8'));
     const list = Array.isArray(data) ? data : data.relationships;
-    assert.strictEqual(list.length, 24);
+    assert.strictEqual(list.length, 26);
   });
 
   // Section 6: Main House Partitioning & Surnamed External Lineage Hiding

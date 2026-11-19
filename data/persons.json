@@ -303,6 +303,25 @@
       "created_at": "2026-11-19T05:21:06.101Z",
       "updated_at": "2026-11-19T05:21:39.738Z",
       "archived_at": null
+    },
+    {
+      "id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+      "first_name": "Rada",
+      "middle_name": null,
+      "last_name": "Galeti",
+      "alias": null,
+      "gender": "female",
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": "Rayalapeta",
+      "death_place": null,
+      "profile_photo": null,
+      "biography": "",
+      "is_living": true,
+      "is_archived": false,
+      "created_at": "2026-11-19T06:27:04.125Z",
+      "updated_at": "2026-11-19T06:27:04.125Z",
+      "archived_at": null
     }
   ]
 }

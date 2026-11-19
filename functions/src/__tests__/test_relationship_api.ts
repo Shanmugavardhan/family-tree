@@ -57,7 +57,7 @@ async function runRelationshipTests() {
     assert(res1.status === 200, 'GET /api/relationships returns 200');
     const data1 = await res1.json();
     assert(data1.success === true, 'Response has success: true');
-    assert(Array.isArray(data1.data) && data1.data.length === 24, `Expected 24 relationships, got ${data1.data.length}`);
+    assert(Array.isArray(data1.data) && data1.data.length === 26, `Expected 26 relationships, got ${data1.data.length}`);
 
     // --- Test 2: GET /api/relationships?personId=... (Filter by person) ---
     const murthyId = '867842c1-b8a2-45ad-8d9c-89150e68eb16';
@@ -311,8 +311,8 @@ async function runRelationshipTests() {
     // --- Test 19: Original production data verification ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 16, `Original database has exactly 16 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 24, `Original database has exactly 24 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 17, `Original database has exactly 17 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 26, `Original database has exactly 26 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.5 Relationship API tests PASSED!`);
   } finally {
