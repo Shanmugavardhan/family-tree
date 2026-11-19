@@ -96,8 +96,8 @@ export const PersonProfilePage: React.FC = () => {
         <p style={{ color: 'var(--color-slate-500)', marginBottom: 20 }}>
           {error || 'The requested person record was not found.'}
         </p>
-        <Link to="/people" className="btn btn-secondary">
-          Return to Family Directory
+        <Link to="/" className="btn btn-secondary">
+          Return to Family Tree
         </Link>
       </div>
     );
@@ -112,7 +112,7 @@ export const PersonProfilePage: React.FC = () => {
       {/* Back button */}
       <div style={{ marginBottom: 16 }}>
         <Link
-          to="/people"
+          to="/"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -123,7 +123,7 @@ export const PersonProfilePage: React.FC = () => {
           }}
         >
           <ArrowLeft size={16} />
-          <span>Back to Directory</span>
+          <span>Back to Family Tree</span>
         </Link>
       </div>
 

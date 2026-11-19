@@ -4,7 +4,7 @@ import { Header } from './Header';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
-  const isCanvasPage = location.pathname === '/tree';
+  const isCanvasPage = location.pathname === '/' || location.pathname === '/tree';
 
   return (
     <div className={`app-container ${isCanvasPage ? 'canvas-layout' : ''}`}>

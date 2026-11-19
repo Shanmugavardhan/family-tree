@@ -48,8 +48,8 @@ export const EditPersonPage: React.FC = () => {
         <p style={{ color: 'var(--color-slate-500)', marginBottom: 20 }}>
           {loadError || 'The requested person could not be found.'}
         </p>
-        <Link to="/people" className="btn btn-secondary">
-          Return to Directory
+        <Link to="/" className="btn btn-secondary">
+          Return to Family Tree
         </Link>
       </div>
     );

@@ -290,7 +290,7 @@ const FamilyCanvasInternal: React.FC = () => {
     if (!layout || !isInitialLoadRef.current) return;
     isInitialLoadRef.current = false;
 
-    const urlPersonId = searchParams.get('personId');
+    const urlPersonId = searchParams.get('personId') || searchParams.get('select');
     const urlFromId = searchParams.get('fromId');
     const urlToId = searchParams.get('toId');
 

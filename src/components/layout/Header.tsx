@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
     setIsMobileMenuOpen(false);
     setSearchQuery('');
     setSearchResults([]);
-    navigate(`/tree?select=${p.id}`);
+    navigate(`/?personId=${p.id}`);
   };
 
   return (
