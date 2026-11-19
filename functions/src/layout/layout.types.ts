@@ -22,6 +22,8 @@ export interface PositionedNode {
   isLiving?: boolean;
   isArchived?: boolean;
   isInferredGeneration?: boolean;
+  hasExternalLineage?: boolean;
+  externalLineage?: any;
 }
 
 export interface PositionedEdge {

@@ -322,8 +322,8 @@ async function runPhotoTests() {
     // --- Test 16: Original Database Integrity Check ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 14, `Original database has exactly 14 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 21, `Original database has exactly 21 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 16, `Original database has exactly 16 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 24, `Original database has exactly 24 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.7 Photo Management tests PASSED!`);
   } finally {

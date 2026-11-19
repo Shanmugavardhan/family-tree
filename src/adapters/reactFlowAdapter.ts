@@ -17,6 +17,8 @@ export interface PersonNodeData extends Record<string, unknown> {
   isLiving: boolean;
   isArchived: boolean;
   isInferredGeneration?: boolean;
+  hasExternalLineage?: boolean;
+  externalLineage?: any;
   isSelected?: boolean;
   isHighlighted?: boolean;
   isPathNode?: boolean;
@@ -146,6 +148,8 @@ export function convertLayoutToReactFlow(
         isLiving: n.isLiving ?? true,
         isArchived: n.isArchived ?? false,
         isInferredGeneration: (n as any).isInferredGeneration ?? false,
+        hasExternalLineage: n.hasExternalLineage ?? false,
+        externalLineage: n.externalLineage ?? null,
         isSelected,
         isHighlighted,
         isPathNode,

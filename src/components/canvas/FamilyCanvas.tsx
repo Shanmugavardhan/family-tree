@@ -372,13 +372,16 @@ const FamilyCanvasInternal: React.FC = () => {
     const finalEdges: Edge<any>[] = [...flowData.edges];
 
     // Requirement 1: View lineage directly on the map (no separate window), showing ONLY father and mother
-    if (expandedLineagePersonId && LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId]) {
-      const lineageInfo = LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId];
+    if (expandedLineagePersonId) {
       const targetPersonNode = finalNodes.find(
         (n) => n.id === expandedLineagePersonId || n.data?.personId === expandedLineagePersonId
       );
 
-      if (targetPersonNode) {
+      const lineageInfo =
+        (targetPersonNode?.data as any)?.externalLineage ||
+        LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId];
+
+      if (targetPersonNode && lineageInfo && lineageInfo.father && lineageInfo.mother) {
         const baseX = targetPersonNode.position.x;
         const baseY = targetPersonNode.position.y;
         // Parents in preceding generation lane above target

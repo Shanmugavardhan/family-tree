@@ -429,6 +429,8 @@ export class LayoutService {
             isLiving: n.isLiving,
             isArchived: n.isArchived,
             isInferredGeneration: (n as any).isInferredGeneration ?? false,
+            hasExternalLineage: n.hasExternalLineage ?? false,
+            externalLineage: n.externalLineage ?? null,
           };
 
           positionedNodes.push(pNode);

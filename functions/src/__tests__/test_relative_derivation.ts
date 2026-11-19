@@ -77,11 +77,15 @@ async function runRelativeDerivationTests() {
     );
 
     // Grandparents
-    assert(rels.grandparents.length === 2, `Expected 2 grandparents for Shanmuga, got ${rels.grandparents.length}`);
+    assert(rels.grandparents.length === 4, `Expected 4 grandparents for Shanmuga, got ${rels.grandparents.length}`);
     const pGrandfather = rels.grandparents.find((p: any) => p.relationship === 'Paternal Grandfather');
     const pGrandmother = rels.grandparents.find((p: any) => p.relationship === 'Paternal Grandmother');
+    const mGrandfather = rels.grandparents.find((p: any) => p.relationship === 'Maternal Grandfather');
+    const mGrandmother = rels.grandparents.find((p: any) => p.relationship === 'Maternal Grandmother');
     assert(pGrandfather && pGrandfather.full_name === 'Murthy Chetty Konukuru', 'Paternal Grandfather derived as Murthy Chetty');
     assert(pGrandmother && pGrandmother.full_name === 'Sarojamma Konukuru', 'Paternal Grandmother derived as Sarojamma');
+    assert(mGrandfather && mGrandfather.full_name.includes('Ramayya'), 'Maternal Grandfather derived as Ramayya Chetty');
+    assert(mGrandmother && mGrandmother.full_name.includes('Achamma'), 'Maternal Grandmother derived as Achamma');
 
     // Uncles & Aunts (Jagannadham's siblings)
     // Chandra Babu (male -> Paternal Uncle), Giri Babu (male -> Paternal Uncle), Chandrakala (female -> Paternal Aunt)
@@ -474,8 +478,8 @@ async function runRelativeDerivationTests() {
     // --- Test 14: Original production database integrity check ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 14, `Original database has exactly 14 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 21, `Original database has exactly 21 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 16, `Original database has exactly 16 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 24, `Original database has exactly 24 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.6 Relative Derivation tests PASSED!`);
   } finally {

@@ -85,7 +85,7 @@ async function runFrontendIntegrationTests() {
     const listRes = await fetch(`${baseUrl}/persons`);
     const listData = await listRes.json();
     assert(listRes.status === 200, 'GET /api/persons returns 200');
-    assert(listData.data.length === 14, `Expected all 14 canonical members, got ${listData.data.length}`);
+    assert(listData.data.length === 16, `Expected all 16 canonical members, got ${listData.data.length}`);
 
     // --- Test 3: Search by name ---
     const searchRes = await fetch(`${baseUrl}/persons?search=Shanmuga`);
@@ -126,7 +126,7 @@ async function runFrontendIntegrationTests() {
     // --- Test 6: Verify new person appears in list ---
     const updatedListRes = await fetch(`${baseUrl}/persons`);
     const updatedListData = await updatedListRes.json();
-    assert(updatedListData.data.length === 15, 'Updated directory now contains 15 members');
+    assert(updatedListData.data.length === 17, 'Updated directory now contains 17 members');
 
     // --- Test 7: Verify parent relationships were created atomically ---
     const relsRes = await fetch(`${baseUrl}/relationships?personId=${newPersonId}`);
@@ -197,11 +197,11 @@ async function runFrontendIntegrationTests() {
 
     // Default list excludes archived
     const listWithoutArchived = await (await fetch(`${baseUrl}/persons`)).json();
-    assert(listWithoutArchived.data.length === 14, 'Archived person is excluded from default list');
+    assert(listWithoutArchived.data.length === 16, 'Archived person is excluded from default list');
 
     // includeArchived=true includes them
     const listWithArchived = await (await fetch(`${baseUrl}/persons?includeArchived=true`)).json();
-    assert(listWithArchived.data.length === 15, 'Archived person is included when includeArchived=true');
+    assert(listWithArchived.data.length === 17, 'Archived person is included when includeArchived=true');
 
     // Restore person
     const restoreRes = await fetch(`${baseUrl}/persons/${newPersonId}/restore`, { method: 'POST' });
@@ -212,7 +212,7 @@ async function runFrontendIntegrationTests() {
     const relativesData = await relativesRes.json();
     assert(relativesRes.status === 200, 'GET /api/persons/:id/relatives returns 200');
     assert(relativesData.data.relatives.parents.length === 2, 'Parents list contains Father and Mother');
-    assert(relativesData.data.relatives.grandparents.length === 2, 'Grandparents list contains Murthy Chetty and Sarojamma');
+    assert(relativesData.data.relatives.grandparents.length === 4, 'Grandparents list contains paternal and maternal grandparents');
 
     // --- Test 13: Perspective-dependent relationship calculation ---
     // Relationship between Aditya and Shanmuga (Full brothers: share Jagannadham and Suguna)
@@ -226,8 +226,8 @@ async function runFrontendIntegrationTests() {
     // --- Test 14: Canonical database integrity ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 14, `Original database has exactly 14 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 21, `Original database has exactly 21 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 16, `Original database has exactly 16 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 24, `Original database has exactly 24 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.8 Frontend Integration tests PASSED!`);
   } finally {

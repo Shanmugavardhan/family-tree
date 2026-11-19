@@ -36,6 +36,7 @@ export interface CreatePersonInput {
   father_id?: string | null;
   mother_id?: string | null;
   spouse_id?: string | null;
+  child_id?: string | null;
 }
 
 export type UpdatePersonInput = Partial<Omit<Person, 'id' | 'created_at' | 'updated_at' | 'is_archived' | 'archived_at'>>;

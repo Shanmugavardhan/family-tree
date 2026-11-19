@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, X, Save, AlertCircle, AlertTriangle, UserCheck } from 'lucide-react';
+import { ArrowLeft, X, Save, AlertCircle, AlertTriangle, UserCheck, Plus, Trash2, Users } from 'lucide-react';
 import { Person, Gender, UpdatePersonInput } from '../../types/person';
 import { personApi } from '../../services/personApi';
+import { relationshipApi } from '../../services/relationshipApi';
+import { Relationship } from '../../types/relationship';
 import { useTheme } from '../../context/ThemeContext';
 import { normalizeDateInput } from '../../utils/dateUtils';
 
@@ -37,6 +39,16 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
 
+  // Family Relationships State
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [allPersons, setAllPersons] = useState<Person[]>([]);
+  const [loadingRels, setLoadingRels] = useState(false);
+  const [relActionError, setRelActionError] = useState<string | null>(null);
+  const [isAddingRelation, setIsAddingRelation] = useState(false);
+  const [newRelType, setNewRelType] = useState<'parent' | 'spouse' | 'child'>('parent');
+  const [newRelTargetId, setNewRelTargetId] = useState<string>('');
+  const [savingRelation, setSavingRelation] = useState(false);
+
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -45,6 +57,88 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const loadRelationships = async (id: string) => {
+    setLoadingRels(true);
+    setRelActionError(null);
+    try {
+      const [relRes, personRes] = await Promise.all([
+        relationshipApi.getAll({ personId: id }),
+        personApi.getAll({ includeArchived: false }),
+      ]);
+      if (relRes.success && relRes.data) {
+        setRelationships(relRes.data);
+      }
+      if (personRes.success && personRes.data) {
+        setAllPersons(personRes.data);
+      }
+    } catch (err: any) {
+      setRelActionError(err.message || 'Failed to load relationships');
+    } finally {
+      setLoadingRels(false);
+    }
+  };
+
+  const handleAddRelation = async () => {
+    if (!personId || !newRelTargetId) {
+      setRelActionError('Please select a family member to connect.');
+      return;
+    }
+    setSavingRelation(true);
+    setRelActionError(null);
+    try {
+      let payload: any;
+      if (newRelType === 'parent') {
+        payload = {
+          person_id: personId,
+          related_person_id: newRelTargetId,
+          relationship_type: 'parent',
+        };
+      } else if (newRelType === 'child') {
+        payload = {
+          person_id: newRelTargetId,
+          related_person_id: personId,
+          relationship_type: 'parent',
+        };
+      } else {
+        payload = {
+          person_id: personId,
+          related_person_id: newRelTargetId,
+          relationship_type: 'spouse',
+        };
+      }
+
+      const res = await relationshipApi.create(payload);
+      if (res.success) {
+        setIsAddingRelation(false);
+        setNewRelTargetId('');
+        await loadRelationships(personId);
+        if (person) onSaveSuccess(person);
+      } else {
+        setRelActionError(res.error?.message || 'Failed to add relationship.');
+      }
+    } catch (err: any) {
+      setRelActionError(err.message || 'Error adding relationship.');
+    } finally {
+      setSavingRelation(false);
+    }
+  };
+
+  const handleDeleteRelation = async (relId: string) => {
+    if (!confirm('Are you sure you want to remove this family relationship?')) return;
+    setRelActionError(null);
+    try {
+      const res = await relationshipApi.delete(relId);
+      if (res.success) {
+        if (personId) await loadRelationships(personId);
+        if (person) onSaveSuccess(person);
+      } else {
+        setRelActionError(res.error?.message || 'Failed to delete relationship.');
+      }
+    } catch (err: any) {
+      setRelActionError(err.message || 'Error deleting relationship.');
+    }
+  };
 
   // Fetch person details when opened
   useEffect(() => {
@@ -61,6 +155,9 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     setSaveError(null);
     setClientErrors({});
     setShowUnsavedPrompt(false);
+    setIsAddingRelation(false);
+    setNewRelTargetId('');
+    loadRelationships(personId);
 
     personApi
       .getById(personId)
@@ -647,6 +744,275 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     placeholder="Education, profession, personal history, or notable family memories..."
                   />
                 </div>
+              </div>
+
+              {/* Family Relationships & Add Relation */}
+              <div
+                style={{
+                  backgroundColor: isDark ? '#1D2633' : '#f8fafc',
+                  border: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
+                  borderRadius: 12,
+                  padding: 18,
+                  marginTop: 18,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 14,
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 650,
+                      letterSpacing: '0.01em',
+                      textTransform: 'uppercase',
+                      color: isDark ? '#D6B15C' : '#92400e',
+                      margin: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Users size={16} />
+                    Family Relationships
+                  </h3>
+
+                  {!isAddingRelation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingRelation(true);
+                        setRelActionError(null);
+                        setNewRelTargetId('');
+                      }}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        backgroundColor: 'rgba(214, 177, 92, 0.12)',
+                        color: '#D6B15C',
+                        border: '1px solid rgba(214, 177, 92, 0.35)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        cursor: 'pointer',
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Plus size={14} />
+                      <span>Add Relation</span>
+                    </button>
+                  )}
+                </div>
+
+                {relActionError && (
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid #ef4444',
+                      borderRadius: 6,
+                      color: '#f87171',
+                      fontSize: '12px',
+                      marginBottom: 12,
+                    }}
+                  >
+                    {relActionError}
+                  </div>
+                )}
+
+                {/* Sub-form: Add Relation */}
+                {isAddingRelation && (
+                  <div
+                    style={{
+                      padding: 14,
+                      backgroundColor: isDark ? '#151922' : '#ffffff',
+                      border: '1px solid #D6B15C',
+                      borderRadius: 8,
+                      marginBottom: 14,
+                    }}
+                  >
+                    <div style={{ fontSize: '13px', fontWeight: 650, marginBottom: 10, color: '#D6B15C' }}>
+                      Connect New Relationship
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, marginBottom: 4 }}>
+                          Relationship Type
+                        </label>
+                        <select
+                          className="form-select"
+                          value={newRelType}
+                          onChange={(e) => {
+                            setNewRelType(e.target.value as any);
+                            setNewRelTargetId('');
+                          }}
+                          style={{ fontSize: '13px', padding: '6px 10px' }}
+                        >
+                          <option value="parent">Parent (Father / Mother)</option>
+                          <option value="spouse">Spouse</option>
+                          <option value="child">Child (Son / Daughter)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, marginBottom: 4 }}>
+                          Select Member
+                        </label>
+                        <select
+                          className="form-select"
+                          value={newRelTargetId}
+                          onChange={(e) => setNewRelTargetId(e.target.value)}
+                          style={{ fontSize: '13px', padding: '6px 10px' }}
+                        >
+                          <option value="">-- Choose Member --</option>
+                          {allPersons
+                            .filter((p) => p.id !== personId)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')} {p.alias ? `(${p.alias})` : ''}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingRelation(false);
+                          setRelActionError(null);
+                        }}
+                        className="btn btn-secondary"
+                        disabled={savingRelation}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddRelation}
+                        disabled={savingRelation || !newRelTargetId}
+                        className="btn btn-primary"
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '12px',
+                          backgroundColor: '#D6B15C',
+                          color: '#101318',
+                          borderColor: '#D6B15C',
+                          fontWeight: 650,
+                        }}
+                      >
+                        {savingRelation ? 'Connecting...' : 'Save Relation'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Existing Relationships List */}
+                {loadingRels ? (
+                  <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', fontStyle: 'italic', padding: 8 }}>
+                    Loading family connections...
+                  </div>
+                ) : relationships.length === 0 ? (
+                  <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', fontStyle: 'italic', padding: '6px 0' }}>
+                    No family relationships linked yet. Click "+ Add Relation" above to connect parents, spouse, or children.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {relationships.map((rel) => {
+                      let roleLabel = 'Relative';
+                      let targetPersonId = '';
+                      if (rel.relationship_type === 'parent') {
+                        if (rel.person_id === personId) {
+                          targetPersonId = rel.related_person_id;
+                          const target = allPersons.find((p) => p.id === targetPersonId);
+                          roleLabel = target?.gender === 'female' ? 'Mother' : target?.gender === 'male' ? 'Father' : 'Parent';
+                        } else {
+                          targetPersonId = rel.person_id;
+                          const target = allPersons.find((p) => p.id === targetPersonId);
+                          roleLabel = target?.gender === 'female' ? 'Daughter' : target?.gender === 'male' ? 'Son' : 'Child';
+                        }
+                      } else {
+                        targetPersonId = rel.person_id === personId ? rel.related_person_id : rel.person_id;
+                        roleLabel = 'Spouse';
+                      }
+
+                      const targetPerson = allPersons.find((p) => p.id === targetPersonId);
+                      const targetName = targetPerson
+                        ? [targetPerson.first_name, targetPerson.middle_name, targetPerson.last_name].filter(Boolean).join(' ')
+                        : 'Unknown Member';
+
+                      return (
+                        <div
+                          key={rel.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            backgroundColor: isDark ? '#151922' : '#ffffff',
+                            border: `1px solid ${isDark ? '#2D3748' : '#e2e8f0'}`,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                padding: '3px 8px',
+                                borderRadius: 4,
+                                backgroundColor:
+                                  roleLabel === 'Father' || roleLabel === 'Mother' || roleLabel === 'Parent'
+                                    ? 'rgba(59, 130, 246, 0.15)'
+                                    : roleLabel === 'Spouse'
+                                    ? 'rgba(236, 72, 153, 0.15)'
+                                    : 'rgba(34, 197, 94, 0.15)',
+                                color:
+                                  roleLabel === 'Father' || roleLabel === 'Mother' || roleLabel === 'Parent'
+                                    ? '#60a5fa'
+                                    : roleLabel === 'Spouse'
+                                    ? '#f472b6'
+                                    : '#4ade80',
+                              }}
+                            >
+                              {roleLabel}
+                            </span>
+                            <span style={{ fontSize: '13.5px', fontWeight: 600, color: isDark ? '#f1f5f9' : '#0f172a' }}>
+                              {targetName}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRelation(rel.id)}
+                            title="Remove relation"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              borderRadius: 4,
+                            }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </form>
           )}

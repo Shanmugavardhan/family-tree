@@ -194,14 +194,15 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
-  // Mom's identifier (Suguna Konukuru / Paradarami)
-  const isMom =
-    nodeData.personId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
-    nodeId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
-    (nodeData.firstName === 'Suguna' && (nodeData.lastName === 'Konukuru' || nodeData.lastName === 'Paradarami'));
+  const hasLineageAvailable =
+    Boolean(nodeData.hasExternalLineage) ||
+    Boolean(nodeData.externalLineage) ||
+    Boolean(LINEAGE_PARENTS_BY_PERSON[nodeId]) ||
+    Boolean(nodeData.personId && LINEAGE_PARENTS_BY_PERSON[nodeData.personId]);
 
-  const hasLineageAvailable = isMom || Boolean(LINEAGE_PARENTS_BY_PERSON[nodeId]) || Boolean(nodeData.personId && LINEAGE_PARENTS_BY_PERSON[nodeData.personId]);
-  const isLineageExpanded = expandedLineagePersonId === nodeId || expandedLineagePersonId === nodeData.personId || (isMom && expandedLineagePersonId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b');
+  const isLineageExpanded =
+    expandedLineagePersonId === nodeId ||
+    expandedLineagePersonId === nodeData.personId;
 
   // Requirement 2: Proportional zoom sizing (1:1.5 size:zoom ratio)
   // At zoom=1.0 -> 1.0; at zoom=0.5 -> (1/0.5)^(1/1.5) = 2^(2/3) ≈ 1.587; at zoom=2.0 -> (1/2)^(2/3) ≈ 0.63
@@ -471,8 +472,8 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
               style={{
                 position: 'absolute',
                 top: 0,
-                right: isMom ? undefined : 0,
-                left: isMom ? 0 : undefined,
+                right: hasLineageAvailable ? undefined : 0,
+                left: hasLineageAvailable ? 0 : undefined,
                 width: 28,
                 height: 28,
                 borderRadius: '50%',

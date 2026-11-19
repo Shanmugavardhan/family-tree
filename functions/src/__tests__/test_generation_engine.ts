@@ -230,8 +230,8 @@ async function runGenerationEngineTests() {
   const rootDataDir = path.resolve(__dirname, '../../../data');
   const personsRaw = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
   const relsRaw = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-  assert(personsRaw.length === 14, `Canonical database has exactly 14 persons (verified: ${personsRaw.length})`);
-  assert(relsRaw.length === 21, `Canonical database has exactly 21 relationships (verified: ${relsRaw.length})`);
+  assert(personsRaw.length === 16, `Canonical database has exactly 16 persons (verified: ${personsRaw.length})`);
+  assert(relsRaw.length === 24, `Canonical database has exactly 24 relationships (verified: ${relsRaw.length})`);
 
   console.log(`\n🎉 All ${passed}/${total} Milestone 3.1 Chronological Generation Engine tests PASSED!`);
 }

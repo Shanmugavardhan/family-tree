@@ -31,11 +31,12 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
 
-  // Parent / Spouse Linking States
+  // Parent / Spouse / Child Linking States
   const [existingPersons, setExistingPersons] = useState<Person[]>([]);
   const [fatherId, setFatherId] = useState<string>('');
   const [motherId, setMotherId] = useState<string>('');
   const [spouseId, setSpouseId] = useState<string>('');
+  const [childId, setChildId] = useState<string>('');
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -67,6 +68,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setFatherId('');
     setMotherId('');
     setSpouseId('');
+    setChildId('');
     setClientErrors({});
     setSaveError(null);
     setShowUnsavedPrompt(false);
@@ -98,7 +100,8 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       biography.trim() !== '' ||
       fatherId !== '' ||
       motherId !== '' ||
-      spouseId !== ''
+      spouseId !== '' ||
+      childId !== ''
     );
   }, [
     isOpen,
@@ -116,6 +119,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     fatherId,
     motherId,
     spouseId,
+    childId,
   ]);
 
   // Request close: prompt if dirty, else close immediately
@@ -175,6 +179,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       father_id: fatherId || null,
       mother_id: motherId || null,
       spouse_id: spouseId || null,
+      child_id: childId || null,
     };
 
     try {
@@ -631,6 +636,26 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                         {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
+                    Son / Daughter
+                  </label>
+                  <select
+                    className="form-select"
+                    value={childId}
+                    onChange={(e) => setChildId(e.target.value)}
+                  >
+                    <option value="">-- None --</option>
+                    {existingPersons
+                      .filter((p) => p.id !== fatherId && p.id !== motherId && p.id !== spouseId)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
+                        </option>
+                      ))}
                   </select>
                 </div>
               </div>

@@ -17,6 +17,8 @@ export interface FamilyGraphNode {
   gender?: string;
   isLiving: boolean;
   isArchived: boolean;
+  hasExternalLineage?: boolean;
+  externalLineage?: any;
 }
 
 export type FamilyGraphEdgeType = 'parent_child' | 'spouse';

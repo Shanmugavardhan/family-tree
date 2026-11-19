@@ -80,6 +80,16 @@ export class PersonService {
       }
     }
 
+    if (data.child_id) {
+      const child = allPersons.find((p) => p.id === data.child_id);
+      if (!child) {
+        throw new NotFoundError('CHILD_NOT_FOUND', `Child with ID "${data.child_id}" was not found.`);
+      }
+      if (child.is_archived) {
+        throw new ValidationError('CANNOT_LINK_ARCHIVED_CHILD', 'Cannot connect to an archived child.');
+      }
+    }
+
     // 5. Construct new person
     const personId = randomUUID();
     const now = new Date().toISOString();
@@ -143,6 +153,20 @@ export class PersonService {
         related_person_id: data.spouse_id,
         relationship_type: 'spouse',
         parent_type: null,
+        start_date: null,
+        end_date: null,
+        notes: null,
+        created_at: now,
+      });
+    }
+
+    if (data.child_id) {
+      newRelationships.push({
+        id: randomUUID(),
+        person_id: data.child_id,
+        related_person_id: personId,
+        relationship_type: 'parent',
+        parent_type: 'biological',
         start_date: null,
         end_date: null,
         notes: null,

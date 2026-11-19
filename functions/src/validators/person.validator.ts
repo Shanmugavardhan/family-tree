@@ -78,6 +78,7 @@ export const CreatePersonSchema = z.object({
   father_id: z.string().uuid().nullable().optional().default(null),
   mother_id: z.string().uuid().nullable().optional().default(null),
   spouse_id: z.string().uuid().nullable().optional().default(null),
+  child_id: z.string().uuid().nullable().optional().default(null),
 }).superRefine((val, ctx) => {
   if (val.is_living && val.death_date) {
     ctx.addIssue({

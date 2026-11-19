@@ -35,6 +35,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
   const [fatherId, setFatherId] = useState<string | null>(null);
   const [motherId, setMotherId] = useState<string | null>(null);
   const [spouseId, setSpouseId] = useState<string | null>(null);
+  const [childId, setChildId] = useState<string | null>(null);
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
@@ -92,6 +93,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
         father_id: fatherId,
         mother_id: motherId,
         spouse_id: spouseId,
+        child_id: childId,
       };
       await onSubmit(createPayload);
     }
@@ -304,6 +306,11 @@ export const PersonForm: React.FC<PersonFormProps> = ({
               label="Spouse"
               selectedId={spouseId}
               onSelect={setSpouseId}
+            />
+            <RelationshipSelector
+              label="Son / Daughter"
+              selectedId={childId}
+              onSelect={setChildId}
             />
           </div>
         </div>
