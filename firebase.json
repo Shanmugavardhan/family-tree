@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "thefamilytree",
     "public": "dist",
     "ignore": [
       "firebase.json",

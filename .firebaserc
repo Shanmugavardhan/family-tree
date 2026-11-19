@@ -1,6 +1,15 @@
 {
   "projects": {
     "default": "family-tree-177f2"
+  },
+  "targets": {
+    "family-tree-177f2": {
+      "hosting": {
+        "thefamilytree": [
+          "thefamilytree"
+        ]
+      }
+    }
   }
 }
 

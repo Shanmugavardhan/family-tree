@@ -32,3 +32,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAMILY_TREE_177F2 }}'
           projectId: family-tree-177f2
+          target: thefamilytree
+

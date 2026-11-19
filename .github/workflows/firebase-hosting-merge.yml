@@ -35,3 +35,5 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAMILY_TREE_177F2 }}'
           channelId: live
           projectId: family-tree-177f2
+          target: thefamilytree
+
