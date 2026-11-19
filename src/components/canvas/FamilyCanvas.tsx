@@ -38,6 +38,10 @@ import { FloatingPersonEditModal } from './FloatingPersonEditModal';
 import { FloatingAddPersonModal } from './FloatingAddPersonModal';
 import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasConstants';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
+import { FirstTimeAccessModal } from '../lineage/FirstTimeAccessModal';
+import { ParallelLineageModal } from '../lineage/ParallelLineageModal';
+import { getParadaramiLayout } from '../../types/lineage';
 import { RefreshCw, AlertCircle, Pencil } from 'lucide-react';
 
 interface StoredViewport {
@@ -143,6 +147,7 @@ function findGraphPath(
 
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
+  const { activeLineageId, isFirstTimeLocked } = useLineage();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setCenter, fitView, setViewport } = useReactFlow();
 
@@ -258,6 +263,14 @@ const FamilyCanvasInternal: React.FC = () => {
     setLoading(true);
     setError(null);
 
+    // Dynamic lineage handling: Paradarami lineage layout vs Konukuru canonical layout
+    if (activeLineageId === 'paradarami') {
+      const paraLayout = getParadaramiLayout();
+      setLayout(paraLayout);
+      setLoading(false);
+      return;
+    }
+
     const res = await layoutApi.getLayout({
       includeArchived,
       compactLanes,
@@ -270,7 +283,7 @@ const FamilyCanvasInternal: React.FC = () => {
       setError(res.error?.message || 'Failed to load family tree layout');
     }
     setLoading(false);
-  }, [includeArchived, compactLanes]);
+  }, [activeLineageId, includeArchived, compactLanes]);
 
   React.useEffect(() => {
     fetchLayout();
@@ -570,8 +583,19 @@ const FamilyCanvasInternal: React.FC = () => {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', backgroundColor: isDark ? '#101318' : '#fcf9f2' }}>
-      {/* Sticky Noble Generation Labels (Requirement 4: Sticky on left, no box) */}
-      <StickyGenerationLabels lanes={layout?.lanes || []} />
+      {/* Blurred Viewport during first-time locked state (Requirement 5) */}
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          filter: isFirstTimeLocked ? 'blur(16px) brightness(0.65)' : 'none',
+          transition: 'filter 0.35s ease-out',
+          pointerEvents: isFirstTimeLocked ? 'none' : 'auto',
+        }}
+      >
+        {/* Sticky Noble Generation Labels (Requirement 4: Sticky on left, no box) */}
+        <StickyGenerationLabels lanes={layout?.lanes || []} />
 
       {/* Header Canvas Controls Portal (Requirements 5 & 8: Search & Actions in Header) */}
       <CanvasControls
@@ -749,6 +773,13 @@ const FamilyCanvasInternal: React.FC = () => {
           fetchLayout();
         }}
       />
+      </div>
+
+      {/* Requirement 5: First-Time Access Code Modal (Blurred background until family code entered) */}
+      <FirstTimeAccessModal />
+
+      {/* Requirement 2: Parallel Maternal Lineage Modal (Mom's lineage Paradarami) */}
+      <ParallelLineageModal />
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Handle, Position, useViewport, useUpdateNodeInternals } from '@xyflow/react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, User } from 'lucide-react';
+import { Pencil, User, Shield, Lock } from 'lucide-react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
 
 /**
  * Noble Lady / Princess Avatar (Game of Thrones Targaryen / Westeros Aesthetic)
@@ -178,6 +179,7 @@ const DefaultUserAvatar: React.FC = () => (
 
 export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const { isDark } = useTheme();
+  const { isFirstTimeLocked, openParadaramiParallel } = useLineage();
   const { zoom } = useViewport();
   const updateNodeInternals = useUpdateNodeInternals();
   const navigate = useNavigate();
@@ -190,6 +192,12 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isPathNode = nodeData.isPathNode;
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
+
+  // Mom's identifier (Suguna Konukuru / Paradarami)
+  const isMom =
+    nodeData.personId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
+    nodeId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
+    (nodeData.firstName === 'Suguna' && (nodeData.lastName === 'Konukuru' || nodeData.lastName === 'Paradarami'));
 
   // Requirement 2: Proportional zoom sizing (1:1.5 size:zoom ratio)
   // At zoom=1.0 -> 1.0; at zoom=0.5 -> (1/0.5)^(1/1.5) = 2^(2/3) ≈ 1.587; at zoom=2.0 -> (1/2)^(2/3) ≈ 0.63
@@ -354,7 +362,21 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
               flexShrink: 0,
             }}
           >
-            {nodeData.photoPath && !imageFailed ? (
+            {isFirstTimeLocked ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: '#161d28',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Lineage locked"
+              >
+                <Lock size={36} color="#D6B15C" />
+              </div>
+            ) : nodeData.photoPath && !imageFailed ? (
               <img
                 src={nodeData.photoPath}
                 alt={fullName}
@@ -375,119 +397,182 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
             )}
           </div>
 
-          {/* Requirement 2: Pencil button top right of the circle, visible ONLY on hover */}
-          <button
-            type="button"
-            title={`Edit details of ${fullName}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (typeof nodeData.onEdit === 'function') {
-                nodeData.onEdit(nodeData.personId);
-              } else {
-                navigate(`/people/${nodeData.personId}/edit`);
-              }
-            }}
-            onMouseEnter={() => setIsPencilHovered(true)}
-            onMouseLeave={() => setIsPencilHovered(false)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              backgroundColor: isPencilHovered ? '#fef08a' : '#D6B15C',
-              color: '#101318',
-              border: '2px solid #101318',
-              boxShadow: isPencilHovered
-                ? '0 0 12px rgba(214, 177, 92, 0.95), 0 3px 8px rgba(0, 0, 0, 0.7)'
-                : '0 2px 8px rgba(0, 0, 0, 0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              padding: 0,
-              zIndex: 10,
-              opacity: isHovered ? 1 : 0,
-              transform: isHovered
-                ? isPencilHovered
-                  ? 'scale(1.15)'
-                  : 'scale(1)'
-                : 'scale(0.6)',
-              pointerEvents: isHovered ? 'auto' : 'none',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          >
-            <Pencil size={13} strokeWidth={2.4} />
-          </button>
+          {/* Requirement 2: View Lineage button on top-right position of Mom's tile */}
+          {isMom && !isFirstTimeLocked && (
+            <button
+              type="button"
+              title="View Paradarami Lineage (Parallel Branch)"
+              onClick={(e) => {
+                e.stopPropagation();
+                openParadaramiParallel();
+              }}
+              style={{
+                position: 'absolute',
+                top: -8,
+                right: -24,
+                background: 'linear-gradient(135deg, #d4af37 0%, #997a15 100%)',
+                color: '#10141d',
+                border: '1.5px solid #fef08a',
+                borderRadius: 14,
+                padding: '3px 8px',
+                fontSize: '11px',
+                fontWeight: 750,
+                fontFamily: "'Inter', sans-serif",
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                cursor: 'pointer',
+                boxShadow: '0 3px 12px rgba(214, 177, 92, 0.65)',
+                zIndex: 25,
+                whiteSpace: 'nowrap',
+                transition: 'all 0.18s ease-in-out',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(214, 177, 92, 0.85)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 3px 12px rgba(214, 177, 92, 0.65)';
+              }}
+            >
+              <Shield size={12} strokeWidth={2.4} />
+              <span>View Lineage</span>
+            </button>
+          )}
+
+          {/* Requirement 2: Pencil button, visible ONLY on hover (hidden if first-time locked) */}
+          {!isFirstTimeLocked && (
+            <button
+              type="button"
+              title={`Edit details of ${fullName}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (typeof nodeData.onEdit === 'function') {
+                  nodeData.onEdit(nodeData.personId);
+                } else {
+                  navigate(`/people/${nodeData.personId}/edit`);
+                }
+              }}
+              onMouseEnter={() => setIsPencilHovered(true)}
+              onMouseLeave={() => setIsPencilHovered(false)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: isMom ? undefined : 0,
+                left: isMom ? 0 : undefined,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                backgroundColor: isPencilHovered ? '#fef08a' : '#D6B15C',
+                color: '#101318',
+                border: '2px solid #101318',
+                boxShadow: isPencilHovered
+                  ? '0 0 12px rgba(214, 177, 92, 0.95), 0 3px 8px rgba(0, 0, 0, 0.7)'
+                  : '0 2px 8px rgba(0, 0, 0, 0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0,
+                zIndex: 10,
+                opacity: isHovered ? 1 : 0,
+                transform: isHovered
+                  ? isPencilHovered
+                    ? 'scale(1.15)'
+                    : 'scale(1)'
+                  : 'scale(0.6)',
+                pointerEvents: isHovered ? 'auto' : 'none',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              <Pencil size={13} strokeWidth={2.4} />
+            </button>
+          )}
         </div>
 
         {/* Person Name centered below the circle: Given name on Line 1, Surname ALWAYS on Line 2 with center alignment (Requirement 1) */}
-        <div
-          style={{
-            marginTop: 2,
-            textAlign: 'center',
-            width: '100%',
-            maxWidth: 180,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            fontSize: '15.5px',
-            fontWeight: 650,
-            lineHeight: 1.25,
-            letterSpacing: '-0.01em',
-            color: isSelected
-              ? '#D6B15C'
-              : isPathNode
-              ? '#D6B15C'
-              : isHovered
-              ? '#fef08a'
-              : isDark
-              ? '#F1E9D7'
-              : '#1D2633',
-            textShadow: isDark
-              ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8)'
-              : '0 1px 3px rgba(255, 255, 255, 0.9)',
-            transition: 'color 0.15s ease-in-out',
-            wordBreak: 'break-word',
-          }}
-        >
-          {givenName && (
-            <span
-              style={{
-                display: 'block',
-                textAlign: 'center',
-                width: '100%',
-                lineHeight: 1.2,
-              }}
-            >
-              {givenName}
-            </span>
-          )}
-          {surname && (
-            <span
-              style={{
-                display: 'block',
-                textAlign: 'center',
-                width: '100%',
-                marginTop: givenName ? 1 : 0,
-                lineHeight: 1.2,
-              }}
-            >
-              {surname}
-            </span>
-          )}
-          {!givenName && !surname && (
-            <span style={{ display: 'block', textAlign: 'center', width: '100%' }}>
-              Unknown
-            </span>
-          )}
-        </div>
+        {isFirstTimeLocked ? (
+          <div
+            style={{
+              marginTop: 6,
+              textAlign: 'center',
+              width: '100%',
+              color: '#D6B15C',
+              letterSpacing: '0.15em',
+              fontSize: '14px',
+              fontWeight: 700,
+            }}
+          >
+            ••••••••••
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 2,
+              textAlign: 'center',
+              width: '100%',
+              maxWidth: 180,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              fontSize: '15.5px',
+              fontWeight: 650,
+              lineHeight: 1.25,
+              letterSpacing: '-0.01em',
+              color: isSelected
+                ? '#D6B15C'
+                : isPathNode
+                ? '#D6B15C'
+                : isHovered
+                ? '#fef08a'
+                : isDark
+                ? '#F1E9D7'
+                : '#1D2633',
+              textShadow: isDark
+                ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8)'
+                : '0 1px 3px rgba(255, 255, 255, 0.9)',
+              transition: 'color 0.15s ease-in-out',
+              wordBreak: 'break-word',
+            }}
+          >
+            {givenName && (
+              <span
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  width: '100%',
+                  lineHeight: 1.2,
+                }}
+              >
+                {givenName}
+              </span>
+            )}
+            {surname && (
+              <span
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  width: '100%',
+                  marginTop: givenName ? 1 : 0,
+                  lineHeight: 1.2,
+                }}
+              >
+                {surname}
+              </span>
+            )}
+            {!givenName && !surname && (
+              <span style={{ display: 'block', textAlign: 'center', width: '100%' }}>
+                Unknown
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Deceased status ONLY (Inter 400 italic, Silver Grey) */}
-        {!nodeData.isLiving && (
+        {!isFirstTimeLocked && !nodeData.isLiving && (
           <div
             style={{
               marginTop: 3,

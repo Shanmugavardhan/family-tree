@@ -824,9 +824,33 @@ button, input, select, textarea {
   transition: background-color 0.2s ease;
 }
 
-/* Smooth Canvas Scrolling & Drag Interactions */
-html {
+/* Smooth Canvas Scrolling & Drag Interactions (Requirement 1) */
+html, body {
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+/* Smooth Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(16, 19, 24, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(214, 177, 92, 0.4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(214, 177, 92, 0.7);
 }
 
 .react-flow__pane {

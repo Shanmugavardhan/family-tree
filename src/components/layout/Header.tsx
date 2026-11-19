@@ -4,8 +4,10 @@ import {
   Menu,
   X,
   Search,
+  KeyRound,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
 import { personApi } from '../../services/personApi';
 import { Person } from '../../types/person';
 
@@ -15,6 +17,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
   const { isDark } = useTheme();
+  const { activeLineage, unlockWithCode } = useLineage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -22,6 +25,24 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
   const [allPersons, setAllPersons] = useState<Person[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Person[]>([]);
+
+  // Requirement 4: Header Family Code state
+  const [headerCodeInput, setHeaderCodeInput] = useState('');
+  const [headerCodeStatus, setHeaderCodeStatus] = useState<string | null>(null);
+
+  const handleHeaderCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!headerCodeInput.trim()) return;
+    const res = unlockWithCode(headerCodeInput);
+    if (res.success) {
+      setHeaderCodeStatus('Unlocked!');
+      setHeaderCodeInput('');
+      setTimeout(() => setHeaderCodeStatus(null), 2500);
+    } else {
+      setHeaderCodeStatus(res.error || 'Invalid code');
+      setTimeout(() => setHeaderCodeStatus(null), 3000);
+    }
+  };
 
   // Auto-close mobile menu when route changes
   useEffect(() => {
@@ -145,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                House of Konukuru
+                {activeLineage.name}
               </h1>
               <p
                 className="header-brand-subtitle"
@@ -159,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Chronicles of the Lineage
+                {activeLineage.description || 'Chronicles of the Lineage'}
               </p>
             </div>
           </Link>
@@ -172,6 +193,89 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
         <div className="header-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Canvas Actions Slot (Pathfinder, Focus Mode, Timeline, Zoom) */}
           <div id="header-canvas-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }} />
+
+          {/* Requirement 4: Header Family Code text box */}
+          <form
+            onSubmit={handleHeaderCodeSubmit}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: isDark ? 'rgba(18, 24, 34, 0.85)' : '#ffffff',
+                border: isDark ? '1px solid rgba(212, 175, 55, 0.4)' : '1px solid rgba(197, 155, 39, 0.4)',
+                borderRadius: 18,
+                padding: '3px 6px 3px 10px',
+                gap: 6,
+                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.4)' : '0 2px 6px rgba(0, 0, 0, 0.05)',
+                transition: 'border-color 0.15s ease',
+              }}
+            >
+              <KeyRound size={13} color={isDark ? '#D6B15C' : '#854d0e'} />
+              <input
+                type="text"
+                placeholder="Family Code..."
+                value={headerCodeInput}
+                onChange={(e) => setHeaderCodeInput(e.target.value.toUpperCase())}
+                style={{
+                  width: 102,
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.785rem',
+                  fontWeight: 650,
+                  letterSpacing: '0.04em',
+                  color: isDark ? '#F1E9D7' : '#1D2633',
+                }}
+              />
+              <button
+                type="submit"
+                title="Unlock lineage with Family Code"
+                style={{
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b8972e 100%)',
+                  color: '#10141d',
+                  borderRadius: 12,
+                  padding: '3px 8px',
+                  fontSize: '11px',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+                Go
+              </button>
+            </div>
+
+            {/* Status tooltip/toast */}
+            {headerCodeStatus && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 6,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  backgroundColor: headerCodeStatus === 'Unlocked!' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)',
+                  color: '#ffffff',
+                  fontSize: '11.5px',
+                  fontWeight: 650,
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                  zIndex: 60,
+                }}
+              >
+                {headerCodeStatus}
+              </div>
+            )}
+          </form>
 
           {/* Active Lineage Count Badge (Requirement 8: swords removed) */}
           <div
@@ -191,7 +295,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             }}
             title="Active House members recorded in lineage"
           >
-            <span>14 Members</span>
+            <span>{activeLineage.memberCount} Members</span>
           </div>
         </div>
 
@@ -279,7 +383,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                       lineHeight: 1.1,
                     }}
                   >
-                    House of Konukuru
+                    {activeLineage.name}
                   </div>
                   <div
                     style={{
@@ -310,6 +414,61 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                 <X size={20} />
               </button>
             </div>
+
+            {/* Requirement 4: Mobile Family Code Box */}
+            <form
+              onSubmit={(e) => {
+                handleHeaderCodeSubmit(e);
+                setIsMobileMenuOpen(false);
+              }}
+              style={{ marginBottom: 14 }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: isDark ? 'rgba(18, 24, 34, 0.9)' : '#f8fafc',
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: isDark ? '1px solid rgba(212, 175, 55, 0.35)' : '1px solid rgba(197, 155, 39, 0.35)',
+                  gap: 8,
+                }}
+              >
+                <KeyRound size={16} color={isDark ? '#d4af37' : '#92400e'} />
+                <input
+                  type="text"
+                  placeholder="Enter Family Code..."
+                  value={headerCodeInput}
+                  onChange={(e) => setHeaderCodeInput(e.target.value.toUpperCase())}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    width: '100%',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.85rem',
+                    fontWeight: 650,
+                    letterSpacing: '0.04em',
+                    color: isDark ? '#f8fafc' : '#1c1917',
+                    backgroundColor: 'transparent',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #d4af37 0%, #b8972e 100%)',
+                    color: '#10141d',
+                    borderRadius: 8,
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Unlock
+                </button>
+              </div>
+            </form>
 
             {/* Mobile Search Box */}
             <div style={{ position: 'relative', marginBottom: 16 }}>
@@ -411,7 +570,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
                 }}
               >
-                <span>14 Active Members in Lineage</span>
+                <span>{activeLineage.memberCount} Active Members in Lineage</span>
               </div>
             </div>
           </div>
