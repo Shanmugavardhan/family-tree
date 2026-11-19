@@ -6,8 +6,11 @@ import { fileURLToPath } from 'node:url';
 import {
   KNOWN_LINEAGES,
   PARADARAMI_DEPTH1_PARENTS,
+  LINEAGE_PARENTS_BY_PERSON,
   getParadaramiLayout,
 } from '../src/types/lineage.ts';
+import { normalizeDateInput } from '../src/utils/dateUtils.ts';
+import { CreatePersonSchema } from '../functions/src/validators/person.validator.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,7 +91,7 @@ it('Invalid codes are rejected', () => {
   assert.ok(res.error?.includes('Invalid'));
 });
 
-// Section 3: Depth-1 Ancestral Verification (Mom\'s Parents)
+// Section 3: Depth-1 Ancestral Verification (Mom's Parents)
 it('Maternal depth-1 parents strictly contain mom\'s father and mother', () => {
   assert.strictEqual(PARADARAMI_DEPTH1_PARENTS.length, 2);
 
@@ -103,6 +106,43 @@ it('Maternal depth-1 parents strictly contain mom\'s father and mother', () => {
   assert.strictEqual(mother.firstName, 'Rukminamma');
   assert.strictEqual(mother.lastName, 'Paradarami');
   assert.strictEqual(mother.relation, 'Maternal Grandmother (Mom\'s Mother)');
+});
+
+it('LINEAGE_PARENTS_BY_PERSON maps Suguna Konukuru to Gopal Chetty & Rukminamma Paradarami', () => {
+  const sugunaId = '5c561a7d-3fee-4112-af6e-286f7a8ad61b';
+  const info = LINEAGE_PARENTS_BY_PERSON[sugunaId];
+  assert.ok(info, 'Suguna must be in LINEAGE_PARENTS_BY_PERSON');
+  assert.strictEqual(info.lineageId, 'paradarami');
+  assert.strictEqual(info.father.firstName, 'Gopal');
+  assert.strictEqual(info.father.middleName, 'Chetty');
+  assert.strictEqual(info.father.lastName, 'Paradarami');
+  assert.strictEqual(info.mother.firstName, 'Rukminamma');
+  assert.strictEqual(info.mother.lastName, 'Paradarami');
+  assert.strictEqual(info.lineageName, 'House of Paradarami');
+});
+
+// Section 4: Flexible Date Handling (Year-only & Full ISO)
+it('normalizeDateInput accepts 4-digit year as well as standard dates', () => {
+  assert.strictEqual(normalizeDateInput('1947'), '1947');
+  assert.strictEqual(normalizeDateInput('2022'), '2022');
+  assert.strictEqual(normalizeDateInput('1947-06-15'), '1947-06-15');
+  assert.strictEqual(normalizeDateInput('15-06-1947'), '1947-06-15');
+  assert.strictEqual(normalizeDateInput('15/06/1947'), '1947-06-15');
+  assert.strictEqual(normalizeDateInput(''), null);
+  assert.strictEqual(normalizeDateInput(undefined), null);
+});
+
+it('CreatePersonSchema accepts year-only dates without validation error', () => {
+  const personYearOnly = {
+    first_name: 'Test',
+    last_name: 'Person',
+    gender: 'male' as const,
+    birth_date: '1947',
+    is_living: false,
+    death_date: '2022',
+  };
+  const result = CreatePersonSchema.safeParse(personYearOnly);
+  assert.strictEqual(result.success, true, `Expected validation to pass, errors: ${!result.success ? JSON.stringify(result.error) : ''}`);
 });
 
 // Section 4: Paradarami Lineage Layout Generator

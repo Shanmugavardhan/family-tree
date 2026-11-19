@@ -9,10 +9,14 @@ interface LineageContextType {
   activeLineageId: string;
   unlockedLineages: string[];
   isFirstTimeLocked: boolean;
-  isParadaramiParallelOpen: boolean;
+  expandedLineagePersonId: string | null;
   isParadaramiUnlocked: boolean;
   unlockWithCode: (inputCode: string) => { success: boolean; lineageId?: string; error?: string };
   switchLineage: (lineageId: string) => boolean;
+  toggleLineageOnMap: (personId: string) => void;
+  setExpandedLineagePersonId: (personId: string | null) => void;
+  // Kept for backward compatibility
+  isParadaramiParallelOpen: boolean;
   openParadaramiParallel: () => void;
   closeParadaramiParallel: () => void;
 }
@@ -45,8 +49,8 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return 'konukuru';
   });
 
-  // Parallel viewer for mom's maternal lineage
-  const [isParadaramiParallelOpen, setIsParadaramiParallelOpen] = useState(false);
+  // Requirement 1: View lineage directly on the map (no separate window)
+  const [expandedLineagePersonId, setExpandedLineagePersonId] = useState<string | null>(null);
 
   // First-timer is locked if they haven't unlocked ANY lineage or if active lineage is not in unlockedLineages
   const isFirstTimeLocked = !unlockedLineages.includes(activeLineageId);
@@ -80,7 +84,7 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!matchedId) {
       return {
         success: false,
-        error: 'Invalid family code. Please enter a valid lineage code (e.g. KONU1290).',
+        error: 'Invalid family code. Please enter a valid lineage code (e.g. KONU1290 or PARA1290).',
       };
     }
 
@@ -97,12 +101,16 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return true;
   };
 
+  const toggleLineageOnMap = (personId: string) => {
+    setExpandedLineagePersonId((prev) => (prev === personId ? null : personId));
+  };
+
   const openParadaramiParallel = () => {
-    setIsParadaramiParallelOpen(true);
+    setExpandedLineagePersonId('5c561a7d-3fee-4112-af6e-286f7a8ad61b');
   };
 
   const closeParadaramiParallel = () => {
-    setIsParadaramiParallelOpen(false);
+    setExpandedLineagePersonId(null);
   };
 
   const activeLineage = KNOWN_LINEAGES[activeLineageId] || KNOWN_LINEAGES.konukuru;
@@ -114,10 +122,13 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activeLineageId,
         unlockedLineages,
         isFirstTimeLocked,
-        isParadaramiParallelOpen,
+        expandedLineagePersonId,
         isParadaramiUnlocked,
         unlockWithCode,
         switchLineage,
+        toggleLineageOnMap,
+        setExpandedLineagePersonId,
+        isParadaramiParallelOpen: !!expandedLineagePersonId,
         openParadaramiParallel,
         closeParadaramiParallel,
       }}

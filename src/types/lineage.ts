@@ -74,6 +74,27 @@ export const PARADARAMI_DEPTH1_PARENTS: MaternalDepth1Member[] = [
   },
 ];
 
+export interface Depth1ParentsInfo {
+  personId: string;
+  lineageId: string;
+  lineageName: string;
+  code: string;
+  father: MaternalDepth1Member;
+  mother: MaternalDepth1Member;
+}
+
+export const LINEAGE_PARENTS_BY_PERSON: Record<string, Depth1ParentsInfo> = {
+  // Suguna Konukuru (born Paradarami)
+  '5c561a7d-3fee-4112-af6e-286f7a8ad61b': {
+    personId: '5c561a7d-3fee-4112-af6e-286f7a8ad61b',
+    lineageId: 'paradarami',
+    lineageName: 'House of Paradarami',
+    code: 'PARA1290',
+    father: PARADARAMI_DEPTH1_PARENTS[0],
+    mother: PARADARAMI_DEPTH1_PARENTS[1],
+  },
+};
+
 /**
  * High-fidelity layout generator for House of Paradarami
  * Kept decoupled from canonical data/persons.json to preserve strict test suite SHA-256 hashes.

@@ -5,6 +5,7 @@ import { Pencil, User, Shield, Lock } from 'lucide-react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
+import { LINEAGE_PARENTS_BY_PERSON } from '../../types/lineage';
 
 /**
  * Noble Lady / Princess Avatar (Game of Thrones Targaryen / Westeros Aesthetic)
@@ -179,7 +180,7 @@ const DefaultUserAvatar: React.FC = () => (
 
 export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const { isDark } = useTheme();
-  const { isFirstTimeLocked, openParadaramiParallel } = useLineage();
+  const { isFirstTimeLocked, expandedLineagePersonId, toggleLineageOnMap } = useLineage();
   const { zoom } = useViewport();
   const updateNodeInternals = useUpdateNodeInternals();
   const navigate = useNavigate();
@@ -198,6 +199,9 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
     nodeData.personId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
     nodeId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b' ||
     (nodeData.firstName === 'Suguna' && (nodeData.lastName === 'Konukuru' || nodeData.lastName === 'Paradarami'));
+
+  const hasLineageAvailable = isMom || Boolean(LINEAGE_PARENTS_BY_PERSON[nodeId]) || Boolean(nodeData.personId && LINEAGE_PARENTS_BY_PERSON[nodeData.personId]);
+  const isLineageExpanded = expandedLineagePersonId === nodeId || expandedLineagePersonId === nodeData.personId || (isMom && expandedLineagePersonId === '5c561a7d-3fee-4112-af6e-286f7a8ad61b');
 
   // Requirement 2: Proportional zoom sizing (1:1.5 size:zoom ratio)
   // At zoom=1.0 -> 1.0; at zoom=0.5 -> (1/0.5)^(1/1.5) = 2^(2/3) ≈ 1.587; at zoom=2.0 -> (1/2)^(2/3) ≈ 0.63
@@ -397,22 +401,24 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
             )}
           </div>
 
-          {/* Requirement 2: View Lineage button on top-right position of Mom's tile */}
-          {isMom && !isFirstTimeLocked && (
+          {/* Requirement 1: View Lineage button on top-right position of tile (in-map expansion, no separate window) */}
+          {hasLineageAvailable && !isFirstTimeLocked && (
             <button
               type="button"
-              title="View Paradarami Lineage (Parallel Branch)"
+              title={isLineageExpanded ? 'Hide Lineage from Map' : 'View Lineage on Map'}
               onClick={(e) => {
                 e.stopPropagation();
-                openParadaramiParallel();
+                toggleLineageOnMap(nodeData.personId || nodeId);
               }}
               style={{
                 position: 'absolute',
                 top: -8,
                 right: -24,
-                background: 'linear-gradient(135deg, #d4af37 0%, #997a15 100%)',
-                color: '#10141d',
-                border: '1.5px solid #fef08a',
+                background: isLineageExpanded
+                  ? 'linear-gradient(135deg, #475569 0%, #1e293b 100%)'
+                  : 'linear-gradient(135deg, #d4af37 0%, #997a15 100%)',
+                color: isLineageExpanded ? '#F1E9D7' : '#10141d',
+                border: isLineageExpanded ? '1.5px solid #94a3b8' : '1.5px solid #fef08a',
                 borderRadius: 14,
                 padding: '3px 8px',
                 fontSize: '11px',
@@ -422,22 +428,28 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
                 alignItems: 'center',
                 gap: 4,
                 cursor: 'pointer',
-                boxShadow: '0 3px 12px rgba(214, 177, 92, 0.65)',
+                boxShadow: isLineageExpanded
+                  ? '0 2px 8px rgba(0, 0, 0, 0.5)'
+                  : '0 3px 12px rgba(214, 177, 92, 0.65)',
                 zIndex: 25,
                 whiteSpace: 'nowrap',
                 transition: 'all 0.18s ease-in-out',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'scale(1.08)';
-                e.currentTarget.style.boxShadow = '0 6px 18px rgba(214, 177, 92, 0.85)';
+                e.currentTarget.style.boxShadow = isLineageExpanded
+                  ? '0 4px 12px rgba(0, 0, 0, 0.7)'
+                  : '0 6px 18px rgba(214, 177, 92, 0.85)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.boxShadow = '0 3px 12px rgba(214, 177, 92, 0.65)';
+                e.currentTarget.style.boxShadow = isLineageExpanded
+                  ? '0 2px 8px rgba(0, 0, 0, 0.5)'
+                  : '0 3px 12px rgba(214, 177, 92, 0.65)';
               }}
             >
               <Shield size={12} strokeWidth={2.4} />
-              <span>View Lineage</span>
+              <span>{isLineageExpanded ? 'Hide Lineage' : 'View Lineage'}</span>
             </button>
           )}
 

@@ -14,6 +14,7 @@ import {
   NodeMouseHandler,
   NodeTypes,
   EdgeTypes,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -40,8 +41,8 @@ import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasC
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
 import { FirstTimeAccessModal } from '../lineage/FirstTimeAccessModal';
-import { ParallelLineageModal } from '../lineage/ParallelLineageModal';
-import { getParadaramiLayout } from '../../types/lineage';
+import { getParadaramiLayout, LINEAGE_PARENTS_BY_PERSON } from '../../types/lineage';
+import { LineageLockNode } from './LineageLockNode';
 import { RefreshCw, AlertCircle, Pencil } from 'lucide-react';
 
 interface StoredViewport {
@@ -83,6 +84,7 @@ const persistViewport = (viewport: StoredViewport) => {
 const nodeTypes: NodeTypes = {
   personCard: PersonNode,
   laneBanner: CohortLaneBanner,
+  lineageLockNode: LineageLockNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -147,7 +149,7 @@ function findGraphPath(
 
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
-  const { activeLineageId, isFirstTimeLocked } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, isParadaramiUnlocked } = useLineage();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setCenter, fitView, setViewport } = useReactFlow();
 
@@ -366,9 +368,191 @@ const FamilyCanvasInternal: React.FC = () => {
       onEditPerson: (id: string) => setEditingPersonId(id),
     });
 
-    setNodes(flowData.nodes);
-    setEdges(flowData.edges);
-  }, [selectedPersonId, focusMode, pathNodeIds, pathEdgeIds, layout, setNodes, setEdges]);
+    const finalNodes: Node<any>[] = [...flowData.nodes];
+    const finalEdges: Edge<any>[] = [...flowData.edges];
+
+    // Requirement 1: View lineage directly on the map (no separate window), showing ONLY father and mother
+    if (expandedLineagePersonId && LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId]) {
+      const lineageInfo = LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId];
+      const targetPersonNode = finalNodes.find(
+        (n) => n.id === expandedLineagePersonId || n.data?.personId === expandedLineagePersonId
+      );
+
+      if (targetPersonNode) {
+        const baseX = targetPersonNode.position.x;
+        const baseY = targetPersonNode.position.y;
+        // Parents in preceding generation lane above target
+        const parentsY = baseY - 440;
+        const fatherX = baseX - 140;
+        const motherX = baseX + 140;
+        const lockY = baseY - 660;
+
+        const fatherNode: Node<PersonNodeData> = {
+          id: lineageInfo.father.id,
+          type: 'personCard',
+          position: { x: fatherX, y: parentsY },
+          style: {
+            width: 190,
+            height: 160,
+          },
+          data: {
+            id: lineageInfo.father.id,
+            personId: lineageInfo.father.id,
+            firstName: lineageInfo.father.firstName,
+            middleName: lineageInfo.father.middleName ?? null,
+            lastName: lineageInfo.father.lastName,
+            birthDate: null,
+            birthYear: lineageInfo.father.birthYear ?? null,
+            generationId: 'silent',
+            generationName: 'Silent Generation',
+            generationOrder: 2,
+            photoPath: null,
+            gender: lineageInfo.father.gender,
+            isLiving: lineageInfo.father.isLiving,
+            isArchived: false,
+            isSelected: selectedPersonId === lineageInfo.father.id,
+            isHighlighted: false,
+            isPathNode: false,
+            isDimmed: false,
+            onEdit: (id: string) => setEditingPersonId(id),
+          },
+          draggable: false,
+          selectable: true,
+        };
+
+        const motherNode: Node<PersonNodeData> = {
+          id: lineageInfo.mother.id,
+          type: 'personCard',
+          position: { x: motherX, y: parentsY },
+          style: {
+            width: 190,
+            height: 160,
+          },
+          data: {
+            id: lineageInfo.mother.id,
+            personId: lineageInfo.mother.id,
+            firstName: lineageInfo.mother.firstName,
+            middleName: lineageInfo.mother.middleName ?? null,
+            lastName: lineageInfo.mother.lastName,
+            birthDate: null,
+            birthYear: lineageInfo.mother.birthYear ?? null,
+            generationId: 'silent',
+            generationName: 'Silent Generation',
+            generationOrder: 2,
+            photoPath: null,
+            gender: lineageInfo.mother.gender,
+            isLiving: lineageInfo.mother.isLiving,
+            isArchived: false,
+            isSelected: selectedPersonId === lineageInfo.mother.id,
+            isHighlighted: false,
+            isPathNode: false,
+            isDimmed: false,
+            onEdit: (id: string) => setEditingPersonId(id),
+          },
+          draggable: false,
+          selectable: true,
+        };
+
+        const lockNode: Node<any> = {
+          id: `${lineageInfo.lineageId}-ancestry-lock`,
+          type: 'lineageLockNode',
+          position: { x: baseX + 52, y: lockY },
+          data: {
+            lineageId: lineageInfo.lineageId,
+            lineageName: lineageInfo.lineageName,
+            isUnlocked: isParadaramiUnlocked,
+          },
+          draggable: false,
+          selectable: false,
+        };
+
+        // Spouse edge between father and mother
+        const spouseEdge: Edge<FamilyEdgeData> = {
+          id: `edge-maternal-spouse-${lineageInfo.father.id}-${lineageInfo.mother.id}`,
+          source: lineageInfo.father.id,
+          target: lineageInfo.mother.id,
+          sourceHandle: 'spouse-right',
+          targetHandle: 'spouse-left',
+          type: 'familyEdge',
+          style: { stroke: '#D18B91', strokeWidth: 2 },
+          data: { edgeType: 'spouse' },
+        };
+
+        // Parent-child edge down to target person
+        const childEdge: Edge<FamilyEdgeData> = {
+          id: `edge-maternal-child-${lineageInfo.father.id}-${targetPersonNode.id}`,
+          source: lineageInfo.father.id,
+          target: targetPersonNode.id,
+          sourceHandle: 'parent-bottom',
+          targetHandle: 'child-top',
+          type: 'familyEdge',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 14,
+            height: 14,
+            color: '#A94747',
+          },
+          style: { stroke: '#A94747', strokeWidth: 2 },
+          data: { edgeType: 'parent_child' },
+        };
+
+        // Ancestry connecting edge from lock node down to father
+        const lockEdge: Edge<FamilyEdgeData> = {
+          id: `edge-maternal-lock-${lineageInfo.father.id}`,
+          source: `${lineageInfo.lineageId}-ancestry-lock`,
+          target: lineageInfo.father.id,
+          sourceHandle: 'parent-bottom',
+          targetHandle: 'child-top',
+          type: 'familyEdge',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 14,
+            height: 14,
+            color: isParadaramiUnlocked ? '#10b981' : '#ef4444',
+          },
+          style: {
+            stroke: isParadaramiUnlocked ? '#10b981' : '#ef4444',
+            strokeWidth: 2,
+            strokeDasharray: '4 4',
+          },
+          data: { edgeType: 'parent_child' },
+        };
+
+        finalNodes.push(fatherNode, motherNode, lockNode);
+        finalEdges.push(spouseEdge, childEdge, lockEdge);
+      }
+    }
+
+    setNodes(finalNodes);
+    setEdges(finalEdges);
+  }, [
+    selectedPersonId,
+    focusMode,
+    pathNodeIds,
+    pathEdgeIds,
+    layout,
+    expandedLineagePersonId,
+    isParadaramiUnlocked,
+    setNodes,
+    setEdges,
+  ]);
+
+  // Smoothly center on expanded lineage parents when toggled on the map
+  const prevExpandedRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (expandedLineagePersonId && expandedLineagePersonId !== prevExpandedRef.current && layout) {
+      const target = layout.nodes.find(
+        (n) => n.id === expandedLineagePersonId || n.personId === expandedLineagePersonId
+      );
+      if (target) {
+        setCenter(target.x + target.width / 2, target.y - 200, {
+          duration: 650,
+          zoom: 1.0,
+        });
+      }
+    }
+    prevExpandedRef.current = expandedLineagePersonId;
+  }, [expandedLineagePersonId, layout, setCenter]);
 
   const handleNodeClick: NodeMouseHandler = (_event, node) => {
     if (node.type === 'personCard') {
@@ -777,9 +961,6 @@ const FamilyCanvasInternal: React.FC = () => {
 
       {/* Requirement 5: First-Time Access Code Modal (Blurred background until family code entered) */}
       <FirstTimeAccessModal />
-
-      {/* Requirement 2: Parallel Maternal Lineage Modal (Mom's lineage Paradarami) */}
-      <ParallelLineageModal />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { X, UserPlus, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Person, Gender, CreatePersonInput } from '../../types/person';
 import { personApi } from '../../services/personApi';
 import { useTheme } from '../../context/ThemeContext';
+import { normalizeDateInput } from '../../utils/dateUtils';
 
 interface FloatingAddPersonModalProps {
   isOpen: boolean;
@@ -166,8 +167,8 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       alias: alias.trim() || null,
       gender,
       is_living: isLiving,
-      birth_date: birthDate || null,
-      death_date: !isLiving && deathDate ? deathDate : null,
+      birth_date: normalizeDateInput(birthDate),
+      death_date: !isLiving ? normalizeDateInput(deathDate) : null,
       birth_place: birthPlace.trim() || null,
       death_place: !isLiving && deathPlace.trim() ? deathPlace.trim() : null,
       biography: biography.trim(),
@@ -494,10 +495,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     Date of Birth
                   </label>
                   <input
-                    type="date"
+                    type="text"
                     className="form-input"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
+                    placeholder="YYYY or YYYY-MM-DD (e.g. 1947)"
                   />
                 </div>
 
@@ -523,10 +525,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                       Date of Death
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       className="form-input"
                       value={deathDate}
                       onChange={(e) => setDeathDate(e.target.value)}
+                      placeholder="YYYY or YYYY-MM-DD (e.g. 2022)"
                     />
                     {clientErrors.death_date && (
                       <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.death_date}</p>

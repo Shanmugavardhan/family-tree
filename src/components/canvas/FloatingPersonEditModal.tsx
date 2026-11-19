@@ -3,6 +3,7 @@ import { ArrowLeft, X, Save, AlertCircle, AlertTriangle, UserCheck } from 'lucid
 import { Person, Gender, UpdatePersonInput } from '../../types/person';
 import { personApi } from '../../services/personApi';
 import { useTheme } from '../../context/ThemeContext';
+import { normalizeDateInput } from '../../utils/dateUtils';
 
 interface FloatingPersonEditModalProps {
   personId: string | null;
@@ -180,8 +181,8 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       alias: alias.trim() || null,
       gender,
       is_living: isLiving,
-      birth_date: birthDate.trim() || null,
-      death_date: isLiving ? null : deathDate.trim() || null,
+      birth_date: normalizeDateInput(birthDate),
+      death_date: isLiving ? null : normalizeDateInput(deathDate),
       birth_place: birthPlace.trim() || null,
       death_place: isLiving ? null : deathPlace.trim() || null,
       biography: biography.trim(),
@@ -559,10 +560,11 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                       Date of Birth
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       className="form-input"
                       value={birthDate}
                       onChange={(e) => setBirthDate(e.target.value)}
+                      placeholder="YYYY or YYYY-MM-DD (e.g. 1947)"
                     />
                   </div>
 
@@ -587,10 +589,11 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         Date of Death
                       </label>
                       <input
-                        type="date"
+                        type="text"
                         className="form-input"
                         value={deathDate}
                         onChange={(e) => setDeathDate(e.target.value)}
+                        placeholder="YYYY or YYYY-MM-DD (e.g. 2022)"
                       />
                       {clientErrors.death_date && (
                         <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.death_date}</p>

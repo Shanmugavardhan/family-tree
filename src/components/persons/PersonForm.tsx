@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CreatePersonInput, UpdatePersonInput, Gender, Person } from '../../types/person';
 import { RelationshipSelector } from './RelationshipSelector';
 import { AlertCircle, Save } from 'lucide-react';
+import { normalizeDateInput } from '../../utils/dateUtils';
 
 interface PersonFormProps {
   initialValues?: Partial<Person>;
@@ -68,8 +69,8 @@ export const PersonForm: React.FC<PersonFormProps> = ({
         alias: alias.trim() || null,
         gender,
         is_living: isLiving,
-        birth_date: birthDate.trim() || null,
-        death_date: isLiving ? null : deathDate.trim() || null,
+        birth_date: normalizeDateInput(birthDate),
+        death_date: isLiving ? null : normalizeDateInput(deathDate),
         birth_place: birthPlace.trim() || null,
         death_place: isLiving ? null : deathPlace.trim() || null,
         biography: biography.trim(),
@@ -83,8 +84,8 @@ export const PersonForm: React.FC<PersonFormProps> = ({
         alias: alias.trim() || null,
         gender,
         is_living: isLiving,
-        birth_date: birthDate.trim() || null,
-        death_date: isLiving ? null : deathDate.trim() || null,
+        birth_date: normalizeDateInput(birthDate),
+        death_date: isLiving ? null : normalizeDateInput(deathDate),
         birth_place: birthPlace.trim() || null,
         death_place: isLiving ? null : deathPlace.trim() || null,
         biography: biography.trim(),
@@ -218,10 +219,11 @@ export const PersonForm: React.FC<PersonFormProps> = ({
           <div className="form-group">
             <label className="form-label">Date of Birth</label>
             <input
-              type="date"
+              type="text"
               className="form-input"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
+              placeholder="YYYY or YYYY-MM-DD (e.g. 1947)"
             />
           </div>
 
@@ -242,10 +244,11 @@ export const PersonForm: React.FC<PersonFormProps> = ({
             <div className="form-group">
               <label className="form-label">Date of Death</label>
               <input
-                type="date"
+                type="text"
                 className="form-input"
                 value={deathDate}
                 onChange={(e) => setDeathDate(e.target.value)}
+                placeholder="YYYY or YYYY-MM-DD (e.g. 2022)"
               />
               {clientErrors.death_date && <p className="form-error">{clientErrors.death_date}</p>}
             </div>
