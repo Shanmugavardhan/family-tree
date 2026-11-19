@@ -91,6 +91,7 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Add to unlocked list if not present
     setUnlockedLineages((prev) => (prev.includes(matchedId!) ? prev : [...prev, matchedId!]));
     setActiveLineageId(matchedId);
+    setExpandedLineagePersonId(null);
 
     return { success: true, lineageId: matchedId };
   };
@@ -98,6 +99,7 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const switchLineage = (lineageId: string): boolean => {
     if (!KNOWN_LINEAGES[lineageId]) return false;
     setActiveLineageId(lineageId);
+    setExpandedLineagePersonId(null);
     return true;
   };
 

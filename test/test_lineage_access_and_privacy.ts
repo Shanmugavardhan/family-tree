@@ -247,7 +247,11 @@ async function runAll() {
     assert.ok(graph.nodes.find((n) => n.id === 'e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b'), 'Achamma must be present');
 
     // 3. Daughters Suguna and Rada Galeti must be present
-    assert.ok(graph.nodes.find((n) => n.id === '5c561a7d-3fee-4112-af6e-286f7a8ad61b'), 'Suguna must be present');
+    const suguna = graph.nodes.find((n) => n.id === '5c561a7d-3fee-4112-af6e-286f7a8ad61b');
+    assert.ok(suguna, 'Suguna must be present');
+    assert.strictEqual(suguna.hasExternalLineage, false, 'Suguna must NOT have external lineage in House of Paradarami (parents are already in main tree)');
+    assert.strictEqual(suguna.externalLineage, null, 'Suguna externalLineage must be null in Paradarami tree');
+
     assert.ok(graph.nodes.find((n) => n.id === 'fd26db0a-7e43-47d8-bb1c-55b1b84026c2'), 'Rada Galeti must be present');
 
     // 4. Suguna's husband Jagannadham Konukuru must be present
@@ -261,6 +265,53 @@ async function runAll() {
     assert.strictEqual(jagannadham.externalLineage.lineageName, 'House of Konukuru', 'Lineage Name must be House of Konukuru');
     assert.strictEqual(jagannadham.externalLineage.father.firstName, 'Murthy', 'Father must be Murthy Chetty');
     assert.strictEqual(jagannadham.externalLineage.mother.firstName, 'Sarojamma', 'Mother must be Sarojamma');
+  });
+
+  await it('Frontend lineage availability rule correctly resolves View Lineage buttons per active house', () => {
+    function computeHasLineageAvailable(
+      nodeId: string,
+      nodeData: { hasExternalLineage?: boolean; externalLineage?: any },
+      activeLineageId: string
+    ) {
+      const staticLineage = LINEAGE_PARENTS_BY_PERSON[nodeId];
+      const targetLineageId = nodeData.externalLineage?.lineageId || staticLineage?.lineageId;
+
+      return (
+        (Boolean(nodeData.hasExternalLineage) || Boolean(nodeData.externalLineage) || Boolean(staticLineage)) &&
+        Boolean(targetLineageId ? targetLineageId !== activeLineageId : nodeData.hasExternalLineage)
+      );
+    }
+
+    const sugunaId = '5c561a7d-3fee-4112-af6e-286f7a8ad61b';
+    const jagannadhamId = 'b19dee44-9906-4c46-84b6-70d2fa70a5b5';
+
+    // In House of Konukuru:
+    // - Suguna has external Paradarami lineage -> TRUE
+    // - Jagannadham has internal Konukuru lineage -> FALSE
+    assert.strictEqual(
+      computeHasLineageAvailable(sugunaId, { hasExternalLineage: true, externalLineage: { lineageId: 'paradarami' } }, 'konukuru'),
+      true,
+      'Suguna must have View Lineage button in House of Konukuru'
+    );
+    assert.strictEqual(
+      computeHasLineageAvailable(jagannadhamId, { hasExternalLineage: false, externalLineage: null }, 'konukuru'),
+      false,
+      'Jagannadham must NOT have View Lineage button in House of Konukuru'
+    );
+
+    // In House of Paradarami:
+    // - Suguna's parents are in current tree -> FALSE (NO View Lineage button)
+    // - Jagannadham has external Konukuru lineage -> TRUE (View Lineage button appears on him)
+    assert.strictEqual(
+      computeHasLineageAvailable(sugunaId, { hasExternalLineage: false, externalLineage: null }, 'paradarami'),
+      false,
+      'Suguna must NOT have View Lineage button in House of Paradarami'
+    );
+    assert.strictEqual(
+      computeHasLineageAvailable(jagannadhamId, { hasExternalLineage: true, externalLineage: { lineageId: 'konukuru' } }, 'paradarami'),
+      true,
+      'Jagannadham must have View Lineage button in House of Paradarami'
+    );
   });
 
   console.log(`\n======================================================`);

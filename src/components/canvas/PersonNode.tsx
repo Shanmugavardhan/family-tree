@@ -180,7 +180,7 @@ const DefaultUserAvatar: React.FC = () => (
 
 export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const { isDark } = useTheme();
-  const { isFirstTimeLocked, expandedLineagePersonId, toggleLineageOnMap } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, toggleLineageOnMap } = useLineage();
   const { zoom } = useViewport();
   const updateNodeInternals = useUpdateNodeInternals();
   const navigate = useNavigate();
@@ -194,11 +194,16 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
+  // Lineage expansion is only available if the person's parents belong to an external house
+  // DIFFERENT from the currently active tree (e.g. Suguna in Konukuru, or Jagannadham in Paradarami).
+  const staticLineage =
+    LINEAGE_PARENTS_BY_PERSON[nodeId] ||
+    (nodeData.personId ? LINEAGE_PARENTS_BY_PERSON[nodeData.personId] : undefined);
+  const targetLineageId = nodeData.externalLineage?.lineageId || staticLineage?.lineageId;
+
   const hasLineageAvailable =
-    Boolean(nodeData.hasExternalLineage) ||
-    Boolean(nodeData.externalLineage) ||
-    Boolean(LINEAGE_PARENTS_BY_PERSON[nodeId]) ||
-    Boolean(nodeData.personId && LINEAGE_PARENTS_BY_PERSON[nodeData.personId]);
+    (Boolean(nodeData.hasExternalLineage) || Boolean(nodeData.externalLineage) || Boolean(staticLineage)) &&
+    Boolean(targetLineageId ? targetLineageId !== activeLineageId : nodeData.hasExternalLineage);
 
   const isLineageExpanded =
     expandedLineagePersonId === nodeId ||

@@ -375,7 +375,13 @@ const FamilyCanvasInternal: React.FC = () => {
         (targetPersonNode?.data as any)?.externalLineage ||
         LINEAGE_PARENTS_BY_PERSON[expandedLineagePersonId];
 
-      if (targetPersonNode && lineageInfo && lineageInfo.father && lineageInfo.mother) {
+      if (
+        targetPersonNode &&
+        lineageInfo &&
+        lineageInfo.father &&
+        lineageInfo.mother &&
+        lineageInfo.lineageId !== activeLineageId
+      ) {
         const baseX = targetPersonNode.position.x;
         const baseY = targetPersonNode.position.y;
         // Parents in preceding generation lane above target
