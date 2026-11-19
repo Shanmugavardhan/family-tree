@@ -41,7 +41,7 @@ import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasC
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
 import { FirstTimeAccessModal } from '../lineage/FirstTimeAccessModal';
-import { getParadaramiLayout, LINEAGE_PARENTS_BY_PERSON } from '../../types/lineage';
+import { LINEAGE_PARENTS_BY_PERSON } from '../../types/lineage';
 import { LineageLockNode } from './LineageLockNode';
 import { RefreshCw, AlertCircle, Pencil } from 'lucide-react';
 
@@ -149,7 +149,7 @@ function findGraphPath(
 
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
-  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, isParadaramiUnlocked } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, unlockedLineages } = useLineage();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setCenter, fitView, setViewport } = useReactFlow();
 
@@ -265,18 +265,12 @@ const FamilyCanvasInternal: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    // Dynamic lineage handling: Paradarami lineage layout vs Konukuru canonical layout
-    if (activeLineageId === 'paradarami') {
-      const paraLayout = getParadaramiLayout();
-      setLayout(paraLayout);
-      setLoading(false);
-      return;
-    }
-
+    // Dynamic lineage handling: both Konukuru and Paradarami layouts use the unified deterministic layout engine
     const res = await layoutApi.getLayout({
       includeArchived,
       compactLanes,
       inferGenerations: true,
+      lineage: activeLineageId,
     });
 
     if (res.success && res.data) {
@@ -456,6 +450,10 @@ const FamilyCanvasInternal: React.FC = () => {
           selectable: true,
         };
 
+        const isTargetLineageUnlocked = lineageInfo.lineageId
+          ? unlockedLineages.includes(lineageInfo.lineageId.toLowerCase())
+          : false;
+
         const lockNode: Node<any> = {
           id: `${lineageInfo.lineageId}-ancestry-lock`,
           type: 'lineageLockNode',
@@ -463,7 +461,7 @@ const FamilyCanvasInternal: React.FC = () => {
           data: {
             lineageId: lineageInfo.lineageId,
             lineageName: lineageInfo.lineageName,
-            isUnlocked: isParadaramiUnlocked,
+            isUnlocked: isTargetLineageUnlocked,
           },
           draggable: false,
           selectable: false,
@@ -511,10 +509,10 @@ const FamilyCanvasInternal: React.FC = () => {
             type: MarkerType.ArrowClosed,
             width: 14,
             height: 14,
-            color: isParadaramiUnlocked ? '#10b981' : '#ef4444',
+            color: isTargetLineageUnlocked ? '#10b981' : '#ef4444',
           },
           style: {
-            stroke: isParadaramiUnlocked ? '#10b981' : '#ef4444',
+            stroke: isTargetLineageUnlocked ? '#10b981' : '#ef4444',
             strokeWidth: 2,
             strokeDasharray: '4 4',
           },
@@ -535,7 +533,7 @@ const FamilyCanvasInternal: React.FC = () => {
     pathEdgeIds,
     layout,
     expandedLineagePersonId,
-    isParadaramiUnlocked,
+    unlockedLineages,
     setNodes,
     setEdges,
   ]);

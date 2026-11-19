@@ -11,12 +11,14 @@ export interface LineageLockNodeData {
 
 export const LineageLockNode: React.FC<any> = ({ data }) => {
   const nodeData = data as LineageLockNodeData;
-  const { isParadaramiUnlocked, unlockWithCode, switchLineage } = useLineage();
+  const { unlockedLineages, unlockWithCode, switchLineage } = useLineage();
   const [showPrompt, setShowPrompt] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const unlocked = nodeData.isUnlocked || isParadaramiUnlocked;
+  const unlocked =
+    nodeData.isUnlocked ||
+    (nodeData.lineageId ? unlockedLineages.includes(nodeData.lineageId.toLowerCase()) : false);
 
   const handleUnlockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,12 +151,12 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
           {unlocked ? (
             <div>
               <p style={{ margin: '0 0 10px', fontSize: '11.5px', color: '#cbd5e1' }}>
-                Paradarami ancestry is verified. You can switch the canvas to explore the full tree.
+                {nodeData.lineageName || 'Lineage'} ancestry is verified. You can switch the canvas to explore the full tree.
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  switchLineage('paradarami');
+                  switchLineage(nodeData.lineageId || 'paradarami');
                   setShowPrompt(false);
                 }}
                 style={{
@@ -173,7 +175,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
                   gap: 6,
                 }}
               >
-                <span>Switch to House of Paradarami</span>
+                <span>Switch to {nodeData.lineageName || 'Lineage'}</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -187,7 +189,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. PARA1290"
+                  placeholder={nodeData.lineageId === 'konukuru' ? 'e.g. KONU1290' : 'e.g. PARA1290'}
                   autoFocus
                   style={{
                     flex: 1,

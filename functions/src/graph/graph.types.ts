@@ -52,4 +52,5 @@ export interface FamilyGraph {
 export interface BuildGraphOptions {
   includeArchived?: boolean;
   rejectInvalidReferences?: boolean;
+  lineage?: string;
 }

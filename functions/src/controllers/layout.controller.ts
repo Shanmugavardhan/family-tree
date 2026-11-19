@@ -13,6 +13,10 @@ export class LayoutController {
     try {
       const includeArchived = req.query.includeArchived === 'true';
       const compactLanes = req.query.compactLanes === 'true';
+      const lineage =
+        typeof req.query.lineage === 'string'
+          ? req.query.lineage
+          : (typeof req.query.house === 'string' ? req.query.house : undefined);
 
       const customConfig: Record<string, any> = {};
       if (req.query.compactLanes !== undefined) {
@@ -35,7 +39,7 @@ export class LayoutController {
       }
 
       const layout = await this.layoutService.getFamilyLayout(
-        { includeArchived },
+        { includeArchived, lineage },
         customConfig
       );
 

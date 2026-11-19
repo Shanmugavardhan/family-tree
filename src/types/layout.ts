@@ -71,5 +71,6 @@ export interface LayoutOptions {
   nodeWidth?: number;
   nodeHeight?: number;
   horizontalSpacing?: number;
+  lineage?: string;
 }
 

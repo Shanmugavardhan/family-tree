@@ -150,18 +150,30 @@ async function runAll() {
   });
 
   // Section 4: Paradarami Lineage Layout Generator
-  await it('getParadaramiLayout generates valid structured layout', () => {
+  await it('getParadaramiLayout generates valid structured layout with zero sample data', () => {
     const layout = getParadaramiLayout();
     assert.ok(layout, 'Layout must be generated');
     assert.ok(Array.isArray(layout.lanes), 'Lanes must be an array');
-    assert.ok(layout.lanes.length >= 4, 'Must have at least 4 generations');
+    assert.ok(layout.lanes.length >= 2, 'Must have generation lanes');
     assert.ok(Array.isArray(layout.nodes), 'Nodes must be an array');
     assert.ok(Array.isArray(layout.edges), 'Edges must be an array');
+
+    // Verify sample data is completely removed
+    const sampleIds = ['paradarami-venkataswamy', 'paradarami-gangamma', 'paradarami-suresh', 'paradarami-ramesh'];
+    for (const sid of sampleIds) {
+      assert.strictEqual(layout.nodes.find((n) => n.id === sid), undefined, `Sample person ${sid} must not exist`);
+    }
 
     // Verify Suguna is connected as child of Ramayya Chetty
     const sugunaNode = layout.nodes.find((n) => n.id === '5c561a7d-3fee-4112-af6e-286f7a8ad61b');
     assert.ok(sugunaNode, 'Suguna must be present in Paradarami tree');
     assert.strictEqual(sugunaNode.firstName, 'Suguna');
+
+    // Verify Suguna's husband Jagannadham is present with external lineage to Konukuru
+    const jagNode = layout.nodes.find((n) => n.id === 'b19dee44-9906-4c46-84b6-70d2fa70a5b5');
+    assert.ok(jagNode, 'Suguna husband Jagannadham must be present in Paradarami tree');
+    assert.strictEqual(jagNode.hasExternalLineage, true, 'Jagannadham must have external lineage flag');
+    assert.strictEqual(jagNode.externalLineage.lineageId, 'konukuru', 'Jagannadham external lineage must be konukuru');
 
     const parentChildEdge = layout.edges.find(
       (e) => e.source === '1ae73a4b-b739-40d3-8b50-071bbf1b07eb' && e.target === '5c561a7d-3fee-4112-af6e-286f7a8ad61b'
@@ -219,6 +231,36 @@ async function runAll() {
     assert.strictEqual(suguna.externalLineage.father.lastName, 'Paradarami');
     assert.strictEqual(suguna.externalLineage.mother.firstName, 'Achamma');
     assert.strictEqual(suguna.externalLineage.mother.lastName, 'Paradarami');
+  });
+
+  // Section 7: Paradarami Tree Dynamic Partitioning & View Lineage on Husband
+  await it('GraphService partitions Paradarami tree: includes Suguna husband Jagannadham with View Lineage on him', async () => {
+    const repo = new LocalJsonFamilyRepository({ dataDir: path.join(projectRoot, 'data') });
+    const graphService = new GraphService(repo);
+    const graph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
+
+    // 1. Expected 5 members in Paradarami tree (Ramayya, Achamma, Suguna, Rada Galeti, Jagannadham)
+    assert.strictEqual(graph.nodes.length, 5, `Expected 5 nodes in Paradarami tree, got ${graph.nodes.length}`);
+
+    // 2. Both parents Ramayya and Achamma must be present
+    assert.ok(graph.nodes.find((n) => n.id === '1ae73a4b-b739-40d3-8b50-071bbf1b07eb'), 'Ramayya Chetty must be present');
+    assert.ok(graph.nodes.find((n) => n.id === 'e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b'), 'Achamma must be present');
+
+    // 3. Daughters Suguna and Rada Galeti must be present
+    assert.ok(graph.nodes.find((n) => n.id === '5c561a7d-3fee-4112-af6e-286f7a8ad61b'), 'Suguna must be present');
+    assert.ok(graph.nodes.find((n) => n.id === 'fd26db0a-7e43-47d8-bb1c-55b1b84026c2'), 'Rada Galeti must be present');
+
+    // 4. Suguna's husband Jagannadham Konukuru must be present
+    const jagannadham = graph.nodes.find((n) => n.id === 'b19dee44-9906-4c46-84b6-70d2fa70a5b5');
+    assert.ok(jagannadham, 'Suguna husband Jagannadham Konukuru must be present');
+
+    // 5. Jagannadham has hasExternalLineage: true with Murthy & Sarojamma in externalLineage
+    assert.strictEqual(jagannadham.hasExternalLineage, true, 'Jagannadham must have hasExternalLineage: true');
+    assert.ok(jagannadham.externalLineage, 'Jagannadham must have externalLineage populated');
+    assert.strictEqual(jagannadham.externalLineage.lineageId, 'konukuru', 'Lineage ID must be konukuru');
+    assert.strictEqual(jagannadham.externalLineage.lineageName, 'House of Konukuru', 'Lineage Name must be House of Konukuru');
+    assert.strictEqual(jagannadham.externalLineage.father.firstName, 'Murthy', 'Father must be Murthy Chetty');
+    assert.strictEqual(jagannadham.externalLineage.mother.firstName, 'Sarojamma', 'Mother must be Sarojamma');
   });
 
   console.log(`\n======================================================`);

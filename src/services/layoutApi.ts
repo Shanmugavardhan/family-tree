@@ -26,6 +26,9 @@ export const layoutApi = {
     if (options?.horizontalSpacing) {
       query.set('horizontalSpacing', options.horizontalSpacing.toString());
     }
+    if (options?.lineage) {
+      query.set('lineage', options.lineage);
+    }
 
     const queryString = query.toString();
     return request<FamilyLayout>(`/layout${queryString ? `?${queryString}` : ''}`);

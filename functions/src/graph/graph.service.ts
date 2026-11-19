@@ -55,7 +55,8 @@ export class GraphService {
     // Partition main house members vs external surnamed lineage parents
     const { mainTreePersonIds, externalParentsMap } = this.partitionLineageMembers(
       includedPersons,
-      allRels
+      allRels,
+      options?.lineage
     );
 
     // Target persons for the primary visualization tree
@@ -222,17 +223,22 @@ export class GraphService {
    */
   private partitionLineageMembers(
     persons: Array<{ id: string; last_name: string | null; first_name?: string; middle_name?: string | null; gender?: string; is_living?: boolean; birth_date?: string | null; death_date?: string | null; birth_place?: string | null; biography?: string; [key: string]: any }>,
-    relationships: Array<{ person_id: string; related_person_id: string; relationship_type: string }>
+    relationships: Array<{ person_id: string; related_person_id: string; relationship_type: string }>,
+    targetLineage: string = 'konukuru'
   ) {
-    // 1. Core bloodline: Anyone with the primary house surname ('Konukuru')
+    const normTarget = (targetLineage || 'konukuru').trim().toLowerCase();
+
+    // 1. Core bloodline: Anyone with the primary house surname
     const coreBloodlineIds = new Set<string>();
     for (const p of persons) {
-      if (p.last_name && p.last_name.trim().toLowerCase() === 'konukuru') {
+      if (p.last_name && p.last_name.trim().toLowerCase() === normTarget) {
         coreBloodlineIds.add(p.id);
       }
     }
 
-    // Expand bloodline downwards: all biological descendants (e.g. Chandrakala Etigadda, Hemanth Etigadda)
+    // Expand bloodline downwards:
+    // If target is Konukuru: all biological descendants (e.g. Chandrakala Etigadda, Hemanth Etigadda)
+    // If target is Paradarami: direct children of Paradarami parents (Suguna, Rada Galeti)
     let addedDescendants = true;
     while (addedDescendants) {
       addedDescendants = false;
@@ -240,23 +246,31 @@ export class GraphService {
         if (rel.relationship_type === 'parent') {
           // related_person_id is parent, person_id is child
           if (coreBloodlineIds.has(rel.related_person_id) && !coreBloodlineIds.has(rel.person_id)) {
-            coreBloodlineIds.add(rel.person_id);
-            addedDescendants = true;
+            if (normTarget === 'paradarami') {
+              const parent = persons.find((p) => p.id === rel.related_person_id);
+              if (parent && parent.last_name?.trim().toLowerCase() === 'paradarami') {
+                coreBloodlineIds.add(rel.person_id);
+                addedDescendants = true;
+              }
+            } else {
+              coreBloodlineIds.add(rel.person_id);
+              addedDescendants = true;
+            }
           }
         }
       }
     }
 
-    // Expand bloodline upwards: any ancestral parents of Konukuru
+    // Expand bloodline upwards: any ancestral parents of target house
     let addedAncestors = true;
     while (addedAncestors) {
       addedAncestors = false;
       for (const rel of relationships) {
         if (rel.relationship_type === 'parent') {
           const child = persons.find((p) => p.id === rel.person_id);
-          if (child && child.last_name?.trim().toLowerCase() === 'konukuru' && !coreBloodlineIds.has(rel.related_person_id)) {
+          if (child && child.last_name?.trim().toLowerCase() === normTarget && !coreBloodlineIds.has(rel.related_person_id)) {
             const parent = persons.find((p) => p.id === rel.related_person_id);
-            if (parent && (!parent.last_name || parent.last_name.trim().toLowerCase() === 'konukuru')) {
+            if (parent && (!parent.last_name || parent.last_name.trim().toLowerCase() === normTarget)) {
               coreBloodlineIds.add(rel.related_person_id);
               addedAncestors = true;
             }
@@ -309,7 +323,7 @@ export class GraphService {
                 deathYear: p.death_date ? parseInt(p.death_date.slice(0, 4), 10) : null,
                 birthPlace: p.birth_place,
                 biography: p.biography,
-                relation: 'Maternal Grandfather (Father)',
+                relation: 'Father',
               };
               if (p.last_name) lineageLastName = p.last_name;
             } else if (p.gender === 'female' && !mother) {
@@ -324,7 +338,7 @@ export class GraphService {
                 deathYear: p.death_date ? parseInt(p.death_date.slice(0, 4), 10) : null,
                 birthPlace: p.birth_place,
                 biography: p.biography,
-                relation: 'Maternal Grandmother (Mother)',
+                relation: 'Mother',
               };
               if (p.last_name) lineageLastName = p.last_name;
             }
