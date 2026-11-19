@@ -3,7 +3,7 @@ import { ApiResponse } from '../types/api';
 import { FamilyLayout, LayoutOptions } from '../types/layout';
 
 export const layoutApi = {
-  getLayout: (options?: LayoutOptions): Promise<ApiResponse<FamilyLayout>> => {
+  getLayout: async (options?: LayoutOptions): Promise<ApiResponse<FamilyLayout>> => {
     const query = new URLSearchParams();
     if (options?.includeArchived) {
       query.set('includeArchived', 'true');
@@ -31,7 +31,30 @@ export const layoutApi = {
     }
 
     const queryString = query.toString();
-    return request<FamilyLayout>(`/layout${queryString ? `?${queryString}` : ''}`);
+    const lineage = options?.lineage || 'konukuru';
+    const apiResult = await request<FamilyLayout>(`/layout${queryString ? `?${queryString}` : ''}`);
+
+    if (apiResult.success && apiResult.data) {
+      return apiResult;
+    }
+
+    // Seamless fallback to static pre-calculated layout when running static on Firebase Hosting
+    try {
+      const fallbackUrl = `/data/layout-${lineage}.json`;
+      const fallbackRes = await fetch(fallbackUrl);
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        return {
+          success: true,
+          data: fallbackData,
+          error: null,
+        };
+      }
+    } catch {
+      // ignore fallback error
+    }
+
+    return apiResult;
   },
 };
 

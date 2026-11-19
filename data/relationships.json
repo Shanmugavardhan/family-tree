@@ -285,6 +285,39 @@
       "end_date": null,
       "notes": null,
       "created_at": "2026-11-19T06:27:04.125Z"
+    },
+    {
+      "id": "5fb7538a-eb17-4824-a8ee-00e3e3918687",
+      "person_id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
+      "related_person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+      "relationship_type": "spouse",
+      "parent_type": null,
+      "start_date": null,
+      "end_date": null,
+      "notes": null,
+      "created_at": "2026-11-19T07:11:26.926Z"
+    },
+    {
+      "id": "970368db-d067-4a4e-a7e0-cf38acafb9c9",
+      "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "related_person_id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": null,
+      "created_at": "2026-11-19T07:18:21.268Z"
+    },
+    {
+      "id": "552d0ac4-2474-4242-8057-6e9f4f280765",
+      "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "related_person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+      "relationship_type": "parent",
+      "parent_type": "biological",
+      "start_date": null,
+      "end_date": null,
+      "notes": null,
+      "created_at": "2026-11-19T07:18:21.268Z"
     }
   ]
 }

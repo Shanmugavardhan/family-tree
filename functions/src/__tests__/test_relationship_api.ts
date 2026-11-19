@@ -57,7 +57,7 @@ async function runRelationshipTests() {
     assert(res1.status === 200, 'GET /api/relationships returns 200');
     const data1 = await res1.json();
     assert(data1.success === true, 'Response has success: true');
-    assert(Array.isArray(data1.data) && data1.data.length === 26, `Expected 26 relationships, got ${data1.data.length}`);
+    assert(Array.isArray(data1.data) && data1.data.length === 29, `Expected 29 relationships, got ${data1.data.length}`);
 
     // --- Test 2: GET /api/relationships?personId=... (Filter by person) ---
     const murthyId = '867842c1-b8a2-45ad-8d9c-89150e68eb16';
@@ -70,7 +70,7 @@ async function runRelationshipTests() {
     const resFilterSpouse = await fetch(`${baseUrl}?relationshipType=spouse`);
     assert(resFilterSpouse.status === 200, 'GET /api/relationships?relationshipType=spouse returns 200');
     const dataFilterSpouse = await resFilterSpouse.json();
-    assert(dataFilterSpouse.data.length === 5, `Expected 5 spouse relationships, got ${dataFilterSpouse.data.length}`);
+    assert(dataFilterSpouse.data.length === 6, `Expected 6 spouse relationships, got ${dataFilterSpouse.data.length}`);
 
     // --- Test 4: GET /api/relationships/:id (Existing relationship) ---
     const existingRelId = data1.data[0].id;
@@ -311,8 +311,8 @@ async function runRelationshipTests() {
     // --- Test 19: Original production data verification ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 17, `Original database has exactly 17 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 26, `Original database has exactly 26 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 19, `Original database has exactly 19 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 29, `Original database has exactly 29 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.5 Relationship API tests PASSED!`);
   } finally {

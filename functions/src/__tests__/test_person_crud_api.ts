@@ -57,7 +57,7 @@ async function runPersonCrudTests() {
     assert(res1.status === 200, 'GET /api/persons returns 200');
     const data1 = await res1.json();
     assert(data1.success === true, 'Response has success: true');
-    assert(Array.isArray(data1.data) && data1.data.length === 17, `Expected 17 persons, got ${data1.data.length}`);
+    assert(Array.isArray(data1.data) && data1.data.length === 19, `Expected 19 persons, got ${data1.data.length}`);
 
     // --- Test 2: GET /api/persons with search query ---
     const resSearch = await fetch(`${baseUrl}?search=Meghana`);
@@ -272,8 +272,8 @@ async function runPersonCrudTests() {
     const originalRelsRaw = await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8');
     const origPersons = JSON.parse(originalPersonsRaw).persons;
     const origRels = JSON.parse(originalRelsRaw).relationships;
-    assert(origPersons.length === 17, `Original database has exactly 17 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 26, `Original database has exactly 26 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 19, `Original database has exactly 19 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 29, `Original database has exactly 29 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.4 CRUD API tests PASSED!`);
   } finally {

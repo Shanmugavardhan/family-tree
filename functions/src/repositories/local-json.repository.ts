@@ -1,4 +1,5 @@
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 import { Person } from '../types/person';
 import { Relationship } from '../types/relationship';
@@ -42,11 +43,54 @@ export class LocalJsonFamilyRepository implements FamilyRepository {
   private version = 1;
 
   constructor(options: LocalJsonRepositoryOptions = {}) {
-    this.dataDir =
-      options.dataDir ||
-      (process.env.DATA_DIR
-        ? path.resolve(process.env.DATA_DIR)
-        : path.resolve(__dirname, '../../../data'));
+    if (options.dataDir) {
+      this.dataDir = options.dataDir;
+    } else if (process.env.DATA_DIR) {
+      this.dataDir = path.resolve(process.env.DATA_DIR);
+    } else {
+      // Find candidate seed directory
+      const candidates = [
+        path.resolve(__dirname, '../../../data'),
+        path.resolve(__dirname, '../../data'),
+        path.resolve(__dirname, '../data'),
+        path.resolve(process.cwd(), 'data'),
+        path.resolve(process.cwd(), '../data'),
+      ];
+      const foundSeedDir =
+        candidates.find(
+          (dir) =>
+            fsSync.existsSync(path.join(dir, 'persons.json')) &&
+            fsSync.existsSync(path.join(dir, 'relationships.json'))
+        ) || candidates[0];
+
+      // In Cloud Functions / Serverless runtime, root filesystem is read-only, so use /tmp
+      const isCloudEnv = Boolean(
+        process.env.K_SERVICE ||
+        process.env.FUNCTION_TARGET ||
+        process.env.FIREBASE_CONFIG ||
+        process.env.GCP_PROJECT
+      );
+
+      if (isCloudEnv) {
+        const tmpDir = path.join('/tmp', 'family_tree_data');
+        if (!fsSync.existsSync(tmpDir)) {
+          fsSync.mkdirSync(tmpDir, { recursive: true });
+        }
+        const tmpPersons = path.join(tmpDir, 'persons.json');
+        const tmpRels = path.join(tmpDir, 'relationships.json');
+
+        if (!fsSync.existsSync(tmpPersons) && fsSync.existsSync(path.join(foundSeedDir, 'persons.json'))) {
+          fsSync.copyFileSync(path.join(foundSeedDir, 'persons.json'), tmpPersons);
+        }
+        if (!fsSync.existsSync(tmpRels) && fsSync.existsSync(path.join(foundSeedDir, 'relationships.json'))) {
+          fsSync.copyFileSync(path.join(foundSeedDir, 'relationships.json'), tmpRels);
+        }
+        this.dataDir = tmpDir;
+      } else {
+        this.dataDir = foundSeedDir;
+      }
+    }
+
     this.personsPath = path.join(this.dataDir, options.personsFileName || 'persons.json');
     this.relationshipsPath = path.join(this.dataDir, options.relationshipsFileName || 'relationships.json');
   }

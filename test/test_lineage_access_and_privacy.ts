@@ -182,18 +182,18 @@ async function runAll() {
   });
 
   // Section 5: Canonical DB Immutability
-  await it('Canonical persons.json database has exactly 17 persons (14 Konukuru + 2 Paradarami parents + 1 Rada Galeti)', () => {
+  await it('Canonical persons.json database has exactly 19 persons (14 Konukuru + 2 Paradarami parents + 3 Galeti family members)', () => {
     const personsPath = path.join(projectRoot, 'data', 'persons.json');
     const data = JSON.parse(fs.readFileSync(personsPath, 'utf8'));
     const list = Array.isArray(data) ? data : data.persons;
-    assert.strictEqual(list.length, 17);
+    assert.strictEqual(list.length, 19);
   });
 
-  await it('Canonical relationships.json database has exactly 26 relationships', () => {
+  await it('Canonical relationships.json database has exactly 29 relationships', () => {
     const relPath = path.join(projectRoot, 'data', 'relationships.json');
     const data = JSON.parse(fs.readFileSync(relPath, 'utf8'));
     const list = Array.isArray(data) ? data : data.relationships;
-    assert.strictEqual(list.length, 26);
+    assert.strictEqual(list.length, 29);
   });
 
   // Section 6: Main House Partitioning & Surnamed External Lineage Hiding
@@ -239,8 +239,8 @@ async function runAll() {
     const graphService = new GraphService(repo);
     const graph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
 
-    // 1. Expected 5 members in Paradarami tree (Ramayya, Achamma, Suguna, Rada Galeti, Jagannadham)
-    assert.strictEqual(graph.nodes.length, 5, `Expected 5 nodes in Paradarami tree, got ${graph.nodes.length}`);
+    // 1. Expected 6 members in Paradarami tree (Ramayya, Achamma, Suguna, Rada Galeti, Munirathnam Galeti, Jagannadham)
+    assert.strictEqual(graph.nodes.length, 6, `Expected 6 nodes in Paradarami tree, got ${graph.nodes.length}`);
 
     // 2. Both parents Ramayya and Achamma must be present
     assert.ok(graph.nodes.find((n) => n.id === '1ae73a4b-b739-40d3-8b50-071bbf1b07eb'), 'Ramayya Chetty must be present');

@@ -25,13 +25,13 @@ async function runTests() {
   const repo = new LocalJsonFamilyRepository({ dataDir });
 
   const persons = await repo.getAllPersons(true);
-  assert(persons.length === 17, `Expected 17 persons in database, got ${persons.length}`);
+  assert(persons.length === 19, `Expected 19 persons in database, got ${persons.length}`);
 
   const activePersons = await repo.getAllPersons(false);
-  assert(activePersons.length === 17, `Expected 17 active persons, got ${activePersons.length}`);
+  assert(activePersons.length === 19, `Expected 19 active persons, got ${activePersons.length}`);
 
   const relationships = await repo.getAllRelationships();
-  assert(relationships.length === 26, `Expected 26 relationships in database, got ${relationships.length}`);
+  assert(relationships.length === 29, `Expected 29 relationships in database, got ${relationships.length}`);
 
   // Test getPersonById
   const person1 = await repo.getPersonById('867842c1-b8a2-45ad-8d9c-89150e68eb16');
@@ -218,7 +218,7 @@ async function runTests() {
   assert(saveRes.version === curVer + 1, 'Data saved safely with version increment');
 
   const loadedPersons = await tempRepo.getAllPersons(true);
-  assert(loadedPersons.length === 17, 'Reloaded persons after atomic save intact');
+  assert(loadedPersons.length === 19, 'Reloaded persons after atomic save intact');
 
   // Cleanup temp test directory
   await fs.rm(tempTestDir, { recursive: true, force: true });
