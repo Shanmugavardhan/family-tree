@@ -1,6 +1,13 @@
-# Family Tree — Person Management Module (Phase 2)
+# Family Tree — Multi-House Genealogical Canvas
 
-A reliable data-management system for family members, their personal attributes, and their relationships.
+A high-performance, infinite-canvas family heritage platform that organizes multi-house genealogies across historical generation epochs, elegantly isolates in-law lineages through dynamic on-canvas expansion, and enforces strict generational privacy via lineage-specific Family Access Codes.
+
+## Architecture & Source of Truth
+The full architectural blueprint, mathematical models, and privacy design specifications are documented in the **[ARCHITECTURE](file:///home/shanmuga/Documents/Learning/personal/Family_tree/ARCHITECTURE/README.md)** directory:
+- **[01. Infinite Canvas & Generations](file:///home/shanmuga/Documents/Learning/personal/Family_tree/ARCHITECTURE/01-INFINITE-CANVAS-AND-GENERATIONS.md)**: 2D coordinate system, generational bands (440px grid), inverse-zoom scaling laws.
+- **[02. Cross-Lineage Marriages & "View Lineage"](file:///home/shanmuga/Documents/Learning/personal/Family_tree/ARCHITECTURE/02-CROSS-LINEAGE-MARRIAGES-AND-VIEW-LINEAGE.md)**: Spousal bridge pattern, non-lineage spouse isolation, and dynamic auto-arrangement to row end.
+- **[03. Privacy Model & Family Access Codes](file:///home/shanmuga/Documents/Learning/personal/Family_tree/ARCHITECTURE/03-PRIVACY-MODEL-AND-FAMILY-ACCESS-CODES.md)**: Protecting living sons/daughters, ancestral visibility rule, and lower-generation grey lock node.
+- **[04. Data Model & Graph Partitioning](file:///home/shanmuga/Documents/Learning/personal/Family_tree/ARCHITECTURE/04-DATA-MODEL-AND-GRAPH-PARTITIONING.md)**: Unified canonical database, deterministic graph partitioning, layout calculation engine.
 
 ## Stack
 - **Frontend**: React + TypeScript + Vite
