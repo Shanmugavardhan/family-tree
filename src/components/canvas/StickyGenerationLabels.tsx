@@ -76,10 +76,10 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               transition: 'opacity 0.2s ease-in-out',
             }}
           >
-            {/* Royal Heritage Generation Title (Cormorant Garamond 700) */}
+            {/* Royal Heritage Generation Title (Marcellus) */}
             <div
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "'Marcellus', Georgia, serif",
                 fontSize: '32px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
@@ -95,13 +95,13 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               {lane.name}
             </div>
 
-            {/* Timeline Period ONLY (Cormorant Garamond / DM Sans) */}
+            {/* Timeline Period ONLY (Marcellus / Inter) */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 marginTop: 4,
-                fontFamily: "'Cormorant Garamond', 'DM Sans', Georgia, serif",
+                fontFamily: "'Marcellus', Georgia, serif",
                 fontSize: '22px',
                 fontWeight: 600,
                 color: isDark ? '#9BA3AF' : '#57534e',

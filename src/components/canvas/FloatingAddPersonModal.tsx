@@ -278,7 +278,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 style={{
                   fontSize: '1.05rem',
                   fontWeight: 700,
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "'Marcellus', Georgia, serif",
                   color: isDark ? '#D6B15C' : '#854d0e',
                   letterSpacing: '0.02em',
                   margin: 0,

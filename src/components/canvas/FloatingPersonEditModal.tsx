@@ -392,7 +392,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
             <div>
               <h2
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Marcellus', serif",
                   fontSize: '1.35rem',
                   fontWeight: 700,
                   margin: 0,
@@ -1119,7 +1119,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
 
               <h3
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Marcellus', serif",
                   fontSize: '1.35rem',
                   fontWeight: 700,
                   margin: '0 0 8px',

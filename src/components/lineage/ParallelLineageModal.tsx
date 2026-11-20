@@ -106,7 +106,7 @@ export const ParallelLineageModal: React.FC = () => {
                 style={{
                   fontSize: '1.1rem',
                   fontWeight: 700,
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "'Marcellus', Georgia, serif",
                   color: '#D6B15C',
                   letterSpacing: '0.02em',
                   margin: 0,

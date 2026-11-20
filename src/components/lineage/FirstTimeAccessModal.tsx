@@ -94,7 +94,7 @@ export const FirstTimeAccessModal: React.FC = () => {
         <h2
           style={{
             margin: 0,
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "'Marcellus', Georgia, serif",
             fontSize: '1.85rem',
             fontWeight: 700,
             color: '#D6B15C',

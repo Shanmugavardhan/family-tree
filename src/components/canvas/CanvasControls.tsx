@@ -138,7 +138,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
                 border: 'none',
                 outline: 'none',
                 width: '100%',
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '0.95rem',
                 fontWeight: 600,
                 color: isDark ? '#f8fafc' : '#1c1917',
@@ -187,7 +187,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
                 >
                   <span
                     style={{
-                      fontFamily: "'Cinzel', serif",
+                      fontFamily: "'Marcellus', Georgia, serif",
                       fontWeight: 700,
                       color: isDark ? '#f8fafc' : '#1c1917',
                       fontSize: '0.825rem',
@@ -198,7 +198,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
                   </span>
                   <span
                     style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontFamily: "'Marcellus', Georgia, serif",
                       fontSize: '0.785rem',
                       color: isDark ? '#d4af37' : '#92400e',
                       fontStyle: 'italic',
@@ -228,7 +228,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
               padding: '6px 12px',
               borderRadius: 8,
               border: isDark ? '1px solid rgba(212, 175, 55, 0.45)' : '1px solid rgba(180, 83, 9, 0.4)',
-              fontFamily: "'Cinzel', Georgia, serif",
+              fontFamily: "'Marcellus', Georgia, serif",
               fontSize: '0.785rem',
               fontWeight: 800,
               letterSpacing: '0.04em',
@@ -640,7 +640,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           <Navigation size={15} color={isDark ? '#e5c158' : '#b45309'} />
           <span
             style={{
-              fontFamily: "'Cinzel', 'Trajan Pro', Georgia, serif",
+              fontFamily: "'Marcellus', Georgia, serif",
               fontSize: '0.85rem',
               fontWeight: 800,
               letterSpacing: '0.04em',
@@ -654,7 +654,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             style={{
               border: 'none',
               background: 'transparent',
-              fontFamily: "'Cinzel', serif",
+              fontFamily: "'Marcellus', Georgia, serif",
               fontSize: '0.785rem',
               fontWeight: 800,
               color: isDark ? '#f8fafc' : '#b45309',

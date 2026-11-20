@@ -294,3 +294,4 @@ npm run test:audit
 # Or run the full repository test suite (functions, canvas, interactions, lineage, audit):
 npm test
 ```
+

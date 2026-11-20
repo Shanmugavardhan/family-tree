@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
               <h1
                 className="header-brand-title"
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "'Marcellus', Georgia, serif",
                   fontSize: '1.35rem',
                   fontWeight: 700,
                   color: isDark ? '#D6B15C' : '#854d0e',
@@ -171,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
               <p
                 className="header-brand-subtitle"
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "'Marcellus', Georgia, serif",
                   fontSize: '0.875rem',
                   color: isDark ? '#9BA3AF' : '#78716c',
                   fontWeight: 600,
@@ -283,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              fontFamily: "'Cinzel', Georgia, serif",
+              fontFamily: "'Marcellus', Georgia, serif",
               fontSize: '0.785rem',
               fontWeight: 700,
               letterSpacing: '0.04em',
@@ -376,7 +376,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                 <div>
                   <div
                     style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontFamily: "'Marcellus', Georgia, serif",
                       fontSize: '1.2rem',
                       fontWeight: 700,
                       color: isDark ? '#D6B15C' : '#854d0e',
@@ -387,7 +387,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontFamily: "'Marcellus', Georgia, serif",
                       fontSize: '0.785rem',
                       fontStyle: 'italic',
                       color: isDark ? '#9BA3AF' : '#78716c',
@@ -559,7 +559,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontFamily: "'Marcellus', Georgia, serif",
                   fontSize: '0.8rem',
                   fontWeight: 700,
                   letterSpacing: '0.04em',

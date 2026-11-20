@@ -117,7 +117,7 @@ export const RelationshipPathfinderModal: React.FC<RelationshipPathfinderModalPr
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: isDark ? '#D6B15C' : '#b45309' }}>
             <Navigation size={18} />
-            <h3 style={{ fontSize: '1.2rem', fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, margin: 0 }}>
+            <h3 style={{ fontSize: '1.2rem', fontFamily: "'Marcellus', serif", fontWeight: 700, margin: 0 }}>
               Relationship Pathfinder
             </h3>
           </div>

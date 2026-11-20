@@ -135,7 +135,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           backgroundColor: isDark ? '#1D2633' : '#f6efe2',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#D6B15C' : '#78350f', fontSize: '0.95rem', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#D6B15C' : '#78350f', fontSize: '0.95rem', fontFamily: "'Marcellus', Georgia, serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <span>⚔️</span>
           <span>Kinship Record</span>
         </div>
@@ -171,7 +171,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
               justifyContent: 'center',
               fontSize: '1.25rem',
               fontWeight: 800,
-              fontFamily: "'Cinzel', serif",
+              fontFamily: "'Marcellus', serif",
               flexShrink: 0,
               overflow: 'hidden',
             }}
@@ -205,7 +205,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <span
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   color: isDark ? '#D6B15C' : '#78350f',
