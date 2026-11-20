@@ -3,15 +3,12 @@ import {
   getSmoothStepPath,
   BaseEdge,
   EdgeLabelRenderer,
-  useInternalNode,
-  useViewport,
 } from '@xyflow/react';
 import { FamilyEdgeData } from '../../adapters/reactFlowAdapter';
 import { Heart, Navigation } from 'lucide-react';
 
 export const FamilyEdge: React.FC<any> = ({
   id,
-  source,
   sourceX,
   sourceY,
   targetX,
@@ -22,29 +19,15 @@ export const FamilyEdge: React.FC<any> = ({
   markerEnd,
   data,
 }) => {
-  const { zoom } = useViewport();
-  const sourceNode = useInternalNode(source);
   const edgeData = data as FamilyEdgeData;
   const isSpouse = edgeData?.edgeType === 'spouse';
   const isHighlighted = edgeData?.isHighlighted;
   const isPathEdge = edgeData?.isPathEdge;
   const parentType = edgeData?.parentType;
 
-  // Requirement 1 & 2: Instant synchronous anchor to name border without delay during zoom
-  let effectiveSourceY = sourceY;
-  if (!isSpouse && sourceNode) {
-    const isLiving = (sourceNode.data as any)?.isLiving ?? true;
-    const unscaledHeight = isLiving ? 132 : 150;
-    const baseScale = Math.min(2.5, Math.max(0.6, Math.pow(1 / Math.max(0.1, zoom), 1 / 1.5)));
-    const nodeY = sourceNode.internals?.positionAbsolute?.y ?? sourceNode.position?.y;
-    if (typeof nodeY === 'number') {
-      effectiveSourceY = nodeY + unscaledHeight * baseScale;
-    }
-  }
-
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
-    sourceY: effectiveSourceY,
+    sourceY,
     sourcePosition,
     targetX,
     targetY,

@@ -215,12 +215,12 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   // Requirement 1: Enlarge smoothly on hover
   const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
 
-  // Sync handle internals on mount and on hover state change
+  // Sync handle internals on mount and whenever zoom, scaleFactor, or nodeId changes
   React.useLayoutEffect(() => {
     if (nodeId) {
       updateNodeInternals(nodeId);
     }
-  }, [nodeId, isHovered, updateNodeInternals]);
+  }, [nodeId, isHovered, scaleFactor, zoom, updateNodeInternals]);
 
   const fullName = [nodeData.firstName, nodeData.middleName, nodeData.lastName]
     .filter(Boolean)
@@ -286,53 +286,6 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
         zIndex: isHovered ? 30 : isSelected ? 15 : 1,
       }}
     >
-      {/* Target handle for incoming parent-child connection (at top of circle) */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="child-top"
-        style={{
-          width: 8,
-          height: 8,
-          background: isPathNode ? '#D6B15C' : '#A94747',
-          border: '1.5px solid #101318',
-          top: 3,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 5,
-        }}
-      />
-
-      {/* Handles for horizontal spouse connection (aligned to middle of circle) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="spouse-left"
-        style={{
-          width: 8,
-          height: 8,
-          background: isPathNode ? '#D6B15C' : '#D18B91',
-          border: '1.5px solid #101318',
-          left: 43,
-          top: 50,
-          zIndex: 5,
-        }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="spouse-right"
-        style={{
-          width: 8,
-          height: 8,
-          background: isPathNode ? '#D6B15C' : '#D18B91',
-          border: '1.5px solid #101318',
-          right: 43,
-          top: 50,
-          zIndex: 5,
-        }}
-      />
-
       {/* Proportional Scaled Container (Enlarges on hover + 1:1 ratio with zoom out) */}
       <div
         style={{
@@ -357,6 +310,66 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
             margin: '6px 0 8px 0',
           }}
         >
+          {/* Target handle for incoming parent-child connection (at top center of circle boundary) */}
+          <Handle
+            type="target"
+            position={Position.Top}
+            id="child-top"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
+              zIndex: 5,
+            }}
+          />
+
+          {/* Exact left boundary handle for horizontal spouse connection */}
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="spouse-left"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
+              zIndex: 5,
+            }}
+          />
+
+          {/* Exact right boundary handle for horizontal spouse connection */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="spouse-right"
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
+              zIndex: 5,
+            }}
+          />
+
           {/* Circular Portrait Medallion (Requirement 3: circle margin & gold rim) */}
           <div
             style={{
@@ -612,9 +625,9 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
         <div
           style={{
             position: 'relative',
-            width: 8,
-            height: 8,
-            marginTop: 4,
+            width: 2,
+            height: 2,
+            marginTop: 6,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -629,10 +642,12 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
               top: 0,
               left: 0,
               transform: 'none',
-              width: 8,
-              height: 8,
-              background: isPathNode ? '#D6B15C' : '#A94747',
-              border: '1.5px solid #101318',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
               zIndex: 5,
             }}
           />

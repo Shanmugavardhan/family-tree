@@ -21,6 +21,10 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
     },
   });
 
+  const activeLanes = lanes.filter(
+    (lane) => lane.id !== 'unknown_birth_year' && lane.order !== null
+  );
+
   return (
     <div
       ref={containerRef}
@@ -36,7 +40,7 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
         willChange: 'transform',
       }}
     >
-      {lanes.map((lane) => (
+      {activeLanes.map((lane) => (
         <div
           key={lane.id}
           style={{

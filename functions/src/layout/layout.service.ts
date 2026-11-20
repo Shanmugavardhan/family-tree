@@ -130,17 +130,19 @@ export class LayoutService {
           textColor: def.textColor,
         });
       }
-      const unknownLane = {
-        id: 'unknown_birth_year',
-        name: 'Birth Year Unknown',
-        order: null,
-        backgroundColor: '#64748b',
-        textColor: '#ffffff',
-      };
-      if (config.unknownLanePlacement === 'top') {
-        laneDefinitions.unshift(unknownLane);
-      } else {
-        laneDefinitions.push(unknownLane);
+      if (cohortNodesMap.has(null) && (cohortNodesMap.get(null)?.length || 0) > 0) {
+        const unknownLane = {
+          id: 'unknown_birth_year',
+          name: 'Birth Year Unknown',
+          order: null,
+          backgroundColor: '#64748b',
+          textColor: '#ffffff',
+        };
+        if (config.unknownLanePlacement === 'top') {
+          laneDefinitions.unshift(unknownLane);
+        } else {
+          laneDefinitions.push(unknownLane);
+        }
       }
     }
 

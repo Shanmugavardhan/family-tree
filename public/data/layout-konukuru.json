@@ -633,26 +633,16 @@
       "endYear": 2039,
       "backgroundColor": "#2D1E26",
       "textColor": "#F1E9D7"
-    },
-    {
-      "id": "unknown_birth_year",
-      "name": "Birth Year Unknown",
-      "order": null,
-      "y": 4840,
-      "height": 440,
-      "nodeCount": 0,
-      "backgroundColor": "#64748b",
-      "textColor": "#ffffff"
     }
   ],
   "width": 3635,
-  "height": 5280,
+  "height": 4840,
   "metadata": {
     "totalNodes": 14,
     "totalEdges": 21,
-    "totalLanes": 12,
+    "totalLanes": 11,
     "width": 3635,
-    "height": 5280,
-    "calculatedAt": "2026-11-20T05:21:14.058Z"
+    "height": 4840,
+    "calculatedAt": "2026-11-20T05:40:57.853Z"
   }
 }
