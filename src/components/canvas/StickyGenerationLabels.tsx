@@ -10,93 +10,117 @@ interface StickyGenerationLabelsProps {
 export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ lanes }) => {
   const { isDark } = useTheme();
   const { y, zoom } = useViewport();
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  // Directly sync vertical transform with zero latency during drag/pan
-  useOnViewportChange({
-    onChange: ({ y: vy, zoom: vz }) => {
-      if (containerRef.current) {
-        containerRef.current.style.transform = `translate3d(0, ${vy}px, 0) scale(${vz})`;
-      }
-    },
-  });
+  const labelRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
 
   const activeLanes = lanes.filter(
     (lane) => lane.id !== 'unknown_birth_year' && lane.order !== null
   );
 
+  // Requirement 1: Generation names increase in size along with zoom out, and decrease in size with zoom in
+  const computeScale = (vz: number) =>
+    Math.min(1.85, Math.max(0.65, Math.pow(1 / Math.max(0.18, vz), 0.58)));
+
+  // Directly sync vertical transform and inverse zoom scale with zero latency during drag/pan/zoom
+  useOnViewportChange({
+    onChange: ({ y: vy, zoom: vz }) => {
+      const scale = computeScale(vz);
+      activeLanes.forEach((lane) => {
+        const el = labelRefs.current.get(lane.id);
+        if (el) {
+          const top = vy + (lane.y + 24) * vz;
+          el.style.transform = `translate3d(36px, ${top}px, 0) scale(${scale})`;
+        }
+      });
+    },
+  });
+
+  const initialScale = computeScale(zoom);
+
   return (
     <div
-      ref={containerRef}
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
-        width: 480,
+        width: 0,
+        height: 0,
         pointerEvents: 'none',
         zIndex: 10,
-        transform: `translate3d(0, ${y}px, 0) scale(${zoom})`,
-        transformOrigin: '0 0',
-        willChange: 'transform',
+        overflow: 'visible',
       }}
     >
-      {activeLanes.map((lane) => (
-        <div
-          key={lane.id}
-          style={{
-            position: 'absolute',
-            top: lane.y + 28,
-            left: 36,
-            display: 'flex',
-            flexDirection: 'column',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            opacity: isDark ? 0.35 : 0.42, // Reduced opacity per Request 4
-            transition: 'opacity 0.2s ease-in-out',
-          }}
-        >
-          {/* Royal Heritage Generation Title (Cormorant Garamond 700) */}
+      {activeLanes.map((lane) => {
+        const top = y + (lane.y + 24) * zoom;
+        return (
           <div
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: '32px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              lineHeight: 1.15,
-              color: isDark ? '#D6B15C' : '#854d0e',
-              textShadow: isDark
-                ? '0 2px 12px rgba(0, 0, 0, 0.95), 0 0 16px rgba(214, 177, 92, 0.25)'
-                : '0 1px 4px rgba(255, 255, 255, 0.95)',
+            key={lane.id}
+            ref={(el) => {
+              if (el) {
+                labelRefs.current.set(lane.id, el);
+              } else {
+                labelRefs.current.delete(lane.id);
+              }
             }}
-          >
-            {lane.name}
-          </div>
-
-          {/* Timeline Period ONLY (Cormorant Garamond / DM Sans) */}
-          <div
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               display: 'flex',
-              alignItems: 'center',
-              marginTop: 4,
-              fontFamily: "'Cormorant Garamond', 'DM Sans', Georgia, serif",
-              fontSize: '22px',
-              fontWeight: 600,
-              color: isDark ? '#9BA3AF' : '#57534e',
-              letterSpacing: '0.04em',
-              textShadow: isDark ? '0 1px 6px rgba(0, 0, 0, 0.9)' : 'none',
+              flexDirection: 'column',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              transform: `translate3d(36px, ${top}px, 0) scale(${initialScale})`,
+              transformOrigin: 'top left',
+              willChange: 'transform',
+              opacity: isDark ? 0.38 : 0.45,
+              transition: 'opacity 0.2s ease-in-out',
             }}
           >
-            {lane.startYear && lane.endYear ? (
-              <span>
-                {lane.startYear} – {lane.endYear}
-              </span>
-            ) : (
-              <span style={{ fontStyle: 'italic', opacity: 0.85 }}>Historical Epoch</span>
-            )}
+            {/* Royal Heritage Generation Title (Cormorant Garamond 700) */}
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '32px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                lineHeight: 1.15,
+                color: isDark ? '#D6B15C' : '#854d0e',
+                textShadow: isDark
+                  ? '0 2px 12px rgba(0, 0, 0, 0.95), 0 0 16px rgba(214, 177, 92, 0.25)'
+                  : '0 1px 4px rgba(255, 255, 255, 0.95)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {lane.name}
+            </div>
+
+            {/* Timeline Period ONLY (Cormorant Garamond / DM Sans) */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: 4,
+                fontFamily: "'Cormorant Garamond', 'DM Sans', Georgia, serif",
+                fontSize: '22px',
+                fontWeight: 600,
+                color: isDark ? '#9BA3AF' : '#57534e',
+                letterSpacing: '0.04em',
+                textShadow: isDark ? '0 1px 6px rgba(0, 0, 0, 0.9)' : 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {lane.startYear && lane.endYear ? (
+                <span>
+                  {lane.startYear} – {lane.endYear}
+                </span>
+              ) : (
+                <span style={{ fontStyle: 'italic', opacity: 0.85 }}>Historical Epoch</span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

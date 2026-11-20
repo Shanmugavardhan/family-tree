@@ -43,7 +43,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
         zIndex: 20,
       }}
     >
-      {/* Target handle from above (optional) */}
+      {/* Target handle from above */}
       <Handle
         type="target"
         position={Position.Top}
@@ -51,13 +51,27 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
         style={{
           width: 8,
           height: 8,
-          background: unlocked ? '#10b981' : '#ef4444',
+          background: unlocked ? '#10b981' : '#94a3b8',
           border: '1.5px solid #101318',
           top: 0,
         }}
       />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="child-top"
+        style={{
+          width: 8,
+          height: 8,
+          background: unlocked ? '#10b981' : '#94a3b8',
+          border: '1.5px solid #101318',
+          top: 0,
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+      />
 
-      {/* Circular Lock Medallion */}
+      {/* Circular Lock Medallion (Requirement 2.c: refined grey aesthetic instead of red) */}
       <div
         onClick={() => setShowPrompt((prev) => !prev)}
         title={unlocked ? 'Ancestry Unlocked' : 'Click to enter Family Code'}
@@ -66,10 +80,10 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
           height: 86,
           borderRadius: '50%',
           backgroundColor: '#151922',
-          border: unlocked ? '2.5px solid #10b981' : '2.5px solid #ef4444',
+          border: unlocked ? '2.5px solid #10b981' : '2.5px solid #94a3b8',
           boxShadow: unlocked
             ? '0 0 25px rgba(16, 185, 129, 0.45), 0 4px 14px rgba(0,0,0,0.7)'
-            : '0 0 25px rgba(239, 68, 68, 0.4), 0 4px 14px rgba(0,0,0,0.7)',
+            : '0 0 20px rgba(148, 163, 184, 0.35), 0 4px 14px rgba(0,0,0,0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -80,7 +94,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
         {unlocked ? (
           <Unlock size={36} color="#10b981" />
         ) : (
-          <Lock size={36} color="#f87171" />
+          <Lock size={36} color="#94a3b8" />
         )}
       </div>
 
@@ -99,7 +113,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
             fontSize: '13px',
             fontWeight: 700,
             letterSpacing: '0.04em',
-            color: unlocked ? '#10b981' : '#f87171',
+            color: unlocked ? '#10b981' : '#cbd5e1',
             textTransform: 'uppercase',
           }}
         >
@@ -224,7 +238,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
         </div>
       )}
 
-      {/* Outgoing handle downward connecting to parents */}
+      {/* Outgoing handle downward */}
       <Handle
         type="source"
         position={Position.Bottom}
@@ -232,7 +246,7 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
         style={{
           width: 8,
           height: 8,
-          background: unlocked ? '#10b981' : '#ef4444',
+          background: unlocked ? '#10b981' : '#94a3b8',
           border: '1.5px solid #101318',
           bottom: -2,
         }}

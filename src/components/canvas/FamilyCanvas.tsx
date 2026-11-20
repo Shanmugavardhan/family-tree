@@ -365,7 +365,10 @@ const FamilyCanvasInternal: React.FC = () => {
     const finalNodes: Node<any>[] = [...flowData.nodes];
     const finalEdges: Edge<any>[] = [...flowData.edges];
 
-    // Requirement 1: View lineage directly on the map (no separate window), showing ONLY father and mother
+    // Requirement 2: View lineage directly on the map:
+    // a. Automatically arrange the expanded person (e.g. Suguna) to the end of the tree so lineage is visible cleanly
+    // b. In upper generation, show ONLY direct ancestors (parents). Lock node belongs in lower generation (later generation).
+    // c. Lock symbol and connecting lines use elegant grey instead of red.
     if (expandedLineagePersonId) {
       const targetPersonNode = finalNodes.find(
         (n) => n.id === expandedLineagePersonId || n.data?.personId === expandedLineagePersonId
@@ -382,13 +385,86 @@ const FamilyCanvasInternal: React.FC = () => {
         lineageInfo.mother &&
         lineageInfo.lineageId !== activeLineageId
       ) {
+        // Step 1: Identify spouse and couple's children
+        const existingSpouseEdge = finalEdges.find(
+          (e) =>
+            e.data?.edgeType === 'spouse' &&
+            (e.source === targetPersonNode.id || e.target === targetPersonNode.id)
+        );
+        const spouseId = existingSpouseEdge
+          ? existingSpouseEdge.source === targetPersonNode.id
+            ? existingSpouseEdge.target
+            : existingSpouseEdge.source
+          : null;
+        const spouseNode = spouseId ? finalNodes.find((n) => n.id === spouseId) : null;
+
+        const childIds = new Set<string>();
+        finalEdges.forEach((e) => {
+          if (
+            e.data?.edgeType === 'parent_child' &&
+            (e.source === targetPersonNode.id || (spouseId && e.source === spouseId))
+          ) {
+            childIds.add(e.target);
+          }
+        });
+        const childNodes = finalNodes.filter((n) => childIds.has(n.id));
+
+        // Step 2 (Requirement 2.a): Find the maximum X among all other nodes in the same generation
+        const otherSameGenNodes = finalNodes.filter(
+          (n) =>
+            n.id !== targetPersonNode.id &&
+            (!spouseNode || n.id !== spouseNode.id) &&
+            Math.abs(n.position.y - targetPersonNode.position.y) < 120
+        );
+        const maxSameGenX =
+          otherSameGenNodes.length > 0
+            ? Math.max(...otherSameGenNodes.map((n) => n.position.x))
+            : targetPersonNode.position.x;
+
+        // Step 3: Reposition spouse and target person to the end of the tree
+        const newSpouseX = maxSameGenX + 320;
+        const newTargetX = spouseNode ? newSpouseX + 320 : maxSameGenX + 320;
+
+        if (spouseNode) {
+          spouseNode.position = { x: newSpouseX, y: targetPersonNode.position.y };
+          targetPersonNode.position = { x: newTargetX, y: targetPersonNode.position.y };
+          if (existingSpouseEdge) {
+            existingSpouseEdge.source = spouseNode.id;
+            existingSpouseEdge.target = targetPersonNode.id;
+            existingSpouseEdge.sourceHandle = 'spouse-right';
+            existingSpouseEdge.targetHandle = 'spouse-left';
+          }
+        } else {
+          targetPersonNode.position = { x: newTargetX, y: targetPersonNode.position.y };
+        }
+
+        // Step 4: Position children directly below the couple
+        const parentsMidX = spouseNode ? (newSpouseX + newTargetX) / 2 : newTargetX;
+        if (childNodes.length === 1) {
+          childNodes[0].position = { x: parentsMidX, y: childNodes[0].position.y };
+        } else if (childNodes.length === 2) {
+          childNodes.sort((a, b) => a.position.x - b.position.x);
+          childNodes[0].position = { x: parentsMidX - 140, y: childNodes[0].position.y };
+          childNodes[1].position = { x: parentsMidX + 140, y: childNodes[1].position.y };
+        } else if (childNodes.length > 2) {
+          const childSpacing = 280;
+          const startX = parentsMidX - ((childNodes.length - 1) * childSpacing) / 2;
+          childNodes.sort((a, b) => a.position.x - b.position.x);
+          childNodes.forEach((c, idx) => {
+            c.position = { x: startX + idx * childSpacing, y: c.position.y };
+          });
+        }
+
         const baseX = targetPersonNode.position.x;
         const baseY = targetPersonNode.position.y;
         // Parents in preceding generation lane above target
         const parentsY = baseY - 440;
         const fatherX = baseX - 140;
         const motherX = baseX + 140;
-        const lockY = baseY - 660;
+
+        // Step 5 (Requirement 2.b): Lock node placed in LOWER generation (later generation), not upper
+        const lockX = motherX + 80;
+        const lockY = baseY + 440;
 
         const fatherNode: Node<PersonNodeData> = {
           id: lineageInfo.father.id,
@@ -406,8 +482,8 @@ const FamilyCanvasInternal: React.FC = () => {
             lastName: lineageInfo.father.lastName,
             birthDate: null,
             birthYear: lineageInfo.father.birthYear ?? null,
-            generationId: 'silent',
-            generationName: 'Silent Generation',
+            generationId: 'baby_boomers',
+            generationName: 'Baby Boomers',
             generationOrder: 2,
             photoPath: null,
             gender: lineageInfo.father.gender,
@@ -439,8 +515,8 @@ const FamilyCanvasInternal: React.FC = () => {
             lastName: lineageInfo.mother.lastName,
             birthDate: null,
             birthYear: lineageInfo.mother.birthYear ?? null,
-            generationId: 'silent',
-            generationName: 'Silent Generation',
+            generationId: 'baby_boomers',
+            generationName: 'Baby Boomers',
             generationOrder: 2,
             photoPath: null,
             gender: lineageInfo.mother.gender,
@@ -463,7 +539,7 @@ const FamilyCanvasInternal: React.FC = () => {
         const lockNode: Node<any> = {
           id: `${lineageInfo.lineageId}-ancestry-lock`,
           type: 'lineageLockNode',
-          position: { x: baseX + 52, y: lockY },
+          position: { x: lockX, y: lockY },
           data: {
             lineageId: lineageInfo.lineageId,
             lineageName: lineageInfo.lineageName,
@@ -503,22 +579,22 @@ const FamilyCanvasInternal: React.FC = () => {
           data: { edgeType: 'parent_child' },
         };
 
-        // Ancestry connecting edge from lock node down to father
+        // Requirement 2.b & 2.c: Ancestry connecting edge down to lock node in lower generation using grey (#94a3b8)
         const lockEdge: Edge<FamilyEdgeData> = {
-          id: `edge-maternal-lock-${lineageInfo.father.id}`,
-          source: `${lineageInfo.lineageId}-ancestry-lock`,
-          target: lineageInfo.father.id,
+          id: `edge-maternal-lock-${lineageInfo.mother.id}`,
+          source: lineageInfo.mother.id,
+          target: `${lineageInfo.lineageId}-ancestry-lock`,
           sourceHandle: 'parent-bottom',
-          targetHandle: 'child-top',
+          targetHandle: 'lock-top',
           type: 'familyEdge',
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 14,
             height: 14,
-            color: isTargetLineageUnlocked ? '#10b981' : '#ef4444',
+            color: isTargetLineageUnlocked ? '#10b981' : '#94a3b8',
           },
           style: {
-            stroke: isTargetLineageUnlocked ? '#10b981' : '#ef4444',
+            stroke: isTargetLineageUnlocked ? '#10b981' : '#94a3b8',
             strokeWidth: 2,
             strokeDasharray: '4 4',
           },
@@ -544,7 +620,7 @@ const FamilyCanvasInternal: React.FC = () => {
     setEdges,
   ]);
 
-  // Smoothly center on expanded lineage parents when toggled on the map
+  // Smoothly center on expanded lineage parents when toggled on the map (at the end of the tree)
   const prevExpandedRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (expandedLineagePersonId && expandedLineagePersonId !== prevExpandedRef.current && layout) {
@@ -552,9 +628,12 @@ const FamilyCanvasInternal: React.FC = () => {
         (n) => n.id === expandedLineagePersonId || n.personId === expandedLineagePersonId
       );
       if (target) {
-        setCenter(target.x + target.width / 2, target.y - 200, {
+        const sameGen = layout.nodes.filter((n) => Math.abs(n.y - target.y) < 120);
+        const maxSameGenX = sameGen.length > 0 ? Math.max(...sameGen.map((n) => n.x)) : target.x;
+        const targetCenterX = maxSameGenX + 480;
+        setCenter(targetCenterX, target.y - 120, {
           duration: 650,
-          zoom: 1.0,
+          zoom: 0.85,
         });
       }
     }
