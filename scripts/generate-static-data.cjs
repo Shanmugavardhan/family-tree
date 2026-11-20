@@ -14,13 +14,13 @@ async function main() {
   const publicDataDir = path.resolve(__dirname, '../public/data');
   fs.mkdirSync(publicDataDir, { recursive: true });
 
-  // 1. Pre-calculate deterministic layouts for both lineages
+  // 1. Pre-calculate deterministic layouts for both lineages (with kinship generation inference enabled)
   const konuGraph = await graphService.buildFamilyGraph({ lineage: 'konukuru' });
-  const konuLayout = layoutService.calculateLayout(konuGraph, { compactLanes: false });
+  const konuLayout = layoutService.calculateLayout(konuGraph, { compactLanes: false, inferGenerations: true });
   fs.writeFileSync(path.join(publicDataDir, 'layout-konukuru.json'), JSON.stringify(konuLayout, null, 2));
 
   const paraGraph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
-  const paraLayout = layoutService.calculateLayout(paraGraph, { compactLanes: false });
+  const paraLayout = layoutService.calculateLayout(paraGraph, { compactLanes: false, inferGenerations: true });
   fs.writeFileSync(path.join(publicDataDir, 'layout-paradarami.json'), JSON.stringify(paraLayout, null, 2));
 
   // 2. Export canonical persons and relationships
