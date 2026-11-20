@@ -14,7 +14,8 @@
     "test:canvas": "./functions/node_modules/.bin/tsx test/test_react_flow_adapter.ts",
     "test:interaction": "./functions/node_modules/.bin/tsx test/test_interaction_and_navigation.ts",
     "test:lineage": "./functions/node_modules/.bin/tsx test/test_lineage_access_and_privacy.ts",
-    "test": "npm --prefix functions test && npm run test:canvas && npm run test:interaction && npm run test:lineage"
+    "test:audit": "./functions/node_modules/.bin/tsx test/test_architecture_audit.ts",
+    "test": "npm --prefix functions test && npm run test:canvas && npm run test:interaction && npm run test:lineage && npm run test:audit"
   },
   "dependencies": {
     "@xyflow/react": "^13.0.1",

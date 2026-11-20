@@ -101,3 +101,4 @@ In [PersonNode.tsx](file:///home/shanmuga/Documents/Learning/personal/Family_tre
 $$\text{Scale}_{\text{node}}(z) = \min\left(2.5, \, \max\left(0.6, \, \left(\frac{1}{\max(0.1, z)}\right)^{2/3}\right)\right)$$
 
 This maintains circular avatar visibility, gold rim borders, and centered surname typography across extreme zoom distances.
+

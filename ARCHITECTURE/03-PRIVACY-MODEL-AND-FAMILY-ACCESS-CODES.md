@@ -110,3 +110,4 @@ stateDiagram-v2
 - Family codes are stored in browser session memory / state.
 - Once unlocked, the lineage ID is appended to `unlockedLineages: string[]`.
 - Unlocking persists across navigations during the session, allowing instant exploration between authorized houses without repeatedly re-entering the code.
+

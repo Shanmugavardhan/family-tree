@@ -104,3 +104,4 @@ Generation X:
 ### 3.3 Visual Result
 - **Zero Line Collisions**: The entire space from $X = 3500\text{px}$ to $X = 4500\text{px}$ in Baby Boomers and Silent Generation is 100% open canvas. Not a single line crosses or interferes with the Konukuru tree.
 - **Graceful Collapse ("Hide Lineage")**: Clicking "Hide Lineage" instantly returns Suguna, Jagannadham, and their children back to their standard resting coordinates ($X = 1905, 2225$), with no permanent alteration of the underlying layout file.
+

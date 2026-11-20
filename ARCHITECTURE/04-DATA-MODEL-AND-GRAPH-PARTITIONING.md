@@ -122,3 +122,4 @@ To guarantee instant page loads and ensure total resilience on static CDN hostin
    - `public/data/persons.json`
    - `public/data/relatives.json`
 4. The client runtime seamlessly loads these pre-computed layouts, ensuring **sub-100ms first paint** while retaining 100% full interactive editing, in-canvas lineage expansion, and code unlocking capabilities.
+

@@ -54,3 +54,4 @@ Family lineage data involves real living individuals, children, and personal rel
 - In an inter-house marriage, viewers are permitted to see **only the direct previous generations (parents, grandparents, great-grandparents)** of the marrying spouse to understand their lineage roots.
 - The spouse's **own generation (siblings, cousins)** and **subsequent/next generations (nephews, nieces, other descendants)** are **strictly locked** and hidden to protect sons and daughters of external families from unauthorized viewing.
 - The lineage **Lock Node** is positioned in the **lower generation** (later generations), indicating where the gated descendants and collateral branches reside. It is unlocked only when the family grants their secret Family Access Code.
+
