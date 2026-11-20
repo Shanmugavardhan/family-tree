@@ -12,7 +12,7 @@ let cachedRelationships: Relationship[] | null = null;
 async function loadStaticRelationships(): Promise<Relationship[]> {
   if (cachedRelationships) return cachedRelationships;
   try {
-    const res = await fetch('/data/relationships.json');
+    const res = await fetch(`/data/relationships.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       const data = await res.json();
       cachedRelationships = Array.isArray(data) ? data : (data.relationships || []);

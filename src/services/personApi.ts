@@ -19,7 +19,7 @@ let cachedRelatives: Record<string, any> | null = null;
 async function loadStaticPersons(): Promise<Person[]> {
   if (cachedPersons) return cachedPersons;
   try {
-    const res = await fetch('/data/persons.json');
+    const res = await fetch(`/data/persons.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       const data = await res.json();
       cachedPersons = Array.isArray(data) ? data : (data.persons || []);
@@ -34,7 +34,7 @@ async function loadStaticPersons(): Promise<Person[]> {
 async function loadStaticRelatives(): Promise<Record<string, any>> {
   if (cachedRelatives) return cachedRelatives;
   try {
-    const res = await fetch('/data/relatives.json');
+    const res = await fetch(`/data/relatives.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       cachedRelatives = await res.json();
       return cachedRelatives!;

@@ -31,8 +31,8 @@ export const layoutApi = {
 
     // In production static hosting on Firebase (or as fallback), load deterministic static layout directly from CDN
     try {
-      const staticUrl = `/data/layout-${lineage}.json`;
-      const staticRes = await fetch(staticUrl);
+      const staticUrl = `/data/layout-${lineage}.json?v=${Date.now()}`;
+      const staticRes = await fetch(staticUrl, { cache: 'no-cache' });
       if (staticRes.ok) {
         const fallbackData = await staticRes.json();
         return {
