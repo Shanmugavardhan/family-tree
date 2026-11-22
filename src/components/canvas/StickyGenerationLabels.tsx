@@ -72,22 +72,22 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               transform: `translate3d(36px, ${top}px, 0) scale(${initialScale})`,
               transformOrigin: 'top left',
               willChange: 'transform',
-              opacity: isDark ? 0.38 : 0.45,
+              opacity: isDark ? 0.9 : 0.95,
               transition: 'opacity 0.2s ease-in-out',
             }}
           >
-            {/* Royal Heritage Generation Title (Marcellus) */}
+            {/* Royal Heritage Generation Title (Marcellus) - Size matches Person Names (15.5px) */}
             <div
               style={{
                 fontFamily: "'Marcellus', Georgia, serif",
-                fontSize: '32px',
+                fontSize: '15.5px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                lineHeight: 1.15,
+                letterSpacing: '0.08em',
+                lineHeight: 1.2,
                 color: isDark ? '#D6B15C' : '#854d0e',
                 textShadow: isDark
-                  ? '0 2px 12px rgba(0, 0, 0, 0.95), 0 0 16px rgba(214, 177, 92, 0.25)'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.95), 0 0 12px rgba(214, 177, 92, 0.3)'
                   : '0 1px 4px rgba(255, 255, 255, 0.95)',
                 whiteSpace: 'nowrap',
               }}
@@ -95,18 +95,19 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               {lane.name}
             </div>
 
-            {/* Timeline Period ONLY (Marcellus / Inter) */}
+            {/* Timeline Period ONLY (Marcellus / Inter) - Decreased transparency / Higher opacity (0.85) */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                marginTop: 4,
+                marginTop: 2,
                 fontFamily: "'Marcellus', Georgia, serif",
-                fontSize: '22px',
+                fontSize: '13px',
                 fontWeight: 600,
-                color: isDark ? '#9BA3AF' : '#57534e',
+                color: isDark ? '#cbd5e1' : '#475569',
+                opacity: isDark ? 0.85 : 0.9,
                 letterSpacing: '0.04em',
-                textShadow: isDark ? '0 1px 6px rgba(0, 0, 0, 0.9)' : 'none',
+                textShadow: isDark ? '0 1px 6px rgba(0, 0, 0, 0.95)' : 'none',
                 whiteSpace: 'nowrap',
               }}
             >
