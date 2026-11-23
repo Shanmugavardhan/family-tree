@@ -26,14 +26,14 @@ async function loadStaticRelationships(): Promise<Relationship[]> {
 
 export const relationshipApi = {
   getAll: async (params?: { personId?: string; relationshipType?: string }): Promise<ApiResponse<Relationship[]>> => {
-    if (isLocal) {
+    try {
       const query = new URLSearchParams();
       if (params?.personId) query.set('personId', params.personId);
       if (params?.relationshipType) query.set('relationshipType', params.relationshipType);
       const queryString = query.toString();
       const res = await request<Relationship[]>(`/relationships${queryString ? `?${queryString}` : ''}`);
       if (res.success && res.data) return res;
-    }
+    } catch {}
 
     let list = await loadStaticRelationships();
     if (params?.personId) {
@@ -46,10 +46,10 @@ export const relationshipApi = {
   },
 
   getById: async (id: string): Promise<ApiResponse<Relationship>> => {
-    if (isLocal) {
+    try {
       const res = await request<Relationship>(`/relationships/${id}`);
       if (res.success && res.data) return res;
-    }
+    } catch {}
 
     const list = await loadStaticRelationships();
     const found = list.find((r) => r.id === id);
@@ -60,12 +60,13 @@ export const relationshipApi = {
   },
 
   create: async (data: CreateRelationshipInput): Promise<ApiResponse<Relationship>> => {
-    if (isLocal) {
-      return request<Relationship>('/relationships', {
+    try {
+      const res = await request<Relationship>('/relationships', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    }
+      if (res.success && res.data) return res;
+    } catch {}
 
     const newRel: Relationship = {
       id: crypto.randomUUID(),

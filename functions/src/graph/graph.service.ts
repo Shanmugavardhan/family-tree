@@ -228,15 +228,64 @@ export class GraphService {
   ) {
     const normTarget = (targetLineage || 'konukuru').trim().toLowerCase();
 
-    // 1. Core bloodline: Anyone with the primary house surname
-    const coreBloodlineIds = new Set<string>();
-    for (const p of persons) {
-      if (p.last_name && p.last_name.trim().toLowerCase() === normTarget) {
-        coreBloodlineIds.add(p.id);
+    const HOUSE_PROGENITORS: Record<string, string[]> = {
+      konukuru: [
+        '867842c1-b8a2-45ad-8d9c-89150e68eb16', // Murthy Chetty Konukuru
+        '4a80001b-76bf-4e13-963b-89b2aafbb413', // Sarojamma Konukuru
+      ],
+      paradarami: [
+        '1ae73a4b-b739-40d3-8b50-071bbf1b07eb', // Ramayya Chetty Paradarami
+        'e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b', // Achamma Paradarami
+      ],
+    };
+
+    // 1. Core bloodline starts with the designated house roots / progenitors
+    const houseRootIds = new Set<string>(HOUSE_PROGENITORS[normTarget] || []);
+
+    // If no explicit progenitors configured, fallback to ancestral roots bearing the house surname
+    // (persons with the surname who have no parents in the database bearing that surname)
+    if (houseRootIds.size === 0) {
+      for (const p of persons) {
+        if (p.last_name && p.last_name.trim().toLowerCase() === normTarget) {
+          const parentRels = relationships.filter((r) => r.relationship_type === 'parent' && r.person_id === p.id);
+          const hasHouseParent = parentRels.some((r) => {
+            const parent = persons.find((x) => x.id === r.related_person_id);
+            return parent && parent.last_name && parent.last_name.trim().toLowerCase() === normTarget;
+          });
+          if (!hasHouseParent) {
+            houseRootIds.add(p.id);
+          }
+        }
       }
     }
 
-    // Expand bloodline downwards: all biological linear descendants (children, grandchildren, etc.)
+    const coreBloodlineIds = new Set<string>();
+    for (const rootId of houseRootIds) {
+      if (persons.some((p) => p.id === rootId)) {
+        coreBloodlineIds.add(rootId);
+      }
+    }
+
+    // Expand bloodline upwards ONLY from house roots/progenitors:
+    // Any biological parents (father or mother) of house roots belong to the house ancestors
+    // Irrespective of what their surname is (e.g. maiden surnames, ancestral surnames like Narayanaswamy)
+    let addedAncestors = true;
+    while (addedAncestors) {
+      addedAncestors = false;
+      for (const rel of relationships) {
+        if (rel.relationship_type === 'parent') {
+          // related_person_id is parent, person_id is child
+          if (houseRootIds.has(rel.person_id) && !coreBloodlineIds.has(rel.related_person_id)) {
+            coreBloodlineIds.add(rel.related_person_id);
+            houseRootIds.add(rel.related_person_id);
+            addedAncestors = true;
+          }
+        }
+      }
+    }
+
+    // Expand bloodline downwards: all biological linear descendants (sons, daughters, grandchildren, etc.)
+    // A daughter's surname may change upon marriage, but her bloodline and children remain in the lineage
     let addedDescendants = true;
     while (addedDescendants) {
       addedDescendants = false;
@@ -246,24 +295,6 @@ export class GraphService {
           if (coreBloodlineIds.has(rel.related_person_id) && !coreBloodlineIds.has(rel.person_id)) {
             coreBloodlineIds.add(rel.person_id);
             addedDescendants = true;
-          }
-        }
-      }
-    }
-
-    // Expand bloodline upwards: any ancestral parents of target house
-    let addedAncestors = true;
-    while (addedAncestors) {
-      addedAncestors = false;
-      for (const rel of relationships) {
-        if (rel.relationship_type === 'parent') {
-          const child = persons.find((p) => p.id === rel.person_id);
-          if (child && child.last_name?.trim().toLowerCase() === normTarget && !coreBloodlineIds.has(rel.related_person_id)) {
-            const parent = persons.find((p) => p.id === rel.related_person_id);
-            if (parent && (!parent.last_name || parent.last_name.trim().toLowerCase() === normTarget)) {
-              coreBloodlineIds.add(rel.related_person_id);
-              addedAncestors = true;
-            }
           }
         }
       }

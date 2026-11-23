@@ -2,17 +2,12 @@ import { request } from './apiClient';
 import { ApiResponse } from '../types/api';
 import { FamilyLayout, LayoutOptions } from '../types/layout';
 
-const isLocal =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1');
-
 export const layoutApi = {
   getLayout: async (options?: LayoutOptions): Promise<ApiResponse<FamilyLayout>> => {
     const lineage = options?.lineage || 'konukuru';
 
-    // On local development, query the local Express backend
-    if (isLocal) {
+    // 1. Try querying backend API first (works locally on port 5001 and in production with Cloud Functions)
+    try {
       const query = new URLSearchParams();
       if (options?.includeArchived) query.set('includeArchived', 'true');
       if (options?.compactLanes) query.set('compactLanes', 'true');
@@ -27,9 +22,11 @@ export const layoutApi = {
       if (apiResult.success && apiResult.data) {
         return apiResult;
       }
+    } catch {
+      // Ignore backend fetch error, fallback to static layout
     }
 
-    // In production static hosting on Firebase (or as fallback), load deterministic static layout directly from CDN
+    // 2. Fallback: load pre-rendered static layout directly from CDN / public data
     try {
       const staticUrl = `/data/layout-${lineage}.json?v=${Date.now()}`;
       const staticRes = await fetch(staticUrl, { cache: 'no-cache' });
