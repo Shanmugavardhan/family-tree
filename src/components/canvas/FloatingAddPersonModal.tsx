@@ -183,11 +183,38 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         (m) => m.id !== fatherId && m.id !== motherId && m.id !== spouseId
       );
     }
-    // Spouse: any other lineage member
+    // Spouse: if person is male, spouse dropdown only shows females, and vice versa
+    if (selectedRelationType === 'spouse') {
+      return effectiveKinshipNodes.filter(
+        (m) =>
+          m.id !== fatherId &&
+          m.id !== motherId &&
+          m.id !== childId &&
+          (gender === 'male'
+            ? m.gender === 'female'
+            : gender === 'female'
+            ? m.gender === 'male'
+            : true)
+      );
+    }
     return effectiveKinshipNodes.filter(
       (m) => m.id !== fatherId && m.id !== motherId && m.id !== childId
     );
-  }, [selectedRelationType, effectiveKinshipNodes, fatherId, motherId, spouseId, childId]);
+  }, [selectedRelationType, effectiveKinshipNodes, fatherId, motherId, spouseId, childId, gender]);
+
+  // Clear spouse if user changes gender to one incompatible with currently selected spouse
+  useEffect(() => {
+    if (spouseId) {
+      const sp = effectiveKinshipNodes.find((m) => m.id === spouseId);
+      if (sp) {
+        if (gender === 'male' && sp.gender !== 'female') {
+          setSpouseId('');
+        } else if (gender === 'female' && sp.gender !== 'male') {
+          setSpouseId('');
+        }
+      }
+    }
+  }, [gender, spouseId, effectiveKinshipNodes]);
 
   // Helper to get formatted name of an ID
   const getMemberName = (id: string): string => {

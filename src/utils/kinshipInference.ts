@@ -370,6 +370,7 @@ export function validateKinshipChronology(params: {
   isLiving?: boolean;
   fatherId?: string | null;
   motherId?: string | null;
+  spouseId?: string | null;
   childId?: string | null;
   currentPersonId?: string | null;
   nodes: KinshipNode[];
@@ -381,6 +382,7 @@ export function validateKinshipChronology(params: {
     isLiving,
     fatherId,
     motherId,
+    spouseId,
     childId,
     currentPersonId,
     nodes,
@@ -404,10 +406,43 @@ export function validateKinshipChronology(params: {
     return null;
   };
 
+  const currentYear = new Date().getFullYear();
   const subjectBirthYear = parseYear(subjectBirthDate);
   const subjectDeathYear = parseYear(subjectDeathDate);
 
-  // Check living with death date
+  // 1. Future Date Sanity Checks
+  if (subjectBirthYear && subjectBirthYear > currentYear) {
+    issues.push({
+      severity: 'error',
+      message: `Date of birth (${subjectBirthYear}) cannot be in the future.`,
+      field: 'birth_date',
+    });
+  }
+  if (subjectDeathYear && subjectDeathYear > currentYear) {
+    issues.push({
+      severity: 'error',
+      message: `Date of death (${subjectDeathYear}) cannot be in the future.`,
+      field: 'death_date',
+    });
+  }
+
+  // 2. Maximum Human Lifespan / Longevity Sanity Checks
+  if (subjectBirthYear && subjectDeathYear && subjectDeathYear - subjectBirthYear > 120) {
+    issues.push({
+      severity: 'error',
+      message: `Biological anomaly: Recorded lifespan (${subjectDeathYear - subjectBirthYear} years) exceeds the verified human limit of 120 years.`,
+      field: 'death_date',
+    });
+  }
+  if (isLiving && subjectBirthYear && currentYear - subjectBirthYear > 115) {
+    issues.push({
+      severity: 'warning',
+      message: `Longevity notice: Living member is estimated to be ${currentYear - subjectBirthYear} years old. Please confirm living status.`,
+      field: 'birth_date',
+    });
+  }
+
+  // 3. Living Status with Death Date
   if (isLiving && subjectDeathDate) {
     issues.push({
       severity: 'error',
@@ -416,7 +451,7 @@ export function validateKinshipChronology(params: {
     });
   }
 
-  // Check death before birth
+  // 4. Death before Birth
   if (subjectBirthYear && subjectDeathYear && subjectDeathYear < subjectBirthYear) {
     issues.push({
       severity: 'error',
@@ -425,7 +460,48 @@ export function validateKinshipChronology(params: {
     });
   }
 
-  // 1. Father validations
+  // 5. Self-Relationship Sanity Checks
+  if (currentPersonId) {
+    if (fatherId && fatherId === currentPersonId) {
+      issues.push({
+        severity: 'error',
+        message: 'Invalid relationship: A person cannot be their own Father.',
+        field: 'father',
+      });
+    }
+    if (motherId && motherId === currentPersonId) {
+      issues.push({
+        severity: 'error',
+        message: 'Invalid relationship: A person cannot be their own Mother.',
+        field: 'mother',
+      });
+    }
+    if (spouseId && spouseId === currentPersonId) {
+      issues.push({
+        severity: 'error',
+        message: 'Invalid relationship: A person cannot be married to themselves.',
+        field: 'spouse',
+      });
+    }
+    if (childId && childId === currentPersonId) {
+      issues.push({
+        severity: 'error',
+        message: 'Invalid relationship: A person cannot be their own Child.',
+        field: 'child',
+      });
+    }
+  }
+
+  // 6. Parent-Parent Compatibility Sanity Check
+  if (fatherId && motherId && fatherId === motherId) {
+    issues.push({
+      severity: 'error',
+      message: 'Relationship conflict: Father and Mother cannot be the same person.',
+      field: 'mother',
+    });
+  }
+
+  // 7. Father validations
   if (fatherId) {
     const father = nodeMap.get(fatherId);
     if (father) {
@@ -471,10 +547,35 @@ export function validateKinshipChronology(params: {
           field: 'father',
         });
       }
+
+      // Paternal Grandparents Generational Sanity Check
+      const pGrandparentEdges = edges.filter((e) => e.type === 'parent' && e.target === fatherId);
+      for (const gpEdge of pGrandparentEdges) {
+        const gp = nodeMap.get(gpEdge.source);
+        if (gp) {
+          const gpBirth = parseYear(gp.birthYear || gp.birthDate);
+          const gpName = [gp.firstName, gp.lastName].filter(Boolean).join(' ') || 'Paternal Grandparent';
+          if (subjectBirthYear && gpBirth) {
+            if (subjectBirthYear <= gpBirth) {
+              issues.push({
+                severity: 'error',
+                message: `Generational inversion: Child (born ${subjectBirthYear}) cannot be born before or same year as Paternal Grandparent (${gpName}, born ${gpBirth}).`,
+                field: 'birth_date',
+              });
+            } else if (subjectBirthYear - gpBirth < 25) {
+              issues.push({
+                severity: 'warning',
+                message: `Generational anomaly: Only ${subjectBirthYear - gpBirth} years between Child and Paternal Grandparent (${gpName}).`,
+                field: 'birth_date',
+              });
+            }
+          }
+        }
+      }
     }
   }
 
-  // 2. Mother validations
+  // 8. Mother validations
   if (motherId) {
     const mother = nodeMap.get(motherId);
     if (mother) {
@@ -520,19 +621,169 @@ export function validateKinshipChronology(params: {
           field: 'mother',
         });
       }
+
+      // Maternal Grandparents Generational Sanity Check
+      const mGrandparentEdges = edges.filter((e) => e.type === 'parent' && e.target === motherId);
+      for (const gpEdge of mGrandparentEdges) {
+        const gp = nodeMap.get(gpEdge.source);
+        if (gp) {
+          const gpBirth = parseYear(gp.birthYear || gp.birthDate);
+          const gpName = [gp.firstName, gp.lastName].filter(Boolean).join(' ') || 'Maternal Grandparent';
+          if (subjectBirthYear && gpBirth) {
+            if (subjectBirthYear <= gpBirth) {
+              issues.push({
+                severity: 'error',
+                message: `Generational inversion: Child (born ${subjectBirthYear}) cannot be born before or same year as Maternal Grandparent (${gpName}, born ${gpBirth}).`,
+                field: 'birth_date',
+              });
+            } else if (subjectBirthYear - gpBirth < 25) {
+              issues.push({
+                severity: 'warning',
+                message: `Generational anomaly: Only ${subjectBirthYear - gpBirth} years between Child and Maternal Grandparent (${gpName}).`,
+                field: 'birth_date',
+              });
+            }
+          }
+        }
+      }
+
+      // Multiple birth check (Twins / Multiples of the same mother)
+      if (subjectBirthDate) {
+        const otherChildEdges = edges.filter(
+          (e) => e.type === 'parent' && e.source === motherId && e.target !== currentPersonId
+        );
+        for (const ocEdge of otherChildEdges) {
+          const sib = nodeMap.get(ocEdge.target);
+          if (sib && sib.birthDate && sib.birthDate.trim() === subjectBirthDate.trim()) {
+            const sibName = [sib.firstName, sib.lastName].filter(Boolean).join(' ') || 'Sibling';
+            issues.push({
+              severity: 'warning',
+              message: `Multiple birth notice: Same exact birth date (${subjectBirthDate}) as sibling ${sibName} (Twins / Multiples).`,
+              field: 'birth_date',
+            });
+          }
+        }
+      }
     }
   }
 
-  // 3. Child validations
+  // 9. Child validations
   if (childId) {
     const child = nodeMap.get(childId);
     if (child) {
       const cBirth = parseYear(child.birthYear || child.birthDate);
-      if (subjectBirthYear && cBirth && cBirth <= subjectBirthYear) {
+      if (subjectBirthYear && cBirth) {
+        if (cBirth <= subjectBirthYear) {
+          issues.push({
+            severity: 'error',
+            message: `Chronology conflict: Child (born ${cBirth}) cannot be older than or same age as parent (born ${subjectBirthYear}).`,
+            field: 'child',
+          });
+        } else if (cBirth - subjectBirthYear < 12) {
+          issues.push({
+            severity: 'warning',
+            message: `Biological anomaly: Parent would be only ${cBirth - subjectBirthYear} years old at child's birth.`,
+            field: 'child',
+          });
+        }
+      }
+
+      // Child born after parent passing
+      if (cBirth && subjectDeathYear && cBirth > subjectDeathYear + 1) {
         issues.push({
           severity: 'error',
-          message: `Chronology conflict: Child (born ${cBirth}) cannot be older than or same age as parent (born ${subjectBirthYear}).`,
+          message: `Chronology conflict: Child (born ${cBirth}) cannot be born after parent passed away (${subjectDeathYear}).`,
           field: 'child',
+        });
+      }
+
+      // Grandparent generational inversion (if subject's father or mother is known)
+      if (fatherId) {
+        const father = nodeMap.get(fatherId);
+        const fBirth = father ? parseYear(father.birthYear || father.birthDate) : null;
+        if (cBirth && fBirth && cBirth <= fBirth) {
+          issues.push({
+            severity: 'error',
+            message: `Generational inversion: Child (born ${cBirth}) cannot be born before or same year as Grandfather (born ${fBirth}).`,
+            field: 'child',
+          });
+        }
+      }
+      if (motherId) {
+        const mother = nodeMap.get(motherId);
+        const mBirth = mother ? parseYear(mother.birthYear || mother.birthDate) : null;
+        if (cBirth && mBirth && cBirth <= mBirth) {
+          issues.push({
+            severity: 'error',
+            message: `Generational inversion: Child (born ${cBirth}) cannot be born before or same year as Grandmother (born ${mBirth}).`,
+            field: 'child',
+          });
+        }
+      }
+    }
+  }
+
+  // 10. Spouse validations & Consanguinity Safeguards
+  if (spouseId) {
+    const spouse = nodeMap.get(spouseId);
+    if (spouse) {
+      const spBirth = parseYear(spouse.birthYear || spouse.birthDate);
+      const spDeath = parseYear(spouse.deathYear || spouse.deathDate);
+
+      // Direct parent or child as spouse
+      if (spouseId === fatherId || spouseId === motherId) {
+        issues.push({
+          severity: 'error',
+          message: 'Direct consanguinity conflict: A person cannot be recorded as spouse to their own Parent.',
+          field: 'spouse',
+        });
+      }
+      if (spouseId === childId) {
+        issues.push({
+          severity: 'error',
+          message: 'Direct consanguinity conflict: A person cannot be recorded as spouse to their own Child.',
+          field: 'spouse',
+        });
+      }
+
+      // Sibling as spouse warning
+      if (fatherId && motherId) {
+        const isFullSibling = edges.some(
+          (e1) => e1.type === 'parent' && e1.source === fatherId && e1.target === spouseId
+        ) && edges.some(
+          (e2) => e2.type === 'parent' && e2.source === motherId && e2.target === spouseId
+        );
+        if (isFullSibling) {
+          issues.push({
+            severity: 'warning',
+            message: 'Consanguinity warning: Spouse is recorded as a biological full sibling in this lineage.',
+            field: 'spouse',
+          });
+        }
+      }
+
+      // Chronological conflicts between spouses
+      if (spDeath && subjectBirthYear && spDeath < subjectBirthYear) {
+        issues.push({
+          severity: 'error',
+          message: `Chronology conflict: Spouse passed away in ${spDeath}, before this person was born (${subjectBirthYear}).`,
+          field: 'spouse',
+        });
+      }
+      if (subjectDeathYear && spBirth && subjectDeathYear < spBirth) {
+        issues.push({
+          severity: 'error',
+          message: `Chronology conflict: This person passed away in ${subjectDeathYear}, before spouse was born (${spBirth}).`,
+          field: 'spouse',
+        });
+      }
+
+      // Extreme age difference between spouses
+      if (subjectBirthYear && spBirth && Math.abs(subjectBirthYear - spBirth) > 50) {
+        issues.push({
+          severity: 'warning',
+          message: `Generational gap notice: Significant age difference (${Math.abs(subjectBirthYear - spBirth)} years) between spouses.`,
+          field: 'spouse',
         });
       }
     }

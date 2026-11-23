@@ -147,8 +147,33 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     if (newRelType === 'mother') {
       return effectiveKinshipNodes.filter((m) => m.id !== personId && m.gender === 'female');
     }
+    if (newRelType === 'spouse') {
+      return effectiveKinshipNodes.filter(
+        (m) =>
+          m.id !== personId &&
+          (gender === 'male'
+            ? m.gender === 'female'
+            : gender === 'female'
+            ? m.gender === 'male'
+            : true)
+      );
+    }
     return effectiveKinshipNodes.filter((m) => m.id !== personId);
-  }, [newRelType, effectiveKinshipNodes, personId]);
+  }, [newRelType, effectiveKinshipNodes, personId, gender]);
+
+  // Safeguard: if newRelType is spouse and gender changes to incompatible gender with selected target
+  useEffect(() => {
+    if (newRelType === 'spouse' && newRelTargetId) {
+      const sp = effectiveKinshipNodes.find((m) => m.id === newRelTargetId);
+      if (sp) {
+        if (gender === 'male' && sp.gender !== 'female') {
+          setNewRelTargetId('');
+        } else if (gender === 'female' && sp.gender !== 'male') {
+          setNewRelTargetId('');
+        }
+      }
+    }
+  }, [gender, newRelType, newRelTargetId, effectiveKinshipNodes]);
 
   // Current parents, spouse, child
   const currentParents = useMemo(() => {

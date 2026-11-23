@@ -168,6 +168,89 @@ runTest('Upgrade 3: Detects ancestry cycle (cannot set grandson as father)', () 
   assert.strictEqual(hasCycle, true, 'Descendant cannot be set as parent');
 });
 
+runTest('Upgrade 3 (Derived): Detects future birth date error', () => {
+  const issues = validateKinshipChronology({
+    subjectBirthDate: '2099',
+    nodes: sampleNodes,
+    edges: sampleEdges,
+  });
+  const futureErr = issues.find((i) => i.severity === 'error' && i.message.includes('cannot be in the future'));
+  assert(futureErr !== undefined, 'Must flag error for future birth date');
+});
+
+runTest('Upgrade 3 (Derived): Detects lifespan exceeding 120 years', () => {
+  const issues = validateKinshipChronology({
+    subjectBirthDate: '1850',
+    subjectDeathDate: '1995', // 145 years
+    isLiving: false,
+    nodes: sampleNodes,
+    edges: sampleEdges,
+  });
+  const lifespanErr = issues.find((i) => i.severity === 'error' && i.message.includes('exceeds the verified human limit'));
+  assert(lifespanErr !== undefined, 'Must flag error for lifespan > 120');
+});
+
+runTest('Upgrade 3 (Derived): Prevents self-relationships (cannot be own father or marry self)', () => {
+  const issues = validateKinshipChronology({
+    currentPersonId: 'p-father',
+    fatherId: 'p-father',
+    spouseId: 'p-father',
+    nodes: sampleNodes,
+    edges: sampleEdges,
+  });
+  assert(issues.some((i) => i.message.includes('cannot be their own Father')));
+  assert(issues.some((i) => i.message.includes('cannot be married to themselves')));
+});
+
+runTest('Upgrade 3 (Derived): Detects direct consanguinity conflict (marrying parent or child)', () => {
+  const issues = validateKinshipChronology({
+    currentPersonId: 'p-grandson',
+    fatherId: 'p-son1',
+    spouseId: 'p-son1', // Marrying own father!
+    nodes: sampleNodes,
+    edges: sampleEdges,
+  });
+  const consangErr = issues.find((i) => i.severity === 'error' && i.message.includes('Direct consanguinity conflict'));
+  assert(consangErr !== undefined, 'Must flag error when spouse is direct parent or child');
+});
+
+runTest('Upgrade 3 (Derived): Detects grandparent generational inversion', () => {
+  // Chandra Babu is father (born 1965). Murthy Chetty is Paternal Grandfather (born 1935).
+  // If child is entered as born in 1930 (before grandfather), generational inversion!
+  const issues = validateKinshipChronology({
+    subjectBirthDate: '1930',
+    fatherId: 'p-son1',
+    nodes: sampleNodes,
+    edges: sampleEdges,
+  });
+  const gpInversion = issues.find((i) => i.severity === 'error' && i.message.includes('Paternal Grandparent'));
+  assert(gpInversion !== undefined, 'Must flag error when child born before grandparent');
+});
+
+runTest('Upgrade 3 (Derived): Detects child born after parent passed away', () => {
+  const issues = validateKinshipChronology({
+    subjectDeathDate: '1980',
+    childId: 'p-son1', // Chandra Babu born 1965, but let's test with a child born later
+    nodes: [
+      ...sampleNodes,
+      { id: 'c-late', firstName: 'Late', lastName: 'Child', gender: 'male', birthYear: 1985 },
+    ],
+    edges: sampleEdges,
+  });
+  // If we set childId to c-late and subject died in 1980
+  const issues2 = validateKinshipChronology({
+    subjectDeathDate: '1980',
+    childId: 'c-late',
+    nodes: [
+      ...sampleNodes,
+      { id: 'c-late', firstName: 'Late', lastName: 'Child', gender: 'male', birthYear: 1985 },
+    ],
+    edges: sampleEdges,
+  });
+  const afterDeathErr = issues2.find((i) => i.severity === 'error' && i.message.includes('cannot be born after parent passed away'));
+  assert(afterDeathErr !== undefined, 'Must flag error when child born years after parent death');
+});
+
 // --------------------------------------------------------------------------
 // Upgrade 4: Surname & House Name Inheritance Heuristics
 // --------------------------------------------------------------------------

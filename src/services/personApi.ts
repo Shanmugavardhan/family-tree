@@ -47,10 +47,12 @@ async function loadStaticRelatives(): Promise<Record<string, any>> {
 
 export const personApi = {
   checkHealth: async (): Promise<ApiResponse<HealthCheckData>> => {
-    try {
-      const res = await request<HealthCheckData>('/health');
-      if (res.success && res.data) return res;
-    } catch {}
+    if (isLocal) {
+      try {
+        const res = await request<HealthCheckData>('/health');
+        if (res.success && res.data) return res;
+      } catch {}
+    }
     return {
       success: true,
       data: {
@@ -63,14 +65,16 @@ export const personApi = {
   },
 
   getAll: async (params?: { search?: string; includeArchived?: boolean }): Promise<ApiResponse<Person[]>> => {
-    try {
-      const query = new URLSearchParams();
-      if (params?.search) query.set('search', params.search);
-      if (params?.includeArchived) query.set('includeArchived', 'true');
-      const queryString = query.toString();
-      const res = await request<Person[]>(`/persons${queryString ? `?${queryString}` : ''}`);
-      if (res.success && res.data) return res;
-    } catch {}
+    if (isLocal) {
+      try {
+        const query = new URLSearchParams();
+        if (params?.search) query.set('search', params.search);
+        if (params?.includeArchived) query.set('includeArchived', 'true');
+        const queryString = query.toString();
+        const res = await request<Person[]>(`/persons${queryString ? `?${queryString}` : ''}`);
+        if (res.success && res.data) return res;
+      } catch {}
+    }
 
     const list = await loadStaticPersons();
     let filtered = list;
@@ -89,11 +93,13 @@ export const personApi = {
   },
 
   getById: async (id: string, params?: { includeArchived?: boolean }): Promise<ApiResponse<Person>> => {
-    try {
-      const query = params?.includeArchived ? '?includeArchived=true' : '';
-      const res = await request<Person>(`/persons/${id}${query}`);
-      if (res.success && res.data) return res;
-    } catch {}
+    if (isLocal) {
+      try {
+        const query = params?.includeArchived ? '?includeArchived=true' : '';
+        const res = await request<Person>(`/persons/${id}${query}`);
+        if (res.success && res.data) return res;
+      } catch {}
+    }
 
     const list = await loadStaticPersons();
     const found = list.find((p) => p.id === id);
@@ -104,15 +110,17 @@ export const personApi = {
   },
 
   create: async (data: CreatePersonInput): Promise<ApiResponse<Person>> => {
-    try {
-      const res = await request<Person>('/persons', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-      if (res.success && res.data) {
-        return res;
-      }
-    } catch {}
+    if (isLocal) {
+      try {
+        const res = await request<Person>('/persons', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+        if (res.success && res.data) {
+          return res;
+        }
+      } catch {}
+    }
 
     const newPerson: Person = {
       id: crypto.randomUUID(),
@@ -140,15 +148,17 @@ export const personApi = {
   },
 
   update: async (id: string, data: UpdatePersonInput): Promise<ApiResponse<Person>> => {
-    try {
-      const res = await request<Person>(`/persons/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-      if (res.success && res.data) {
-        return res;
-      }
-    } catch {}
+    if (isLocal) {
+      try {
+        const res = await request<Person>(`/persons/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+        if (res.success && res.data) {
+          return res;
+        }
+      } catch {}
+    }
 
     const list = await loadStaticPersons();
     const found = list.find((p) => p.id === id);
@@ -160,14 +170,16 @@ export const personApi = {
   },
 
   archive: async (id: string): Promise<ApiResponse<Person>> => {
-    try {
-      const res = await request<Person>(`/persons/${id}/archive`, {
-        method: 'POST',
-      });
-      if (res.success && res.data) {
-        return res;
-      }
-    } catch {}
+    if (isLocal) {
+      try {
+        const res = await request<Person>(`/persons/${id}/archive`, {
+          method: 'POST',
+        });
+        if (res.success && res.data) {
+          return res;
+        }
+      } catch {}
+    }
 
     const list = await loadStaticPersons();
     const found = list.find((p) => p.id === id);
@@ -180,14 +192,16 @@ export const personApi = {
   },
 
   restore: async (id: string): Promise<ApiResponse<Person>> => {
-    try {
-      const res = await request<Person>(`/persons/${id}/restore`, {
-        method: 'POST',
-      });
-      if (res.success && res.data) {
-        return res;
-      }
-    } catch {}
+    if (isLocal) {
+      try {
+        const res = await request<Person>(`/persons/${id}/restore`, {
+          method: 'POST',
+        });
+        if (res.success && res.data) {
+          return res;
+        }
+      } catch {}
+    }
 
     const list = await loadStaticPersons();
     const found = list.find((p) => p.id === id);
