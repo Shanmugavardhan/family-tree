@@ -9,9 +9,20 @@ import { ImageCropperModal } from '../photos/ImageCropperModal';
 import {
   findDuplicateLineageMembers,
   inferKinshipRelations,
+  discoverSiblings,
+  estimateBirthYearAndGeneration,
+  validateKinshipChronology,
+  inferInheritedSurname,
+  calculateKinshipNomenclature,
+  findNuclearFamilyBatchCandidates,
   KinshipNode,
   KinshipEdge,
+  SiblingDiscoveryResult,
+  GenerationEstimateResult,
+  ChronologyIssue,
+  NuclearFamilyBatchCandidate,
 } from '../../utils/kinshipInference';
+import { relationshipApi } from '../../services/relationshipApi';
 
 import avatarMale from '../../assets/avatar_male.png';
 import avatarFemale from '../../assets/avatar_female.png';
@@ -63,8 +74,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   // Which Relation dot options state ('father' | 'mother' | 'spouse' | 'child')
   const [selectedRelationType, setSelectedRelationType] = useState<'father' | 'mother' | 'spouse' | 'child'>('father');
 
-  // Kinship Auto-Inference Feedback
+  // Kinship Auto-Inference Feedback & Batch Linking
   const [inferenceNotice, setInferenceNotice] = useState<string | null>(null);
+  const [selectedBatchChildIds, setSelectedBatchChildIds] = useState<string[]>([]);
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -98,6 +110,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setSpouseId('');
     setChildId('');
     setSelectedRelationType('father');
+    setSelectedBatchChildIds([]);
     setSelectedPhotoFile(null);
     setCroppedPhotoFile(null);
     setPhotoPreviewUrl(null);
@@ -183,6 +196,104 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     return [found.firstName, found.middleName, found.lastName].filter(Boolean).join(' ');
   };
 
+  // Upgrade 1: Sibling Auto-Discovery (Reactive)
+  const discoveredSiblings: SiblingDiscoveryResult = useMemo(() => {
+    return discoverSiblings(
+      fatherId || null,
+      motherId || null,
+      null,
+      effectiveKinshipNodes,
+      effectiveKinshipEdges
+    );
+  }, [fatherId, motherId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  // Upgrade 2: Generational Epoch & Birth Year Estimation (Reactive)
+  const estimatedGeneration: GenerationEstimateResult | null = useMemo(() => {
+    return estimateBirthYearAndGeneration({
+      fatherId: fatherId || null,
+      motherId: motherId || null,
+      spouseId: spouseId || null,
+      childId: childId || null,
+      nodes: effectiveKinshipNodes,
+    });
+  }, [fatherId, motherId, spouseId, childId, effectiveKinshipNodes]);
+
+  // Upgrade 3: Biological & Chronological Sanity Checks (Reactive)
+  const chronologyIssues: ChronologyIssue[] = useMemo(() => {
+    return validateKinshipChronology({
+      subjectBirthDate: birthDate,
+      subjectDeathDate: deathDate,
+      isLiving,
+      fatherId: fatherId || null,
+      motherId: motherId || null,
+      childId: childId || null,
+      currentPersonId: null,
+      nodes: effectiveKinshipNodes,
+      edges: effectiveKinshipEdges,
+    });
+  }, [birthDate, deathDate, isLiving, fatherId, motherId, childId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  // Upgrade 4: Surname Inheritance
+  const surnameInference = useMemo(() => {
+    return inferInheritedSurname(fatherId, lastName, effectiveKinshipNodes);
+  }, [fatherId, lastName, effectiveKinshipNodes]);
+
+  // Upgrade 5: Multi-Spouse Disambiguation Candidates
+  const fatherSpouses = useMemo(() => {
+    if (!fatherId) return [];
+    const spEdges = effectiveKinshipEdges.filter(
+      (e) => e.type === 'spouse' && (e.source === fatherId || e.target === fatherId)
+    );
+    return spEdges.map((e) => {
+      const sId = e.source === fatherId ? e.target : e.source;
+      const sNode = effectiveKinshipNodes.find((n) => n.id === sId);
+      return {
+        id: sId,
+        fullName: sNode ? [sNode.firstName, sNode.middleName, sNode.lastName].filter(Boolean).join(' ') : sId,
+        birthYear: sNode?.birthYear,
+        gender: sNode?.gender,
+      };
+    });
+  }, [fatherId, effectiveKinshipEdges, effectiveKinshipNodes]);
+
+  const motherSpouses = useMemo(() => {
+    if (!motherId) return [];
+    const spEdges = effectiveKinshipEdges.filter(
+      (e) => e.type === 'spouse' && (e.source === motherId || e.target === motherId)
+    );
+    return spEdges.map((e) => {
+      const sId = e.source === motherId ? e.target : e.source;
+      const sNode = effectiveKinshipNodes.find((n) => n.id === sId);
+      return {
+        id: sId,
+        fullName: sNode ? [sNode.firstName, sNode.middleName, sNode.lastName].filter(Boolean).join(' ') : sId,
+        birthYear: sNode?.birthYear,
+        gender: sNode?.gender,
+      };
+    });
+  }, [motherId, effectiveKinshipEdges, effectiveKinshipNodes]);
+
+  // Upgrade 7: Cascading Nuclear Family Batch Linking Candidates
+  const nuclearFamilyCandidates: NuclearFamilyBatchCandidate[] = useMemo(() => {
+    if (!spouseId) return [];
+    return findNuclearFamilyBatchCandidates(
+      spouseId,
+      null,
+      effectiveKinshipNodes,
+      effectiveKinshipEdges
+    );
+  }, [spouseId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  useEffect(() => {
+    if (nuclearFamilyCandidates.length > 0) {
+      setSelectedBatchChildIds(
+        nuclearFamilyCandidates.filter((c) => !c.hasOtherParent).map((c) => c.childId)
+      );
+    } else {
+      setSelectedBatchChildIds([]);
+    }
+  }, [nuclearFamilyCandidates]);
+
   // Dirty detection
   const isDirty = useMemo(() => {
     if (!isOpen) return false;
@@ -246,7 +357,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     await handleSubmit();
   };
 
-  // Mandatory relationship validation
+  // Mandatory relationship validation & Biological/Chronological Sanity Checks
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
     if (!firstName.trim()) {
@@ -258,6 +369,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     if (!fatherId && !motherId && !spouseId && !childId) {
       errors.relations =
         'Please select at least one family relationship (Father, Mother, Spouse, or Child) to connect this person to the family lineage.';
+    }
+    // Critical Chronology / Cycle Errors check
+    const criticalError = chronologyIssues.find((c) => c.severity === 'error');
+    if (criticalError) {
+      errors.chronology = criticalError.message;
     }
     setClientErrors(errors);
     return Object.keys(errors).length === 0;
@@ -275,12 +391,18 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentSpouseId: spouseId,
         currentChildId: childId,
         subjectGender: gender,
+        subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
       });
       if (res.inferredMotherId && !motherId) {
         setMotherId(res.inferredMotherId);
         setInferenceNotice(res.reason || null);
+      } else if (res.requiresDisambiguation) {
+        setInferenceNotice(res.reason || null);
+      }
+      if (res.suggestedSurname && !lastName.trim()) {
+        setLastName(res.suggestedSurname);
       }
     }
   };
@@ -296,11 +418,17 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentSpouseId: spouseId,
         currentChildId: childId,
         subjectGender: gender,
+        subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
       });
       if (res.inferredFatherId && !fatherId) {
         setFatherId(res.inferredFatherId);
+        setInferenceNotice(res.reason || null);
+        if (res.suggestedSurname && !lastName.trim()) {
+          setLastName(res.suggestedSurname);
+        }
+      } else if (res.requiresDisambiguation) {
         setInferenceNotice(res.reason || null);
       }
     }
@@ -317,6 +445,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentSpouseId: spouseId,
         currentChildId: newChildId,
         subjectGender: gender,
+        subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
       });
@@ -338,6 +467,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentSpouseId: newSpouseId,
         currentChildId: childId,
         subjectGender: gender,
+        subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
       });
@@ -399,6 +529,23 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       const res = await personApi.create(input);
       if (res.success && res.data) {
         const createdPerson = res.data;
+
+        // Upgrade 7: Cascading Nuclear Family Batch Linking
+        if (selectedBatchChildIds.length > 0) {
+          try {
+            await Promise.all(
+              selectedBatchChildIds.map((cId) =>
+                relationshipApi.create({
+                  person_id: cId,
+                  related_person_id: createdPerson.id,
+                  relationship_type: 'parent',
+                })
+              )
+            );
+          } catch (batchErr) {
+            console.error('Failed to batch link nuclear family children:', batchErr);
+          }
+        }
 
         if (croppedPhotoFile) {
           try {
@@ -792,6 +939,27 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="e.g. Sharma"
                       />
+                      {surnameInference.suggestedSurname && lastName !== surnameInference.suggestedSurname && (
+                        <button
+                          type="button"
+                          onClick={() => setLastName(surnameInference.suggestedSurname!)}
+                          style={{
+                            marginTop: 4,
+                            background: 'none',
+                            border: 'none',
+                            color: '#D6B15C',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            padding: 0,
+                            textAlign: 'left',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          💡 Inherit family surname "{surnameInference.suggestedSurname}"
+                        </button>
+                      )}
                     </div>
 
                     <div>
@@ -949,6 +1117,45 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                     onChange={(e) => setBirthDate(e.target.value)}
                     placeholder="YYYY or YYYY-MM-DD (e.g. 1965)"
                   />
+                  {estimatedGeneration && (
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(214, 177, 92, 0.12)',
+                          border: '1px solid rgba(214, 177, 92, 0.35)',
+                          color: '#D6B15C',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                        title={estimatedGeneration.explanation}
+                      >
+                        ✨ Est. ~{estimatedGeneration.estimatedBirthYear} · {estimatedGeneration.generationName}
+                      </span>
+                      {estimatedGeneration.estimatedBirthYear && !birthDate && (
+                        <button
+                          type="button"
+                          onClick={() => setBirthDate(String(estimatedGeneration.estimatedBirthYear))}
+                          style={{
+                            padding: '2px 7px',
+                            borderRadius: 4,
+                            backgroundColor: '#D6B15C',
+                            color: '#10141d',
+                            border: 'none',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Apply Year
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -995,6 +1202,42 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                       placeholder="e.g. Hyderabad"
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Biological & Chronological Sanity Checks */}
+              {chronologyIssues.length > 0 && (
+                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {chronologyIssues.map((issue, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        backgroundColor:
+                          issue.severity === 'error'
+                            ? 'rgba(239, 68, 68, 0.12)'
+                            : 'rgba(245, 158, 11, 0.12)',
+                        border: `1px solid ${
+                          issue.severity === 'error'
+                            ? 'rgba(239, 68, 68, 0.35)'
+                            : 'rgba(245, 158, 11, 0.35)'
+                        }`,
+                        color: issue.severity === 'error' ? '#f87171' : '#f59e0b',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      {issue.severity === 'error' ? (
+                        <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                      ) : (
+                        <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+                      )}
+                      <span>{issue.message}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1166,113 +1409,330 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </select>
               </div>
 
-              {/* Connected Relationships Badges */}
+              {/* Upgrade 5: Multi-Spouse Disambiguation Cards */}
+              {fatherSpouses.length > 1 && !motherId && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(214, 177, 92, 0.12)',
+                    border: '1px solid rgba(214, 177, 92, 0.4)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 650, color: '#D6B15C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={14} />
+                    <span>Father has {fatherSpouses.length} recorded spouses in this lineage. Select biological Mother:</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {fatherSpouses.map((cand) => (
+                      <button
+                        key={cand.id}
+                        type="button"
+                        onClick={() => setMotherId(cand.id)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          backgroundColor: isDark ? '#252E3A' : '#ffffff',
+                          border: '1px solid #D6B15C',
+                          color: '#D6B15C',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <span>{cand.fullName}</span>
+                        {cand.birthYear && <span style={{ opacity: 0.75, fontSize: '11px' }}>({cand.birthYear})</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {motherSpouses.length > 1 && !fatherId && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(214, 177, 92, 0.12)',
+                    border: '1px solid rgba(214, 177, 92, 0.4)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 650, color: '#D6B15C', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={14} />
+                    <span>Mother has {motherSpouses.length} recorded spouses in this lineage. Select biological Father:</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {motherSpouses.map((cand) => (
+                      <button
+                        key={cand.id}
+                        type="button"
+                        onClick={() => setFatherId(cand.id)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          backgroundColor: isDark ? '#252E3A' : '#ffffff',
+                          border: '1px solid #D6B15C',
+                          color: '#D6B15C',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <span>{cand.fullName}</span>
+                        {cand.birthYear && <span style={{ opacity: 0.75, fontSize: '11px' }}>({cand.birthYear})</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Connected Relationships Badges with Upgrade 6: Deep Kinship Nomenclature */}
               {(fatherId || motherId || spouseId || childId) && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${isDark ? '#2a3441' : '#e2e8f0'}` }}>
                   <div style={{ fontSize: '11.5px', fontWeight: 600, color: isDark ? '#9BA3AF' : '#64748b', marginBottom: 8 }}>
                     Currently Connected Relations for this Person:
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {fatherId && (
+                    {fatherId && (() => {
+                      const nom = calculateKinshipNomenclature('father', 'male', true, true);
+                      return (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                            border: '1px solid rgba(59, 130, 246, 0.4)',
+                            color: '#60a5fa',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <strong>{nom.formalEnglish} ({nom.traditionalTelugu}):</strong> {getMemberName(fatherId)}
+                          <button
+                            type="button"
+                            onClick={() => setFatherId('')}
+                            title="Remove Father"
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })()}
+                    {motherId && (() => {
+                      const nom = calculateKinshipNomenclature('mother', 'female', true, true);
+                      return (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                            border: '1px solid rgba(236, 72, 153, 0.4)',
+                            color: '#f472b6',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <strong>{nom.formalEnglish} ({nom.traditionalTelugu}):</strong> {getMemberName(motherId)}
+                          <button
+                            type="button"
+                            onClick={() => setMotherId('')}
+                            title="Remove Mother"
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })()}
+                    {spouseId && (() => {
+                      const spNode = effectiveKinshipNodes.find((n) => n.id === spouseId);
+                      const nom = calculateKinshipNomenclature('spouse', spNode?.gender || 'female', true, true);
+                      return (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                            border: '1px solid rgba(214, 177, 92, 0.4)',
+                            color: '#D6B15C',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <strong>{nom.formalEnglish} ({nom.traditionalTelugu}):</strong> {getMemberName(spouseId)}
+                          <button
+                            type="button"
+                            onClick={() => setSpouseId('')}
+                            title="Remove Spouse"
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })()}
+                    {childId && (() => {
+                      const chNode = effectiveKinshipNodes.find((n) => n.id === childId);
+                      const nom = calculateKinshipNomenclature(
+                        chNode?.gender === 'female' ? 'daughter' : 'son',
+                        chNode?.gender || 'male',
+                        true,
+                        true
+                      );
+                      return (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                            border: '1px solid rgba(34, 197, 94, 0.4)',
+                            color: '#4ade80',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <strong>{nom.formalEnglish} ({nom.traditionalTelugu}):</strong> {getMemberName(childId)}
+                          <button
+                            type="button"
+                            onClick={() => setChildId('')}
+                            title="Remove Child"
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Upgrade 1: Sibling Auto-Discovery Display */}
+              {(discoveredSiblings.fullSiblings.length > 0 || discoveredSiblings.halfSiblings.length > 0) && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : '#f1f5f9',
+                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 650, color: isDark ? '#e2e8f0' : '#1e293b', marginBottom: 6 }}>
+                    👨‍👩‍👧‍👦 Auto-Discovered Siblings in Lineage ({discoveredSiblings.fullSiblings.length + discoveredSiblings.halfSiblings.length}):
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {discoveredSiblings.fullSiblings.map((sib) => {
+                      const nom = calculateKinshipNomenclature(
+                        'sibling',
+                        sib.gender || 'male',
+                        true,
+                        (sib.birthYear || 0) < (parseInt(birthDate.slice(0, 4), 10) || 9999)
+                      );
+                      return (
+                        <span
+                          key={sib.id}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            backgroundColor: isDark ? '#1a2230' : '#e2e8f0',
+                            border: `1px solid ${isDark ? '#3b495e' : '#cbd5e1'}`,
+                            fontSize: '11.5px',
+                            color: isDark ? '#cbd5e1' : '#334155',
+                          }}
+                        >
+                          {sib.fullName} · <strong style={{ color: '#D6B15C' }}>{nom.formalEnglish} ({nom.traditionalTelugu})</strong>
+                        </span>
+                      );
+                    })}
+                    {discoveredSiblings.halfSiblings.map((sib) => (
                       <span
+                        key={sib.id}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          backgroundColor: isDark ? '#1a2230' : '#e2e8f0',
+                          border: `1px solid ${isDark ? '#3b495e' : '#cbd5e1'}`,
+                          fontSize: '11.5px',
+                          color: isDark ? '#94a3b8' : '#64748b',
+                        }}
+                      >
+                        {sib.fullName} (Half-sibling via {sib.sharedParent})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Upgrade 7: Cascading Nuclear Family Batch Linking Card */}
+              {nuclearFamilyCandidates.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '12px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.35)',
+                  }}
+                >
+                  <div style={{ fontSize: '12.5px', fontWeight: 650, color: '#60a5fa', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>👨‍👩‍👧‍👦 Connect Entire Nuclear Family</span>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 10px' }}>
+                    Found {nuclearFamilyCandidates.length} existing children of {getMemberName(spouseId)}. Select children to automatically link as offspring of this new member:
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {nuclearFamilyCandidates.map((child) => (
+                      <label
+                        key={child.childId}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                          border: '1px solid rgba(59, 130, 246, 0.4)',
-                          color: '#60a5fa',
+                          gap: 8,
+                          cursor: 'pointer',
                           fontSize: '12px',
+                          color: isDark ? '#e2e8f0' : '#1e293b',
                         }}
                       >
-                        <strong>Father:</strong> {getMemberName(fatherId)}
-                        <button
-                          type="button"
-                          onClick={() => setFatherId('')}
-                          title="Remove Father"
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    )}
-                    {motherId && (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(236, 72, 153, 0.15)',
-                          border: '1px solid rgba(236, 72, 153, 0.4)',
-                          color: '#f472b6',
-                          fontSize: '12px',
-                        }}
-                      >
-                        <strong>Mother:</strong> {getMemberName(motherId)}
-                        <button
-                          type="button"
-                          onClick={() => setMotherId('')}
-                          title="Remove Mother"
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    )}
-                    {spouseId && (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
-                          border: '1px solid rgba(214, 177, 92, 0.4)',
-                          color: '#D6B15C',
-                          fontSize: '12px',
-                        }}
-                      >
-                        <strong>Spouse:</strong> {getMemberName(spouseId)}
-                        <button
-                          type="button"
-                          onClick={() => setSpouseId('')}
-                          title="Remove Spouse"
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    )}
-                    {childId && (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                          border: '1px solid rgba(34, 197, 94, 0.4)',
-                          color: '#4ade80',
-                          fontSize: '12px',
-                        }}
-                      >
-                        <strong>Son / Daughter:</strong> {getMemberName(childId)}
-                        <button
-                          type="button"
-                          onClick={() => setChildId('')}
-                          title="Remove Child"
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    )}
+                        <input
+                          type="checkbox"
+                          checked={selectedBatchChildIds.includes(child.childId)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBatchChildIds((prev) => [...prev, child.childId]);
+                            } else {
+                              setSelectedBatchChildIds((prev) => prev.filter((id) => id !== child.childId));
+                            }
+                          }}
+                          style={{ width: 14, height: 14, accentColor: '#3b82f6', cursor: 'pointer' }}
+                        />
+                        <span>
+                          {child.fullName} {child.birthYear ? `(Born: ${child.birthYear})` : ''}
+                          {child.hasOtherParent && (
+                            <span style={{ marginLeft: 6, fontSize: '11px', color: '#f59e0b' }}>
+                              (Already has another parent recorded)
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               )}

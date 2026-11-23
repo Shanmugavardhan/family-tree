@@ -11,8 +11,19 @@ import { ImageCropperModal } from '../photos/ImageCropperModal';
 import {
   findDuplicateLineageMembers,
   inferKinshipRelations,
+  discoverSiblings,
+  estimateBirthYearAndGeneration,
+  validateKinshipChronology,
+  inferInheritedSurname,
+  calculateKinshipNomenclature,
+  findNuclearFamilyBatchCandidates,
+  detectAncestryCycle,
   KinshipNode,
   KinshipEdge,
+  SiblingDiscoveryResult,
+  GenerationEstimateResult,
+  ChronologyIssue,
+  NuclearFamilyBatchCandidate,
 } from '../../utils/kinshipInference';
 
 import avatarMale from '../../assets/avatar_male.png';
@@ -73,6 +84,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [newRelType, setNewRelType] = useState<'father' | 'mother' | 'spouse' | 'child'>('father');
   const [newRelTargetId, setNewRelTargetId] = useState<string>('');
   const [savingRelation, setSavingRelation] = useState(false);
+  const [batchChildrenToAdd, setBatchChildrenToAdd] = useState<string[]>([]);
 
   // Kinship Auto-Inference Notice
   const [relInferenceNotice, setRelInferenceNotice] = useState<string | null>(null);
@@ -138,6 +150,105 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     return effectiveKinshipNodes.filter((m) => m.id !== personId);
   }, [newRelType, effectiveKinshipNodes, personId]);
 
+  // Current parents, spouse, child
+  const currentParents = useMemo(() => {
+    return relationships
+      .filter((r) => r.relationship_type === 'parent' && r.person_id === personId)
+      .map((r) => r.related_person_id);
+  }, [relationships, personId]);
+
+  const currentFatherId = useMemo(() => {
+    return (
+      currentParents.find((pId) => {
+        const p = allPersons.find((x) => x.id === pId) || effectiveKinshipNodes.find((x) => x.id === pId);
+        return p?.gender === 'male';
+      }) || null
+    );
+  }, [currentParents, allPersons, effectiveKinshipNodes]);
+
+  const currentMotherId = useMemo(() => {
+    return (
+      currentParents.find((pId) => {
+        const p = allPersons.find((x) => x.id === pId) || effectiveKinshipNodes.find((x) => x.id === pId);
+        return p?.gender === 'female';
+      }) || null
+    );
+  }, [currentParents, allPersons, effectiveKinshipNodes]);
+
+  const currentSpouseId = useMemo(() => {
+    const sp = relationships.find((r) => r.relationship_type === 'spouse');
+    if (!sp) return null;
+    return sp.person_id === personId ? sp.related_person_id : sp.person_id;
+  }, [relationships, personId]);
+
+  const currentChildId = useMemo(() => {
+    const ch = relationships.find((r) => r.relationship_type === 'parent' && r.related_person_id === personId);
+    return ch ? ch.person_id : null;
+  }, [relationships, personId]);
+
+  // Upgrade 1: Discovered Siblings (Reactive)
+  const discoveredSiblings: SiblingDiscoveryResult = useMemo(() => {
+    return discoverSiblings(
+      currentFatherId,
+      currentMotherId,
+      personId,
+      effectiveKinshipNodes,
+      effectiveKinshipEdges
+    );
+  }, [currentFatherId, currentMotherId, personId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  // Upgrade 2: Generational Epoch & Birth Year Estimation (Reactive)
+  const estimatedGeneration: GenerationEstimateResult | null = useMemo(() => {
+    return estimateBirthYearAndGeneration({
+      fatherId: currentFatherId,
+      motherId: currentMotherId,
+      spouseId: currentSpouseId,
+      childId: currentChildId,
+      nodes: effectiveKinshipNodes,
+    });
+  }, [currentFatherId, currentMotherId, currentSpouseId, currentChildId, effectiveKinshipNodes]);
+
+  // Upgrade 3: Biological & Chronological Sanity Checks (Reactive)
+  const chronologyIssues: ChronologyIssue[] = useMemo(() => {
+    return validateKinshipChronology({
+      subjectBirthDate: birthDate,
+      subjectDeathDate: deathDate,
+      isLiving,
+      fatherId: currentFatherId,
+      motherId: currentMotherId,
+      childId: currentChildId,
+      currentPersonId: personId,
+      nodes: effectiveKinshipNodes,
+      edges: effectiveKinshipEdges,
+    });
+  }, [birthDate, deathDate, isLiving, currentFatherId, currentMotherId, currentChildId, personId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  // Upgrade 4: Surname Inheritance from Father
+  const surnameInference = useMemo(() => {
+    return inferInheritedSurname(currentFatherId, lastName, effectiveKinshipNodes);
+  }, [currentFatherId, lastName, effectiveKinshipNodes]);
+
+  // Upgrade 7: Batch candidates when adding a spouse in the modal
+  const newSpouseBatchCandidates: NuclearFamilyBatchCandidate[] = useMemo(() => {
+    if (newRelType !== 'spouse' || !newRelTargetId) return [];
+    return findNuclearFamilyBatchCandidates(
+      newRelTargetId,
+      personId,
+      effectiveKinshipNodes,
+      effectiveKinshipEdges
+    );
+  }, [newRelType, newRelTargetId, personId, effectiveKinshipNodes, effectiveKinshipEdges]);
+
+  useEffect(() => {
+    if (newSpouseBatchCandidates.length > 0) {
+      setBatchChildrenToAdd(
+        newSpouseBatchCandidates.filter((c) => !c.hasOtherParent).map((c) => c.childId)
+      );
+    } else {
+      setBatchChildrenToAdd([]);
+    }
+  }, [newSpouseBatchCandidates]);
+
   const loadRelationships = async (id: string) => {
     setLoadingRels(true);
     setRelActionError(null);
@@ -167,6 +278,20 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     setSavingRelation(true);
     setRelActionError(null);
     try {
+      if (newRelType === 'father' || newRelType === 'mother') {
+        if (detectAncestryCycle(personId, newRelTargetId, effectiveKinshipEdges)) {
+          setRelActionError('Cannot connect relation: ancestry cycle detected (person cannot be an ancestor of their own parent).');
+          setSavingRelation(false);
+          return;
+        }
+      } else if (newRelType === 'child') {
+        if (detectAncestryCycle(newRelTargetId, personId, effectiveKinshipEdges)) {
+          setRelActionError('Cannot connect relation: ancestry cycle detected (child cannot be an ancestor of parent).');
+          setSavingRelation(false);
+          return;
+        }
+      }
+
       let payload: any;
       if (newRelType === 'father' || newRelType === 'mother') {
         payload = {
@@ -190,6 +315,23 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
 
       const res = await relationshipApi.create(payload);
       if (res.success) {
+        // Upgrade 7: Cascading Nuclear Family Batch Linking in Edit Modal
+        if (batchChildrenToAdd.length > 0) {
+          try {
+            await Promise.all(
+              batchChildrenToAdd.map((cId) =>
+                relationshipApi.create({
+                  person_id: cId,
+                  related_person_id: personId,
+                  relationship_type: 'parent',
+                })
+              )
+            );
+          } catch (batchErr) {
+            console.error('Failed to link batch children:', batchErr);
+          }
+        }
+
         setIsAddingRelation(false);
         setNewRelTargetId('');
         setRelInferenceNotice(null);
@@ -417,6 +559,11 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     if (relationships.length === 0) {
       errs.relations =
         'Every member must have at least one family relationship in the tree. Please connect a parent, spouse, or child.';
+    }
+    // Critical Chronology / Cycle Errors check
+    const criticalError = chronologyIssues.find((c) => c.severity === 'error');
+    if (criticalError) {
+      errs.chronology = criticalError.message;
     }
     setClientErrors(errs);
     return Object.keys(errs).length === 0;
@@ -912,6 +1059,27 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                           onChange={(e) => setLastName(e.target.value)}
                           placeholder="e.g. Sharma"
                         />
+                        {surnameInference.suggestedSurname && lastName !== surnameInference.suggestedSurname && (
+                          <button
+                            type="button"
+                            onClick={() => setLastName(surnameInference.suggestedSurname!)}
+                            style={{
+                              marginTop: 4,
+                              background: 'none',
+                              border: 'none',
+                              color: '#D6B15C',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              padding: 0,
+                              textAlign: 'left',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            💡 Inherit family surname "{surnameInference.suggestedSurname}"
+                          </button>
+                        )}
                       </div>
 
                       <div>
@@ -1069,6 +1237,45 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                       onChange={(e) => setBirthDate(e.target.value)}
                       placeholder="YYYY or YYYY-MM-DD (e.g. 1965)"
                     />
+                    {estimatedGeneration && (
+                      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(214, 177, 92, 0.12)',
+                            border: '1px solid rgba(214, 177, 92, 0.35)',
+                            color: '#D6B15C',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                          title={estimatedGeneration.explanation}
+                        >
+                          ✨ Est. ~{estimatedGeneration.estimatedBirthYear} · {estimatedGeneration.generationName}
+                        </span>
+                        {estimatedGeneration.estimatedBirthYear && !birthDate && (
+                          <button
+                            type="button"
+                            onClick={() => setBirthDate(String(estimatedGeneration.estimatedBirthYear))}
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              backgroundColor: '#D6B15C',
+                              color: '#10141d',
+                              border: 'none',
+                              fontSize: '10.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Apply Year
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1115,6 +1322,42 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         placeholder="e.g. Hyderabad"
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Biological & Chronological Sanity Checks */}
+                {chronologyIssues.length > 0 && (
+                  <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {chronologyIssues.map((issue, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          backgroundColor:
+                            issue.severity === 'error'
+                              ? 'rgba(239, 68, 68, 0.12)'
+                              : 'rgba(245, 158, 11, 0.12)',
+                          border: `1px solid ${
+                            issue.severity === 'error'
+                              ? 'rgba(239, 68, 68, 0.35)'
+                              : 'rgba(245, 158, 11, 0.35)'
+                          }`,
+                          color: issue.severity === 'error' ? '#f87171' : '#f59e0b',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        {issue.severity === 'error' ? (
+                          <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                        ) : (
+                          <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+                        )}
+                        <span>{issue.message}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1238,6 +1481,63 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                   </div>
                 )}
 
+                {/* Upgrade 1: Sibling Auto-Discovery Display in Edit Modal */}
+                {(discoveredSiblings.fullSiblings.length > 0 || discoveredSiblings.halfSiblings.length > 0) && (
+                  <div
+                    style={{
+                      marginBottom: 14,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : '#f1f5f9',
+                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', fontWeight: 650, color: isDark ? '#e2e8f0' : '#1e293b', marginBottom: 6 }}>
+                      👨‍👩‍👧‍👦 Auto-Discovered Siblings in Lineage ({discoveredSiblings.fullSiblings.length + discoveredSiblings.halfSiblings.length}):
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {discoveredSiblings.fullSiblings.map((sib) => {
+                        const nom = calculateKinshipNomenclature(
+                          'sibling',
+                          sib.gender || 'male',
+                          true,
+                          (sib.birthYear || 0) < (parseInt(birthDate.slice(0, 4), 10) || 9999)
+                        );
+                        return (
+                          <span
+                            key={sib.id}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              backgroundColor: isDark ? '#1a2230' : '#e2e8f0',
+                              border: `1px solid ${isDark ? '#3b495e' : '#cbd5e1'}`,
+                              fontSize: '11.5px',
+                              color: isDark ? '#cbd5e1' : '#334155',
+                            }}
+                          >
+                            {sib.fullName} · <strong style={{ color: '#D6B15C' }}>{nom.formalEnglish} ({nom.traditionalTelugu})</strong>
+                          </span>
+                        );
+                      })}
+                      {discoveredSiblings.halfSiblings.map((sib) => (
+                        <span
+                          key={sib.id}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            backgroundColor: isDark ? '#1a2230' : '#e2e8f0',
+                            border: `1px solid ${isDark ? '#3b495e' : '#cbd5e1'}`,
+                            fontSize: '11.5px',
+                            color: isDark ? '#94a3b8' : '#64748b',
+                          }}
+                        >
+                          {sib.fullName} (Half-sibling via {sib.sharedParent})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Sub-form: Add Relation with Dot Options of "Which Relation" and Dropdown of "Who" */}
                 {isAddingRelation && (
                   <div
@@ -1346,6 +1646,57 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                       </select>
                     </div>
 
+                    {/* Upgrade 7: Cascading Nuclear Family Batch Linking Card in Edit Sub-form */}
+                    {newSpouseBatchCandidates.length > 0 && (
+                      <div
+                        style={{
+                          marginBottom: 14,
+                          padding: '10px 12px',
+                          borderRadius: 8,
+                          backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                          border: '1px solid rgba(59, 130, 246, 0.35)',
+                        }}
+                      >
+                        <div style={{ fontSize: '12px', fontWeight: 650, color: '#60a5fa', marginBottom: 4 }}>
+                          👨‍👩‍👧‍👦 Connect Entire Nuclear Family
+                        </div>
+                        <p style={{ fontSize: '11px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 8px' }}>
+                          Found {newSpouseBatchCandidates.length} children of this spouse. Link this person as parent:
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {newSpouseBatchCandidates.map((child) => (
+                            <label
+                              key={child.childId}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                cursor: 'pointer',
+                                fontSize: '11.5px',
+                                color: isDark ? '#e2e8f0' : '#1e293b',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={batchChildrenToAdd.includes(child.childId)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setBatchChildrenToAdd((prev) => [...prev, child.childId]);
+                                  } else {
+                                    setBatchChildrenToAdd((prev) => prev.filter((id) => id !== child.childId));
+                                  }
+                                }}
+                                style={{ width: 14, height: 14, accentColor: '#3b82f6', cursor: 'pointer' }}
+                              />
+                              <span>
+                                {child.fullName} {child.birthYear ? `(Born: ${child.birthYear})` : ''}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                       <button
                         type="button"
@@ -1394,25 +1745,37 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     {relationships.map((rel) => {
                       let roleLabel = 'Relative';
                       let targetPersonId = '';
+                      let nomCategory = 'relative';
                       if (rel.relationship_type === 'parent') {
                         if (rel.person_id === personId) {
                           targetPersonId = rel.related_person_id;
                           const target = allPersons.find((p) => p.id === targetPersonId);
                           roleLabel = target?.gender === 'female' ? 'Mother' : target?.gender === 'male' ? 'Father' : 'Parent';
+                          nomCategory = target?.gender === 'female' ? 'mother' : 'father';
                         } else {
                           targetPersonId = rel.person_id;
                           const target = allPersons.find((p) => p.id === targetPersonId);
                           roleLabel = target?.gender === 'female' ? 'Daughter' : target?.gender === 'male' ? 'Son' : 'Child';
+                          nomCategory = target?.gender === 'female' ? 'daughter' : 'son';
                         }
                       } else {
                         targetPersonId = rel.person_id === personId ? rel.related_person_id : rel.person_id;
                         roleLabel = 'Spouse';
+                        nomCategory = 'spouse';
                       }
 
                       const targetPerson = allPersons.find((p) => p.id === targetPersonId);
                       const targetName = targetPerson
                         ? [targetPerson.first_name, targetPerson.middle_name, targetPerson.last_name].filter(Boolean).join(' ')
                         : 'Unknown Member';
+
+                      // Upgrade 6: Deep Kinship Nomenclature in relationship list
+                      const nom = calculateKinshipNomenclature(
+                        nomCategory,
+                        targetPerson?.gender || (roleLabel === 'Mother' || roleLabel === 'Daughter' ? 'female' : 'male'),
+                        true,
+                        true
+                      );
 
                       return (
                         <div
@@ -1449,7 +1812,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                                     : '#4ade80',
                               }}
                             >
-                              {roleLabel}
+                              {nom.formalEnglish} ({nom.traditionalTelugu})
                             </span>
                             <span style={{ fontSize: '13.5px', fontWeight: 600, color: isDark ? '#f1f5f9' : '#0f172a' }}>
                               {targetName}
