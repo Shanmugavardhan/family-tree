@@ -190,14 +190,15 @@ export const PersonForm: React.FC<PersonFormProps> = ({
           </div>
 
           <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <label className="form-label">Living Status</label>
+            <label className="form-label">Status</label>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 4 }}>
               <input
                 type="checkbox"
-                checked={isLiving}
+                checked={!isLiving}
                 onChange={(e) => {
-                  setIsLiving(e.target.checked);
-                  if (e.target.checked) {
+                  const deceased = e.target.checked;
+                  setIsLiving(!deceased);
+                  if (!deceased) {
                     setDeathDate('');
                     setDeathPlace('');
                   }
@@ -205,7 +206,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
                 style={{ width: 18, height: 18, accentColor: 'var(--color-primary)' }}
               />
               <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-slate-700)' }}>
-                {isLiving ? 'Currently living' : 'Deceased'}
+                Deceased
               </span>
             </label>
           </div>

@@ -49,7 +49,7 @@ async function runAll() {
     const paradarami = KNOWN_LINEAGES.paradarami;
     assert.ok(paradarami, 'Paradarami lineage should exist');
     assert.strictEqual(paradarami.code, 'PARA1290');
-    assert.strictEqual(paradarami.memberCount, 8);
+    assert.strictEqual(paradarami.memberCount, 9);
     assert.strictEqual(paradarami.name, 'House of Paradarami');
   });
 
@@ -239,8 +239,8 @@ async function runAll() {
     const graphService = new GraphService(repo);
     const graph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
 
-    // 1. Expected 6 members in Paradarami tree (Ramayya, Achamma, Suguna, Rada Galeti, Munirathnam Galeti, Jagannadham)
-    assert.strictEqual(graph.nodes.length, 6, `Expected 6 nodes in Paradarami tree, got ${graph.nodes.length}`);
+    // 1. Expected 9 members in Paradarami tree (Ramayya, Achamma, Suguna, Rada Galeti, Munirathnam Galeti, Jagannadham, Meghana, Shanmuga, Navaneeth)
+    assert.strictEqual(graph.nodes.length, 9, `Expected 9 nodes in Paradarami tree, got ${graph.nodes.length}`);
 
     // 2. Both parents Ramayya and Achamma must be present
     assert.ok(graph.nodes.find((n) => n.id === '1ae73a4b-b739-40d3-8b50-071bbf1b07eb'), 'Ramayya Chetty must be present');

@@ -444,7 +444,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   </select>
                 </div>
 
-                {/* Requirement 7: Deceased Checkbox */}
+                {/* Requirement 7: Deceased Checkbox (Standard fixed label) */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
                     Status
@@ -464,7 +464,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                       style={{ width: 17, height: 17, accentColor: '#D6B15C' }}
                     />
                     <span style={{ fontSize: '13.5px', fontWeight: 500, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
-                      {!isLiving ? '† Deceased' : 'Living'}
+                      Deceased
                     </span>
                   </label>
                 </div>

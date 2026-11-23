@@ -2,7 +2,7 @@
   "nodes": [
     {
       "id": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
-      "x": 445,
+      "x": 650,
       "y": 2340,
       "width": 190,
       "height": 160,
@@ -25,7 +25,7 @@
     },
     {
       "id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
-      "x": 445,
+      "x": 650,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -48,7 +48,7 @@
     },
     {
       "id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
-      "x": 1175,
+      "x": 1380,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -71,7 +71,7 @@
     },
     {
       "id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
-      "x": 765,
+      "x": 970,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -122,8 +122,77 @@
       }
     },
     {
+      "id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "x": 810,
+      "y": 3660,
+      "width": 190,
+      "height": 160,
+      "generationId": "gen_z",
+      "generationOrder": 5,
+      "personId": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "firstName": "Meghana",
+      "middleName": null,
+      "lastName": "Konukuru",
+      "birthDate": "2001-05-30",
+      "birthYear": 2001,
+      "generationName": "Generation Z",
+      "photoPath": null,
+      "gender": "female",
+      "isLiving": true,
+      "isArchived": false,
+      "isInferredGeneration": false,
+      "hasExternalLineage": false,
+      "externalLineage": null
+    },
+    {
+      "id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "x": 1220,
+      "y": 3660,
+      "width": 190,
+      "height": 160,
+      "generationId": "gen_z",
+      "generationOrder": 5,
+      "personId": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "firstName": "Shanmuga",
+      "middleName": "Vardhan",
+      "lastName": "Konukuru",
+      "birthDate": "2004-07-23",
+      "birthYear": 2004,
+      "generationName": "Generation Z",
+      "photoPath": null,
+      "gender": "male",
+      "isLiving": true,
+      "isArchived": false,
+      "isInferredGeneration": false,
+      "hasExternalLineage": false,
+      "externalLineage": null
+    },
+    {
+      "id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "x": 1630,
+      "y": 3660,
+      "width": 190,
+      "height": 160,
+      "generationId": "gen_z",
+      "generationOrder": 5,
+      "personId": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "firstName": "Navaneeth",
+      "middleName": null,
+      "lastName": "Galeti",
+      "birthDate": "2006",
+      "birthYear": 2006,
+      "generationName": "Generation Z",
+      "photoPath": null,
+      "gender": "male",
+      "isLiving": true,
+      "isArchived": false,
+      "isInferredGeneration": false,
+      "hasExternalLineage": false,
+      "externalLineage": null
+    },
+    {
       "id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
-      "x": 765,
+      "x": 970,
       "y": 2340,
       "width": 190,
       "height": 160,
@@ -146,7 +215,7 @@
     },
     {
       "id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
-      "x": 1495,
+      "x": 1700,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -184,6 +253,41 @@
       "parentType": "biological"
     },
     {
+      "id": "edge-pc-5c561a7d-3fee-4112-af6e-286f7a8ad61b-c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "source": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "target": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-5c561a7d-3fee-4112-af6e-286f7a8ad61b-dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "source": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "target": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-901d8c3f-0bd1-4947-9678-fbfd685d77c1-e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "source": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
+      "target": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-b19dee44-9906-4c46-84b6-70d2fa70a5b5-c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "source": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "target": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-b19dee44-9906-4c46-84b6-70d2fa70a5b5-dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "source": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+      "target": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
       "id": "edge-pc-e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b-5c561a7d-3fee-4112-af6e-286f7a8ad61b",
       "source": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
       "target": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
@@ -194,6 +298,13 @@
       "id": "edge-pc-e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b-fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
       "source": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
       "target": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-fd26db0a-7e43-47d8-bb1c-55b1b84026c2-e363ae76-6ecd-4810-a20b-06e10852afd7",
+      "source": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+      "target": "e363ae76-6ecd-4810-a20b-06e10852afd7",
       "type": "parent_child",
       "parentType": "biological"
     },
@@ -322,7 +433,7 @@
       "order": 5,
       "y": 3520,
       "height": 440,
-      "nodeCount": 0,
+      "nodeCount": 3,
       "startYear": 1997,
       "endYear": 2012,
       "backgroundColor": "#44372A",
@@ -353,14 +464,14 @@
       "textColor": "#F1E9D7"
     }
   ],
-  "width": 1800,
+  "width": 1970,
   "height": 4840,
   "metadata": {
-    "totalNodes": 6,
-    "totalEdges": 7,
+    "totalNodes": 9,
+    "totalEdges": 13,
     "totalLanes": 11,
-    "width": 1800,
+    "width": 1970,
     "height": 4840,
-    "calculatedAt": "2026-11-20T13:07:06.694Z"
+    "calculatedAt": "2026-11-23T05:51:26.852Z"
   }
 }

@@ -236,9 +236,7 @@ export class GraphService {
       }
     }
 
-    // Expand bloodline downwards:
-    // If target is Konukuru: all biological descendants (e.g. Chandrakala Etigadda, Hemanth Etigadda)
-    // If target is Paradarami: direct children of Paradarami parents (Suguna, Rada Galeti)
+    // Expand bloodline downwards: all biological linear descendants (children, grandchildren, etc.)
     let addedDescendants = true;
     while (addedDescendants) {
       addedDescendants = false;
@@ -246,16 +244,8 @@ export class GraphService {
         if (rel.relationship_type === 'parent') {
           // related_person_id is parent, person_id is child
           if (coreBloodlineIds.has(rel.related_person_id) && !coreBloodlineIds.has(rel.person_id)) {
-            if (normTarget === 'paradarami') {
-              const parent = persons.find((p) => p.id === rel.related_person_id);
-              if (parent && parent.last_name?.trim().toLowerCase() === 'paradarami') {
-                coreBloodlineIds.add(rel.person_id);
-                addedDescendants = true;
-              }
-            } else {
-              coreBloodlineIds.add(rel.person_id);
-              addedDescendants = true;
-            }
+            coreBloodlineIds.add(rel.person_id);
+            addedDescendants = true;
           }
         }
       }

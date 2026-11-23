@@ -339,12 +339,12 @@ export async function runAuditTests() {
     assert.strictEqual(relationships.length, 29, 'Canonical database must have exactly 29 relationships');
   });
 
-  await testCase('TEST-ARCH-04-02', 'Deterministic graph partitioning: Konukuru partitioned to 14 nodes; Paradarami partitioned to 6 nodes', async () => {
+  await testCase('TEST-ARCH-04-02', 'Deterministic graph partitioning: Konukuru partitioned to 14 nodes; Paradarami partitioned to 9 nodes (including vertical linear descendants)', async () => {
     const konukuruGraph = await graphService.buildFamilyGraph({ lineage: 'konukuru' });
     assert.strictEqual(konukuruGraph.nodes.length, 14, 'Konukuru partition must have exactly 14 nodes');
 
     const paradaramiGraph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
-    assert.strictEqual(paradaramiGraph.nodes.length, 6, 'Paradarami partition must have exactly 6 nodes');
+    assert.strictEqual(paradaramiGraph.nodes.length, 9, 'Paradarami partition must have exactly 9 nodes');
   });
 
   await testCase('TEST-ARCH-04-03', 'Layout geometry: standard 190x160 dimensions and 320px spouse spacing', async () => {

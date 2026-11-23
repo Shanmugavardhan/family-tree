@@ -621,7 +621,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         style={{ width: 17, height: 17, accentColor: '#D6B15C' }}
                       />
                       <span style={{ fontSize: '13.5px', fontWeight: 500, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
-                        {!isLiving ? '† Deceased' : 'Living'}
+                        Deceased
                       </span>
                     </label>
                   </div>

@@ -254,7 +254,7 @@ Reference Specification: [`ARCHITECTURE/04-DATA-MODEL-AND-GRAPH-PARTITIONING.md`
 - **Architecture Statement**: A single database is partitioned into house subgraphs based on the `lineage` parameter, including spouses while omitting external ancestors from default views.
 - **Desired Result**:
   1. `buildFamilyGraph({ lineage: 'konukuru' })` returns exactly 14 nodes.
-  2. `buildFamilyGraph({ lineage: 'paradarami' })` returns exactly 6 nodes.
+  2. `buildFamilyGraph({ lineage: 'paradarami' })` returns exactly 9 nodes (including vertical linear descendants: children and grandchildren).
 - **Test Case**: `TEST-ARCH-04-02`
 - **Verification Result**: **PASS**
 
