@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useReactFlow } from '@xyflow/react';
 import {
   X,
-  User,
   Calendar,
   MapPin,
   ExternalLink,
@@ -19,6 +18,8 @@ import { personApi } from '../../services/personApi';
 import { Person } from '../../types/person';
 import { DerivedRelativesResponse, RelativeItem } from '../../types/relative';
 import { useTheme } from '../../context/ThemeContext';
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
 
 interface PersonDetailsDrawerProps {
   personId: string | null;
@@ -92,8 +93,6 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   const fullName = [activeNode.firstName, activeNode.middleName, activeNode.lastName]
     .filter(Boolean)
     .join(' ');
-
-  const initials = `${activeNode.firstName?.[0] || ''}${activeNode.lastName?.[0] || ''}`.toUpperCase() || 'P';
 
   const handleFocusRelative = (relPersonId: string) => {
     const targetNode = allNodes.find((n) => n.id === relPersonId);
@@ -184,7 +183,11 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
                 onError={() => setImageFailed(true)}
               />
             ) : (
-              initials || <User size={28} />
+              <img
+                src={activeNode.gender?.toLowerCase() === 'female' ? avatarFemale : avatarMale}
+                alt={fullName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             )}
           </div>
 

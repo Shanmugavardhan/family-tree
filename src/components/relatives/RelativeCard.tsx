@@ -4,6 +4,8 @@ import { RelativeItem } from '../../types/relative';
 import { personApi } from '../../services/personApi';
 import { RelationshipBadge } from './RelationshipBadge';
 import { ChevronRight } from 'lucide-react';
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
 
 interface RelativeCardProps {
   relative: RelativeItem;
@@ -11,13 +13,6 @@ interface RelativeCardProps {
 
 export const RelativeCard: React.FC<RelativeCardProps> = ({ relative }) => {
   const photoUrl = relative.profile_photo ? personApi.getPhotoUrl(relative.person_id, relative.is_archived) : null;
-  const initials = relative.full_name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   return (
     <Link
@@ -59,23 +54,18 @@ export const RelativeCard: React.FC<RelativeCardProps> = ({ relative }) => {
             }}
           />
         ) : (
-          <div
+          <img
+            src={relative.gender === 'female' ? avatarFemale : avatarMale}
+            alt={relative.full_name}
             style={{
               width: 44,
               height: 44,
               borderRadius: '50%',
-              backgroundColor: relative.gender === 'female' ? '#fce7f3' : '#e0f2fe',
-              color: relative.gender === 'female' ? '#be185d' : '#0369a1',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: '0.9375rem',
+              objectFit: 'cover',
+              border: '1px solid var(--color-slate-200)',
               flexShrink: 0,
             }}
-          >
-            {initials}
-          </div>
+          />
         )}
 
         <div>

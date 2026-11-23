@@ -1,181 +1,67 @@
 import React from 'react';
 import { Handle, Position, useViewport, useUpdateNodeInternals } from '@xyflow/react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, User, Shield, Lock } from 'lucide-react';
+import { Pencil, Shield, Lock } from 'lucide-react';
 import { PersonNodeData } from '../../adapters/reactFlowAdapter';
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
 import { LINEAGE_PARENTS_BY_PERSON } from '../../types/lineage';
 
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
+
 /**
- * Noble Lady / Princess Avatar (Game of Thrones Targaryen / Westeros Aesthetic)
+ * Royal Heritage Avatar for Female members without a profile photo
  */
 const FemaleNobleAvatar: React.FC = () => (
-  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
-    <defs>
-      <radialGradient id="fem-bg" cx="50%" cy="38%" r="62%">
-        <stop offset="0%" stopColor="#4a0e14" />
-        <stop offset="65%" stopColor="#24070a" />
-        <stop offset="100%" stopColor="#0f0204" />
-      </radialGradient>
-      <linearGradient id="fem-hair" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fef08a" />
-        <stop offset="40%" stopColor="#e2d4a8" />
-        <stop offset="100%" stopColor="#a38243" />
-      </linearGradient>
-      <linearGradient id="fem-tiara" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#d4af37" />
-        <stop offset="50%" stopColor="#fef08a" />
-        <stop offset="100%" stopColor="#b45309" />
-      </linearGradient>
-      <linearGradient id="fem-robe" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#881337" />
-        <stop offset="100%" stopColor="#4c0519" />
-      </linearGradient>
-    </defs>
-    {/* Background Disc */}
-    <circle cx="50" cy="50" r="49" fill="url(#fem-bg)" />
-
-    {/* Back Hair Cascades */}
-    <path
-      d="M24 50 C20 68 28 88 34 98 C36 84 32 68 34 52 Z M76 50 C80 68 72 88 66 98 C64 84 68 68 66 52 Z"
-      fill="url(#fem-hair)"
-      opacity="0.9"
-    />
-
-    {/* Robe / Gown Shoulders */}
-    <path
-      d="M18 100 C20 84 35 76 50 78 C65 76 80 84 82 100 Z"
-      fill="url(#fem-robe)"
-    />
-    <path
-      d="M38 80 L50 88 L62 80 L50 78 Z"
-      fill="#d4af37"
-      opacity="0.8"
-    />
-
-    {/* Elegant Neck & Delicate Face Profile */}
-    <path d="M43 62 L43 78 C46 80 54 80 57 78 L57 62 Z" fill="#fde2d0" />
-    <path
-      d="M36 40 C36 28 42 22 50 22 C58 22 64 28 64 40 C64 54 58 64 50 64 C42 64 36 54 36 40 Z"
-      fill="#fed7aa"
-    />
-
-    {/* Facial Features (Serene Noble Eyes, Lips, Brows) */}
-    <path d="M42 38 Q45 36 48 38" stroke="#78350f" strokeWidth="1" fill="none" />
-    <path d="M52 38 Q55 36 58 38" stroke="#78350f" strokeWidth="1" fill="none" />
-    <path d="M43 42 Q45.5 44 47 42" stroke="#451a03" strokeWidth="1.2" fill="none" />
-    <path d="M53 42 Q54.5 44 57 42" stroke="#451a03" strokeWidth="1.2" fill="none" />
-    <path d="M50 43 L49 49 L51 49" stroke="#ea580c" strokeWidth="0.8" fill="none" opacity="0.6" />
-    <path d="M46 54 Q50 57 54 54" stroke="#be123c" strokeWidth="1.4" fill="none" />
-
-    {/* Royal Braided Hair Framing Face */}
-    <path
-      d="M34 38 C32 24 40 16 50 16 C60 16 68 24 66 38 C64 34 60 27 50 27 C40 27 36 34 34 38 Z"
-      fill="url(#fem-hair)"
-    />
-    <path
-      d="M34 38 C35 50 38 60 41 68 C39 62 36 52 35 44 Z M66 38 C65 50 62 60 59 68 C61 62 64 52 65 44 Z"
-      fill="url(#fem-hair)"
-    />
-
-    {/* Golden Royal Tiara / Circlet */}
-    <path
-      d="M38 27 Q50 23 62 27 L64 25 Q50 21 36 25 Z"
-      fill="url(#fem-tiara)"
-    />
-    <polygon points="50,19 53,24 47,24" fill="url(#fem-tiara)" />
-    <circle cx="50" cy="22" r="1.5" fill="#e11d48" />
-  </svg>
-);
-
-/**
- * Noble Lord / Knight Avatar (Game of Thrones Stark / Baratheon Aesthetic)
- */
-const MaleNobleAvatar: React.FC = () => (
-  <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
-    <defs>
-      <radialGradient id="male-bg" cx="50%" cy="38%" r="62%">
-        <stop offset="0%" stopColor="#1e293b" />
-        <stop offset="65%" stopColor="#0f172a" />
-        <stop offset="100%" stopColor="#040711" />
-      </radialGradient>
-      <linearGradient id="male-hair" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#475569" />
-        <stop offset="100%" stopColor="#1e293b" />
-      </linearGradient>
-      <linearGradient id="male-armor" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#334155" />
-        <stop offset="50%" stopColor="#64748b" />
-        <stop offset="100%" stopColor="#1e293b" />
-      </linearGradient>
-    </defs>
-    {/* Background Disc */}
-    <circle cx="50" cy="50" r="49" fill="url(#male-bg)" />
-
-    {/* Valyrian Steel / Dark Leather Mantle */}
-    <path
-      d="M14 100 C16 80 32 72 50 74 C68 72 84 80 86 100 Z"
-      fill="url(#male-armor)"
-    />
-    {/* Fur Collar Trim */}
-    <path
-      d="M26 84 C32 74 44 76 50 78 C56 76 68 74 74 84 C66 90 56 88 50 88 C44 88 34 90 26 84 Z"
-      fill="#1e293b"
-      stroke="#64748b"
-      strokeWidth="1.2"
-    />
-    {/* Gorget Clasp */}
-    <circle cx="50" cy="84" r="3.5" fill="#d4af37" stroke="#92400e" strokeWidth="1" />
-
-    {/* Strong Neck & Jaw */}
-    <path d="M41 58 L41 76 C45 78 55 78 59 76 L59 58 Z" fill="#e2c5ad" />
-    <path
-      d="M34 38 C34 26 40 22 50 22 C60 22 66 26 66 38 C66 52 60 62 50 62 C40 62 34 52 34 38 Z"
-      fill="#fed7aa"
-    />
-
-    {/* Noble Hair (Swept Back) */}
-    <path
-      d="M32 36 C30 22 38 15 50 15 C62 15 70 22 68 36 C64 26 58 22 50 22 C42 22 36 26 32 36 Z"
-      fill="url(#male-hair)"
-    />
-
-    {/* Distinguished Medieval Beard & Mustache */}
-    <path
-      d="M38 46 C38 58 44 67 50 67 C56 67 62 58 62 46 C60 52 56 56 50 56 C44 56 40 52 38 46 Z"
-      fill="#334155"
-    />
-    <path
-      d="M42 50 Q50 53 58 50 Q50 48 42 50 Z"
-      fill="#1e293b"
-    />
-
-    {/* Commanding Facial Features */}
-    <path d="M40 37 Q44 35 48 37" stroke="#1e293b" strokeWidth="1.4" fill="none" />
-    <path d="M52 37 Q56 35 60 37" stroke="#1e293b" strokeWidth="1.4" fill="none" />
-    <circle cx="45" cy="40" r="1.5" fill="#0f172a" />
-    <circle cx="55" cy="40" r="1.5" fill="#0f172a" />
-    <path d="M50 39 L49 47 L52 47" stroke="#9a3412" strokeWidth="1" fill="none" opacity="0.7" />
-  </svg>
-);
-
-/**
- * Minimalist Clean User Avatar (matching uploaded design reference)
- */
-const DefaultUserAvatar: React.FC = () => (
-  <div
+  <img
+    src={avatarFemale}
+    alt="Female Avatar"
     style={{
       width: '100%',
       height: '100%',
-      backgroundColor: '#252E3A',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      objectFit: 'cover',
+      display: 'block',
+      pointerEvents: 'none',
+      userSelect: 'none',
     }}
-  >
-    <User size={46} strokeWidth={1.8} color="#E8D6B2" />
-  </div>
+  />
+);
+
+/**
+ * Royal Heritage Avatar for Male members without a profile photo
+ */
+const MaleNobleAvatar: React.FC = () => (
+  <img
+    src={avatarMale}
+    alt="Male Avatar"
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block',
+      pointerEvents: 'none',
+      userSelect: 'none',
+    }}
+  />
+);
+
+/**
+ * Default fallback avatar
+ */
+const DefaultUserAvatar: React.FC = () => (
+  <img
+    src={avatarMale}
+    alt="Default Avatar"
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block',
+      pointerEvents: 'none',
+      userSelect: 'none',
+    }}
+  />
 );
 
 export const PersonNode: React.FC<any> = ({ id, data, selected }) => {

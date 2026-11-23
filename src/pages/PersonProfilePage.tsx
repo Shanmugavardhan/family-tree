@@ -13,6 +13,8 @@ import {
   GitCompare,
   AlertCircle,
 } from 'lucide-react';
+import avatarMale from '../assets/avatar_male.png';
+import avatarFemale from '../assets/avatar_female.png';
 
 export const PersonProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -104,7 +106,6 @@ export const PersonProfilePage: React.FC = () => {
   }
 
   const fullName = [person.first_name, person.middle_name, person.last_name].filter(Boolean).join(' ');
-  const initials = `${person.first_name[0]}${person.last_name ? person.last_name[0] : ''}`.toUpperCase();
   const photoUrl = person.profile_photo ? personApi.getPhotoUrl(person.id, person.is_archived) : null;
 
   return (
@@ -153,24 +154,19 @@ export const PersonProfilePage: React.FC = () => {
                 }}
               />
             ) : (
-              <div
+              <img
+                src={person.gender === 'female' ? avatarFemale : avatarMale}
+                alt={fullName}
                 style={{
                   width: 96,
                   height: 96,
                   borderRadius: '50%',
-                  backgroundColor: person.gender === 'female' ? '#fce7f3' : '#e0f2fe',
-                  color: person.gender === 'female' ? '#be185d' : '#0369a1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '2rem',
+                  objectFit: 'cover',
+                  border: '3px solid #ffffff',
                   boxShadow: 'var(--shadow-md)',
                   flexShrink: 0,
                 }}
-              >
-                {initials}
-              </div>
+              />
             )}
 
             <div>

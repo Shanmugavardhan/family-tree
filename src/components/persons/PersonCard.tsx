@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Person } from '../../types/person';
 import { personApi } from '../../services/personApi';
 import { Calendar, MapPin, Edit3, Eye, Archive, RotateCcw } from 'lucide-react';
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
 
 interface PersonCardProps {
   person: Person;
@@ -12,7 +14,6 @@ interface PersonCardProps {
 
 export const PersonCard: React.FC<PersonCardProps> = ({ person, onArchive, onRestore }) => {
   const fullName = [person.first_name, person.middle_name, person.last_name].filter(Boolean).join(' ');
-  const initials = `${person.first_name.charAt(0)}${person.last_name ? person.last_name.charAt(0) : ''}`.toUpperCase();
 
   const photoUrl = person.profile_photo ? personApi.getPhotoUrl(person.id, person.is_archived) : null;
 
@@ -62,25 +63,19 @@ export const PersonCard: React.FC<PersonCardProps> = ({ person, onArchive, onRes
               }}
             />
           ) : (
-            <div
+            <img
+              src={person.gender === 'female' ? avatarFemale : avatarMale}
+              alt={fullName}
               style={{
                 width: 60,
                 height: 60,
                 borderRadius: '50%',
-                backgroundColor: person.gender === 'female' ? '#fce7f3' : '#e0f2fe',
-                color: person.gender === 'female' ? '#be185d' : '#0369a1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '1.25rem',
-                border: '2px solid #ffffff',
+                objectFit: 'cover',
+                border: '2px solid var(--color-slate-200)',
                 boxShadow: 'var(--shadow-sm)',
                 flexShrink: 0,
               }}
-            >
-              {initials}
-            </div>
+            />
           )}
 
           <div style={{ flex: 1, minWidth: 0 }}>
