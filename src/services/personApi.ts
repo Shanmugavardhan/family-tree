@@ -1,6 +1,7 @@
 import { request } from './apiClient';
 import { ApiResponse } from '../types/api';
 import { Person, CreatePersonInput, UpdatePersonInput } from '../types/person';
+import { relationshipApi } from './relationshipApi';
 
 export interface HealthCheckData {
   status: string;
@@ -12,6 +13,34 @@ const isLocal =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1');
+
+export const LOCAL_CUSTOM_PERSONS_KEY = 'family_tree_custom_persons';
+
+export function getLocalCustomPersons(): Person[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_CUSTOM_PERSONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+export function saveLocalCustomPerson(person: Person): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalCustomPersons();
+    const idx = list.findIndex((p) => p.id === person.id);
+    if (idx >= 0) {
+      list[idx] = person;
+    } else {
+      list.push(person);
+    }
+    localStorage.setItem(LOCAL_CUSTOM_PERSONS_KEY, JSON.stringify(list));
+  } catch {}
+}
 
 let cachedPersons: Person[] | null = null;
 let cachedRelatives: Record<string, any> | null = null;
@@ -77,7 +106,12 @@ export const personApi = {
     }
 
     const list = await loadStaticPersons();
-    let filtered = list;
+    const localList = getLocalCustomPersons();
+    const mergedMap = new Map<string, Person>();
+    for (const p of list) mergedMap.set(p.id, p);
+    for (const p of localList) mergedMap.set(p.id, p);
+    let filtered = Array.from(mergedMap.values());
+
     if (!params?.includeArchived) {
       filtered = filtered.filter((p) => !p.is_archived);
     }
@@ -102,7 +136,8 @@ export const personApi = {
     }
 
     const list = await loadStaticPersons();
-    const found = list.find((p) => p.id === id);
+    const localList = getLocalCustomPersons();
+    const found = localList.find((p) => p.id === id) || list.find((p) => p.id === id);
     if (!found) {
       return { success: false, data: null, error: { code: 'PERSON_NOT_FOUND', message: 'Person not found' } };
     }
@@ -110,6 +145,7 @@ export const personApi = {
   },
 
   create: async (data: CreatePersonInput): Promise<ApiResponse<Person>> => {
+    let serverPerson: Person | null = null;
     if (isLocal) {
       try {
         const res = await request<Person>('/persons', {
@@ -117,12 +153,12 @@ export const personApi = {
           body: JSON.stringify(data),
         });
         if (res.success && res.data) {
-          return res;
+          serverPerson = res.data;
         }
       } catch {}
     }
 
-    const newPerson: Person = {
+    const newPerson: Person = serverPerson || {
       id: crypto.randomUUID(),
       first_name: data.first_name,
       middle_name: data.middle_name || null,
@@ -141,9 +177,47 @@ export const personApi = {
       updated_at: new Date().toISOString(),
       archived_at: null,
     };
+
+    saveLocalCustomPerson(newPerson);
     if (cachedPersons) {
-      cachedPersons.push(newPerson);
+      const idx = cachedPersons.findIndex((p) => p.id === newPerson.id);
+      if (idx >= 0) cachedPersons[idx] = newPerson;
+      else cachedPersons.push(newPerson);
     }
+
+    // Connect specified lineage relationships
+    if (data.father_id) {
+      await relationshipApi.create({
+        person_id: newPerson.id,
+        related_person_id: data.father_id,
+        relationship_type: 'parent',
+        parent_type: 'biological',
+      });
+    }
+    if (data.mother_id) {
+      await relationshipApi.create({
+        person_id: newPerson.id,
+        related_person_id: data.mother_id,
+        relationship_type: 'parent',
+        parent_type: 'biological',
+      });
+    }
+    if (data.spouse_id) {
+      await relationshipApi.create({
+        person_id: newPerson.id,
+        related_person_id: data.spouse_id,
+        relationship_type: 'spouse',
+      });
+    }
+    if (data.child_id) {
+      await relationshipApi.create({
+        person_id: data.child_id,
+        related_person_id: newPerson.id,
+        relationship_type: 'parent',
+        parent_type: 'biological',
+      });
+    }
+
     return { success: true, data: newPerson, error: null };
   },
 

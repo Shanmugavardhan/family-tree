@@ -42,7 +42,7 @@ async function runAll() {
     assert.ok(konukuru, 'Konukuru lineage should exist');
     assert.strictEqual(konukuru.code, 'KONU1290');
     assert.strictEqual(konukuru.memberCount, 14);
-    assert.strictEqual(konukuru.name, 'House of Konukuru');
+    assert.strictEqual(konukuru.name, 'Konukuru Family Tree');
   });
 
   await it('Paradarami lineage is registered with code PARA1290', () => {
@@ -50,7 +50,7 @@ async function runAll() {
     assert.ok(paradarami, 'Paradarami lineage should exist');
     assert.strictEqual(paradarami.code, 'PARA1290');
     assert.strictEqual(paradarami.memberCount, 10);
-    assert.strictEqual(paradarami.name, 'House of Paradarami');
+    assert.strictEqual(paradarami.name, 'Paradarami Family Tree');
   });
 
   // Section 2: Code Validation and Unlocking Logic
@@ -66,13 +66,13 @@ async function runAll() {
     return { success: false, error: 'Invalid family code.' };
   }
 
-  await it('Valid code KONU1290 unlocks House of Konukuru', () => {
+  await it('Valid code KONU1290 unlocks Konukuru Family Tree', () => {
     const res = simulateUnlock('KONU1290');
     assert.strictEqual(res.success, true);
     assert.strictEqual(res.lineageId, 'konukuru');
   });
 
-  await it('Valid code PARA1290 unlocks House of Paradarami', () => {
+  await it('Valid code PARA1290 unlocks Paradarami Family Tree', () => {
     const res = simulateUnlock('PARA1290');
     assert.strictEqual(res.success, true);
     assert.strictEqual(res.lineageId, 'paradarami');
@@ -122,7 +122,7 @@ async function runAll() {
     assert.strictEqual(info.father.lastName, 'Paradarami');
     assert.strictEqual(info.mother.firstName, 'Achamma');
     assert.strictEqual(info.mother.lastName, 'Paradarami');
-    assert.strictEqual(info.lineageName, 'House of Paradarami');
+    assert.strictEqual(info.lineageName, 'Paradarami Family Tree');
   });
 
   // Section 4: Flexible Date Handling (Year-only & Full ISO)
@@ -262,7 +262,7 @@ async function runAll() {
     assert.strictEqual(jagannadham.hasExternalLineage, true, 'Jagannadham must have hasExternalLineage: true');
     assert.ok(jagannadham.externalLineage, 'Jagannadham must have externalLineage populated');
     assert.strictEqual(jagannadham.externalLineage.lineageId, 'konukuru', 'Lineage ID must be konukuru');
-    assert.strictEqual(jagannadham.externalLineage.lineageName, 'House of Konukuru', 'Lineage Name must be House of Konukuru');
+    assert.strictEqual(jagannadham.externalLineage.lineageName, 'Konukuru Family Tree', 'Lineage Name must be Konukuru Family Tree');
     assert.strictEqual(jagannadham.externalLineage.father.firstName, 'Murthy', 'Father must be Murthy Chetty');
     assert.strictEqual(jagannadham.externalLineage.mother.firstName, 'Sarojamma', 'Mother must be Sarojamma');
   });

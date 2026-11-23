@@ -200,10 +200,10 @@ export const LineageLockNode: React.FC<any> = ({ data }) => {
               )}
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
-                  type="text"
+                  type="password"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder={nodeData.lineageId === 'konukuru' ? 'e.g. KONU1290' : 'e.g. PARA1290'}
+                  placeholder="••••••••"
                   autoFocus
                   style={{
                     flex: 1,

@@ -684,7 +684,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 Add Family Member
               </h2>
               <span style={{ fontSize: '11.5px', color: isDark ? '#9BA3AF' : '#64748b' }}>
-                Record a new member in the House lineage
+                Record a new member in the Family Tree
               </span>
             </div>
           </div>
@@ -1292,7 +1292,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 Lineage Relationships
               </h3>
               <p style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 16px' }}>
-                Select which relation to connect, then choose who from this house lineage. At least one relation is required.
+                Select which relation to connect, then choose who from this family tree. At least one relation is required.
               </p>
 
               {/* Relationship Validation Error Message */}
@@ -1427,7 +1427,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   }}
                   style={{ width: '100%', fontSize: '13.5px', padding: '9px 12px' }}
                 >
-                  <option value="">-- Choose Member from this Lineage --</option>
+                  <option value="">-- Choose Member from this Family Tree --</option>
                   {availableMembersForSelectedRelation.map((m) => (
                     <option key={m.id} value={m.id}>
                       {[m.firstName, m.middleName, m.lastName].filter(Boolean).join(' ')} {m.birthYear ? `(Born: ${m.birthYear})` : ''}

@@ -367,7 +367,7 @@ export class GraphService {
         }
 
         const lineageId = lineageLastName ? lineageLastName.toLowerCase() : 'external';
-        const lineageName = lineageLastName ? `House of ${lineageLastName}` : 'External Ancestry';
+        const lineageName = lineageLastName ? `${lineageLastName} Family Tree` : 'External Ancestry';
 
         externalParentsMap.set(memberId, { father, mother, lineageName, lineageId });
       }

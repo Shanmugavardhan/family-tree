@@ -9,6 +9,34 @@ const isLocal =
 
 let cachedRelationships: Relationship[] | null = null;
 
+export const LOCAL_CUSTOM_RELATIONSHIPS_KEY = 'family_tree_custom_relationships';
+
+export function getLocalCustomRelationships(): Relationship[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_CUSTOM_RELATIONSHIPS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+export function saveLocalCustomRelationship(rel: Relationship): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalCustomRelationships();
+    const idx = list.findIndex((r) => r.id === rel.id);
+    if (idx >= 0) {
+      list[idx] = rel;
+    } else {
+      list.push(rel);
+    }
+    localStorage.setItem(LOCAL_CUSTOM_RELATIONSHIPS_KEY, JSON.stringify(list));
+  } catch {}
+}
+
 async function loadStaticRelationships(): Promise<Relationship[]> {
   if (cachedRelationships) return cachedRelationships;
   try {
@@ -37,7 +65,13 @@ export const relationshipApi = {
       } catch {}
     }
 
-    let list = await loadStaticRelationships();
+    const staticList = await loadStaticRelationships();
+    const localList = getLocalCustomRelationships();
+    const map = new Map<string, Relationship>();
+    for (const r of staticList) map.set(r.id, r);
+    for (const r of localList) map.set(r.id, r);
+    let list = Array.from(map.values());
+
     if (params?.personId) {
       list = list.filter((r) => r.person_id === params.personId || r.related_person_id === params.personId);
     }
@@ -55,8 +89,9 @@ export const relationshipApi = {
       } catch {}
     }
 
-    const list = await loadStaticRelationships();
-    const found = list.find((r) => r.id === id);
+    const staticList = await loadStaticRelationships();
+    const localList = getLocalCustomRelationships();
+    const found = localList.find((r) => r.id === id) || staticList.find((r) => r.id === id);
     if (!found) {
       return { success: false, data: null, error: { code: 'RELATIONSHIP_NOT_FOUND', message: 'Relationship not found' } };
     }
@@ -64,17 +99,20 @@ export const relationshipApi = {
   },
 
   create: async (data: CreateRelationshipInput): Promise<ApiResponse<Relationship>> => {
+    let serverRel: Relationship | null = null;
     if (isLocal) {
       try {
         const res = await request<Relationship>('/relationships', {
           method: 'POST',
           body: JSON.stringify(data),
         });
-        if (res.success && res.data) return res;
+        if (res.success && res.data) {
+          serverRel = res.data;
+        }
       } catch {}
     }
 
-    const newRel: Relationship = {
+    const newRel: Relationship = serverRel || {
       id: crypto.randomUUID(),
       person_id: data.person_id,
       related_person_id: data.related_person_id,
@@ -85,8 +123,12 @@ export const relationshipApi = {
       notes: data.notes || null,
       created_at: new Date().toISOString(),
     };
+
+    saveLocalCustomRelationship(newRel);
     if (cachedRelationships) {
-      cachedRelationships.push(newRel);
+      const idx = cachedRelationships.findIndex((r) => r.id === newRel.id);
+      if (idx >= 0) cachedRelationships[idx] = newRel;
+      else cachedRelationships.push(newRel);
     }
     return { success: true, data: newRel, error: null };
   },

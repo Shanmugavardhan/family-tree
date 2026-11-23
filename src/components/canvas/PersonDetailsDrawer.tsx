@@ -219,7 +219,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
                   letterSpacing: '0.02em',
                 }}
               >
-                {activeNode.generationName || 'House Cohort'}
+                {activeNode.generationName || 'Family Cohort'}
               </span>
               {!activeNode.isLiving && (
                 <span

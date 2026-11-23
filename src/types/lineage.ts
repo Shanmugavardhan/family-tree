@@ -13,7 +13,7 @@ export interface LineageInfo {
 export const KNOWN_LINEAGES: Record<string, LineageInfo> = {
   konukuru: {
     id: 'konukuru',
-    name: 'House of Konukuru',
+    name: 'Konukuru Family Tree',
     code: 'KONU1290',
     headOfHouse: 'Murthy Chetty Konukuru',
     patriarch: 'Murthy Chetty & Sarojamma',
@@ -22,7 +22,7 @@ export const KNOWN_LINEAGES: Record<string, LineageInfo> = {
   },
   paradarami: {
     id: 'paradarami',
-    name: 'House of Paradarami',
+    name: 'Paradarami Family Tree',
     code: 'PARA1290',
     headOfHouse: 'Ramayya Chetty Paradarami',
     patriarch: 'Ramayya Chetty & Achamma',
@@ -88,7 +88,7 @@ export const LINEAGE_PARENTS_BY_PERSON: Record<string, Depth1ParentsInfo> = {
   '5c561a7d-3fee-4112-af6e-286f7a8ad61b': {
     personId: '5c561a7d-3fee-4112-af6e-286f7a8ad61b',
     lineageId: 'paradarami',
-    lineageName: 'House of Paradarami',
+    lineageName: 'Paradarami Family Tree',
     code: 'PARA1290',
     father: PARADARAMI_DEPTH1_PARENTS[0],
     mother: PARADARAMI_DEPTH1_PARENTS[1],
@@ -97,7 +97,7 @@ export const LINEAGE_PARENTS_BY_PERSON: Record<string, Depth1ParentsInfo> = {
   'b19dee44-9906-4c46-84b6-70d2fa70a5b5': {
     personId: 'b19dee44-9906-4c46-84b6-70d2fa70a5b5',
     lineageId: 'konukuru',
-    lineageName: 'House of Konukuru',
+    lineageName: 'Konukuru Family Tree',
     code: 'KONU1290',
     father: {
       id: '867842c1-b8a2-45ad-8d9c-89150e68eb16',
@@ -262,7 +262,7 @@ export function getParadaramiLayout(): FamilyLayout {
           biography: 'Homemaker; after her husband\'s death, worked in the local market as a vegetable seller.',
           relation: 'Mother',
         },
-        lineageName: 'House of Konukuru',
+        lineageName: 'Konukuru Family Tree',
         lineageId: 'konukuru',
       },
     },

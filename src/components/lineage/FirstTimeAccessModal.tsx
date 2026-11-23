@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, KeyRound, ArrowRight, AlertCircle, Lock } from 'lucide-react';
+import { Shield, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useLineage } from '../../context/LineageContext';
 
 export const FirstTimeAccessModal: React.FC = () => {
@@ -17,7 +17,7 @@ export const FirstTimeAccessModal: React.FC = () => {
 
     const res = unlockWithCode(code);
     if (!res.success) {
-      setError(res.error || 'Invalid family code.');
+      setError(res.error || 'Invalid family code. Please enter the secret code for your family.');
       setSubmitting(false);
     }
   };
@@ -40,50 +40,34 @@ export const FirstTimeAccessModal: React.FC = () => {
     >
       <div
         style={{
-          width: 'min(460px, 100%)',
-          backgroundColor: '#141A24',
+          width: '100%',
+          maxWidth: 440,
+          backgroundColor: '#121824',
           borderRadius: 20,
           border: '1.5px solid rgba(214, 177, 92, 0.45)',
-          boxShadow: '0 25px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(214, 177, 92, 0.2)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(214, 177, 92, 0.25)',
           padding: '36px 32px',
+          boxSizing: 'border-box',
+          textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          fontFamily: "'Inter', sans-serif",
-          color: '#F1E9D7',
+          animation: 'modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Subtle background glow */}
+        {/* Royal Crest Medallion */}
         <div
           style={{
-            position: 'absolute',
-            top: -60,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 220,
-            height: 220,
+            width: 72,
+            height: 72,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(214, 177, 92, 0.25) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Heraldic Shield Icon */}
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: 18,
-            background: 'linear-gradient(135deg, #d4af37 0%, #997a15 100%)',
+            background: 'linear-gradient(135deg, #d4af37 0%, #856a18 100%)',
+            border: '2px solid rgba(255, 255, 255, 0.35)',
+            boxShadow: '0 0 25px rgba(214, 177, 92, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#10141d',
-            boxShadow: '0 6px 20px rgba(212, 175, 55, 0.45)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
             marginBottom: 20,
           }}
         >
@@ -102,7 +86,7 @@ export const FirstTimeAccessModal: React.FC = () => {
             lineHeight: 1.2,
           }}
         >
-          Lineage Access Portal
+          Welcome to Family Tree
         </h2>
 
         <p
@@ -115,7 +99,7 @@ export const FirstTimeAccessModal: React.FC = () => {
             maxWidth: 360,
           }}
         >
-          Chronicles of the Lineage are private to verified family members. Enter your secret Family Code to unlock the archives.
+          This space is a display of family trees which ofcourse private to family members. Enter your family code below to view your family tree
         </p>
 
         {error && (
@@ -155,14 +139,14 @@ export const FirstTimeAccessModal: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <KeyRound size={18} />
+              <Lock size={18} />
             </div>
 
             <input
-              type="text"
+              type="password"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="e.g. KONU1290"
+              placeholder="••••••••"
               autoFocus
               required
               style={{
@@ -173,9 +157,9 @@ export const FirstTimeAccessModal: React.FC = () => {
                 backgroundColor: '#1A2230',
                 border: '1.5px solid rgba(214, 177, 92, 0.35)',
                 color: '#F1E9D7',
-                fontSize: '1.05rem',
+                fontSize: '1.15rem',
                 fontWeight: 650,
-                letterSpacing: '0.08em',
+                letterSpacing: '0.12em',
                 outline: 'none',
                 transition: 'all 0.2s ease',
               }}
@@ -219,31 +203,11 @@ export const FirstTimeAccessModal: React.FC = () => {
               e.currentTarget.style.boxShadow = '0 4px 16px rgba(214, 177, 92, 0.35)';
             }}
           >
-            <span>Unlock Lineage</span>
+            <span>View Family Tree</span>
             <ArrowRight size={18} />
           </button>
         </form>
-
-        {/* Informative lineage code guide */}
-        <div
-          style={{
-            marginTop: 22,
-            paddingTop: 16,
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            fontSize: '12px',
-            color: '#64748b',
-          }}
-        >
-          <Lock size={13} color="#D6B15C" />
-          <span>House of Konukuru code: <strong style={{ color: '#D6B15C' }}>KONU1290</strong></span>
-        </div>
       </div>
     </div>
   );
 };
-

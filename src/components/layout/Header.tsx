@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
   const { isDark } = useTheme();
-  const { activeLineage, unlockWithCode } = useLineage();
+  const { activeLineage, unlockWithCode, isFirstTimeLocked } = useLineage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {activeLineage.name}
+                {isFirstTimeLocked ? 'The Family Tree' : activeLineage.name}
               </h1>
               <p
                 className="header-brand-subtitle"
@@ -180,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {activeLineage.description || 'Chronicles of the Lineage'}
+                {isFirstTimeLocked ? 'Private Family Archives' : (activeLineage.description || 'Ancestral Lineage Archives')}
               </p>
             </div>
           </Link>
@@ -218,7 +218,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
             >
               <KeyRound size={13} color={isDark ? '#D6B15C' : '#854d0e'} />
               <input
-                type="text"
+                type="password"
                 placeholder="Family Code..."
                 value={headerCodeInput}
                 onChange={(e) => setHeaderCodeInput(e.target.value.toUpperCase())}
@@ -293,9 +293,9 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
               backgroundColor: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(197, 155, 39, 0.12)',
               border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
             }}
-            title="Active House members recorded in lineage"
+            title="Active family members recorded in tree"
           >
-            <span>{activeLineage.memberCount} Members</span>
+            <span>{isFirstTimeLocked ? 'Private Access' : `${activeLineage.memberCount} Members`}</span>
           </div>
         </div>
 

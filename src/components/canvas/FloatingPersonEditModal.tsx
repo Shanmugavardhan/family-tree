@@ -1662,7 +1662,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         onChange={(e) => handleTargetRelationChange(e.target.value)}
                         style={{ fontSize: '13px', padding: '8px 12px', width: '100%' }}
                       >
-                        <option value="">-- Choose Member from this Lineage --</option>
+                        <option value="">-- Choose Member from this Family Tree --</option>
                         {availableMembersForNewRelation.map((p) => (
                           <option key={p.id} value={p.id}>
                             {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')} {p.birthYear ? `(Born: ${p.birthYear})` : ''}

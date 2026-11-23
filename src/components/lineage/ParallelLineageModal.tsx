@@ -113,7 +113,7 @@ export const ParallelLineageModal: React.FC = () => {
                   lineHeight: 1.2,
                 }}
               >
-                House of Paradarami — Maternal Ancestry
+                Paradarami Family Tree — Maternal Ancestry
               </h2>
               <span style={{ fontSize: '11.5px', color: '#9BA3AF' }}>
                 Parallel maternal lineage of Suguna Konukuru (born Paradarami)
@@ -469,7 +469,7 @@ export const ParallelLineageModal: React.FC = () => {
                   boxShadow: '0 2px 10px rgba(16, 185, 129, 0.35)',
                 }}
               >
-                <span>Switch to House of Paradarami</span>
+                <span>Switch to Paradarami Family Tree</span>
                 <ArrowRight size={16} />
               </button>
             ) : (

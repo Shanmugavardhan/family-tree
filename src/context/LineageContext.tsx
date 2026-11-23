@@ -84,7 +84,7 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!matchedId) {
       return {
         success: false,
-        error: 'Invalid family code. Please enter a valid lineage code (e.g. KONU1290 or PARA1290).',
+        error: 'Invalid family code. Please enter the secret code for your family.',
       };
     }
 
