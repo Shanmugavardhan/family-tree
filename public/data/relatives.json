@@ -941,6 +941,20 @@
           "relationship_paths": [
             "Spouse (Suguna Konukuru) -> Sibling (Rada Galeti)"
           ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Sister-in-law",
+          "category": "in_laws",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "spouse",
+          "relationship_paths": [
+            "Spouse (Suguna Konukuru) -> Sibling (Srivalli Narayanaswamy)"
+          ]
         }
       ]
     },
@@ -1104,9 +1118,19 @@
         "path": [
           "Spouse (Suguna Konukuru) -> Sibling (Rada Galeti)"
         ]
+      },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Sister-in-law",
+        "category": "in_laws",
+        "path": [
+          "Spouse (Suguna Konukuru) -> Sibling (Srivalli Narayanaswamy)"
+        ]
       }
     },
-    "total_count": 16
+    "total_count": 17
   },
   "3eed0182-af91-4c12-9a6f-89444291a5fe": {
     "person_id": "3eed0182-af91-4c12-9a6f-89444291a5fe",
@@ -2273,6 +2297,24 @@
           "relationship_paths": [
             "Full Sibling"
           ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Sister",
+          "category": "siblings",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "shared_parent_ids": [
+            "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+            "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b"
+          ],
+          "relationship_paths": [
+            "Full Sibling"
+          ]
         }
       ],
       "grandparents": [],
@@ -2445,6 +2487,16 @@
           "Full Sibling"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Sister",
+        "category": "siblings",
+        "path": [
+          "Full Sibling"
+        ]
+      },
       "e363ae76-6ecd-4810-a20b-06e10852afd7": {
         "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
         "full_name": "Navaneeth Galeti",
@@ -2516,7 +2568,7 @@
         ]
       }
     },
-    "total_count": 13
+    "total_count": 14
   },
   "823f9028-8094-4480-b87f-716b4ad6d8a9": {
     "person_id": "823f9028-8094-4480-b87f-716b4ad6d8a9",
@@ -3085,6 +3137,20 @@
           "relationship_paths": [
             "Suguna Konukuru (Maternal) -> Sibling (Rada Galeti)"
           ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Maternal Aunt",
+          "category": "uncles_aunts",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Suguna Konukuru (Maternal) -> Sibling (Srivalli Narayanaswamy)"
+          ]
         }
       ],
       "nephews_nieces": [],
@@ -3303,6 +3369,16 @@
           "Suguna Konukuru (Maternal) -> Sibling (Rada Galeti)"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Maternal Aunt",
+        "category": "uncles_aunts",
+        "path": [
+          "Suguna Konukuru (Maternal) -> Sibling (Srivalli Narayanaswamy)"
+        ]
+      },
       "3a50c542-2fe5-4cd2-a99d-10f17afd9b81": {
         "person_id": "3a50c542-2fe5-4cd2-a99d-10f17afd9b81",
         "full_name": "Revati Konukuru",
@@ -3374,7 +3450,7 @@
         ]
       }
     },
-    "total_count": 18
+    "total_count": 19
   },
   "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05": {
     "person_id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
@@ -3551,6 +3627,20 @@
           "lineage_type": "biological",
           "relationship_paths": [
             "Suguna Konukuru (Maternal) -> Sibling (Rada Galeti)"
+          ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Maternal Aunt",
+          "category": "uncles_aunts",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Suguna Konukuru (Maternal) -> Sibling (Srivalli Narayanaswamy)"
           ]
         }
       ],
@@ -3770,6 +3860,16 @@
           "Suguna Konukuru (Maternal) -> Sibling (Rada Galeti)"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Maternal Aunt",
+        "category": "uncles_aunts",
+        "path": [
+          "Suguna Konukuru (Maternal) -> Sibling (Srivalli Narayanaswamy)"
+        ]
+      },
       "3a50c542-2fe5-4cd2-a99d-10f17afd9b81": {
         "person_id": "3a50c542-2fe5-4cd2-a99d-10f17afd9b81",
         "full_name": "Revati Konukuru",
@@ -3841,7 +3941,7 @@
         ]
       }
     },
-    "total_count": 18
+    "total_count": 19
   },
   "3a50c542-2fe5-4cd2-a99d-10f17afd9b81": {
     "person_id": "3a50c542-2fe5-4cd2-a99d-10f17afd9b81",
@@ -4916,6 +5016,20 @@
           "relationship_paths": [
             "Daughter"
           ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Daughter",
+          "category": "children",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Daughter"
+          ]
         }
       ],
       "spouses": [
@@ -5037,6 +5151,16 @@
           "Daughter"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Daughter",
+        "category": "children",
+        "path": [
+          "Daughter"
+        ]
+      },
       "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b": {
         "person_id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
         "full_name": "Achamma Paradarami",
@@ -5098,7 +5222,7 @@
         ]
       }
     },
-    "total_count": 8
+    "total_count": 9
   },
   "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b": {
     "person_id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
@@ -5127,6 +5251,20 @@
         {
           "person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
           "full_name": "Rada Galeti",
+          "relationship": "Daughter",
+          "category": "children",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Daughter"
+          ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
           "relationship": "Daughter",
           "category": "children",
           "gender": "female",
@@ -5258,6 +5396,16 @@
           "Daughter"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Daughter",
+        "category": "children",
+        "path": [
+          "Daughter"
+        ]
+      },
       "1ae73a4b-b739-40d3-8b50-071bbf1b07eb": {
         "person_id": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
         "full_name": "Ramayya Chetty Paradarami",
@@ -5319,7 +5467,7 @@
         ]
       }
     },
-    "total_count": 8
+    "total_count": 9
   },
   "fd26db0a-7e43-47d8-bb1c-55b1b84026c2": {
     "person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
@@ -5395,6 +5543,24 @@
         {
           "person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
           "full_name": "Suguna Konukuru",
+          "relationship": "Sister",
+          "category": "siblings",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "shared_parent_ids": [
+            "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+            "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b"
+          ],
+          "relationship_paths": [
+            "Full Sibling"
+          ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
           "relationship": "Sister",
           "category": "siblings",
           "gender": "female",
@@ -5515,6 +5681,16 @@
           "Full Sibling"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Sister",
+        "category": "siblings",
+        "path": [
+          "Full Sibling"
+        ]
+      },
       "c16eda13-8aae-4dd1-bd93-ffce2303c173": {
         "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
         "full_name": "Meghana Konukuru",
@@ -5546,7 +5722,7 @@
         ]
       }
     },
-    "total_count": 8
+    "total_count": 9
   },
   "901d8c3f-0bd1-4947-9678-fbfd685d77c1": {
     "person_id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
@@ -5639,6 +5815,20 @@
           "relationship_paths": [
             "Spouse (Rada Galeti) -> Sibling (Suguna Konukuru)"
           ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Sister-in-law",
+          "category": "in_laws",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "spouse",
+          "relationship_paths": [
+            "Spouse (Rada Galeti) -> Sibling (Srivalli Narayanaswamy)"
+          ]
         }
       ]
     },
@@ -5692,9 +5882,19 @@
         "path": [
           "Spouse (Rada Galeti) -> Sibling (Suguna Konukuru)"
         ]
+      },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Sister-in-law",
+        "category": "in_laws",
+        "path": [
+          "Spouse (Rada Galeti) -> Sibling (Srivalli Narayanaswamy)"
+        ]
       }
     },
-    "total_count": 5
+    "total_count": 6
   },
   "e363ae76-6ecd-4810-a20b-06e10852afd7": {
     "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
@@ -5782,6 +5982,20 @@
           "lineage_type": "biological",
           "relationship_paths": [
             "Rada Galeti (Maternal) -> Sibling (Suguna Konukuru)"
+          ]
+        },
+        {
+          "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+          "full_name": "Srivalli Narayanaswamy",
+          "relationship": "Maternal Aunt",
+          "category": "uncles_aunts",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Rada Galeti (Maternal) -> Sibling (Srivalli Narayanaswamy)"
           ]
         }
       ],
@@ -5885,6 +6099,16 @@
           "Rada Galeti (Maternal) -> Sibling (Suguna Konukuru)"
         ]
       },
+      "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+        "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+        "full_name": "Srivalli Narayanaswamy",
+        "gender": "female",
+        "relationship": "Maternal Aunt",
+        "category": "uncles_aunts",
+        "path": [
+          "Rada Galeti (Maternal) -> Sibling (Srivalli Narayanaswamy)"
+        ]
+      },
       "c16eda13-8aae-4dd1-bd93-ffce2303c173": {
         "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
         "full_name": "Meghana Konukuru",
@@ -5916,6 +6140,259 @@
         ]
       }
     },
-    "total_count": 8
+    "total_count": 9
+  },
+  "bde77be0-8530-4ce6-93a5-f3751cbc3f6a": {
+    "person_id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+    "target_person": {
+      "id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+      "full_name": "Srivalli Narayanaswamy",
+      "gender": "female"
+    },
+    "relatives": {
+      "parents": [
+        {
+          "person_id": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+          "full_name": "Ramayya Chetty Paradarami",
+          "relationship": "Father",
+          "category": "parents",
+          "gender": "male",
+          "is_living": false,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Father"
+          ]
+        },
+        {
+          "person_id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
+          "full_name": "Achamma Paradarami",
+          "relationship": "Mother",
+          "category": "parents",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Mother"
+          ]
+        }
+      ],
+      "children": [],
+      "spouses": [],
+      "siblings": [
+        {
+          "person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+          "full_name": "Suguna Konukuru",
+          "relationship": "Sister",
+          "category": "siblings",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "shared_parent_ids": [
+            "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+            "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b"
+          ],
+          "relationship_paths": [
+            "Full Sibling"
+          ]
+        },
+        {
+          "person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+          "full_name": "Rada Galeti",
+          "relationship": "Sister",
+          "category": "siblings",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "shared_parent_ids": [
+            "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+            "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b"
+          ],
+          "relationship_paths": [
+            "Full Sibling"
+          ]
+        }
+      ],
+      "grandparents": [],
+      "grandchildren": [],
+      "great_grandparents": [],
+      "uncles_aunts": [],
+      "nephews_nieces": [
+        {
+          "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+          "full_name": "Meghana Konukuru",
+          "relationship": "Niece",
+          "category": "nephews_nieces",
+          "gender": "female",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Sibling (Suguna Konukuru) -> Child (Meghana Konukuru)"
+          ]
+        },
+        {
+          "person_id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+          "full_name": "Shanmuga Vardhan Konukuru",
+          "relationship": "Nephew",
+          "category": "nephews_nieces",
+          "gender": "male",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Sibling (Suguna Konukuru) -> Child (Shanmuga Vardhan Konukuru)"
+          ]
+        },
+        {
+          "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+          "full_name": "Navaneeth Galeti",
+          "relationship": "Nephew",
+          "category": "nephews_nieces",
+          "gender": "male",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "biological",
+          "relationship_paths": [
+            "Sibling (Rada Galeti) -> Child (Navaneeth Galeti)"
+          ]
+        }
+      ],
+      "cousins": [],
+      "first_cousins_once_removed": [],
+      "in_laws": [
+        {
+          "person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+          "full_name": "Jagannadham Konukuru",
+          "relationship": "Brother-in-law",
+          "category": "in_laws",
+          "gender": "male",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "spouse",
+          "relationship_paths": [
+            "Sibling (Suguna Konukuru) -> Spouse (Jagannadham Konukuru)"
+          ]
+        },
+        {
+          "person_id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
+          "full_name": "Munirathnam Galeti",
+          "relationship": "Brother-in-law",
+          "category": "in_laws",
+          "gender": "male",
+          "is_living": true,
+          "is_archived": false,
+          "profile_photo": null,
+          "lineage_type": "spouse",
+          "relationship_paths": [
+            "Sibling (Rada Galeti) -> Spouse (Munirathnam Galeti)"
+          ]
+        }
+      ]
+    },
+    "all_relationships": {
+      "1ae73a4b-b739-40d3-8b50-071bbf1b07eb": {
+        "person_id": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+        "full_name": "Ramayya Chetty Paradarami",
+        "gender": "male",
+        "relationship": "Father",
+        "category": "parents",
+        "path": [
+          "Father"
+        ]
+      },
+      "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b": {
+        "person_id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
+        "full_name": "Achamma Paradarami",
+        "gender": "female",
+        "relationship": "Mother",
+        "category": "parents",
+        "path": [
+          "Mother"
+        ]
+      },
+      "5c561a7d-3fee-4112-af6e-286f7a8ad61b": {
+        "person_id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+        "full_name": "Suguna Konukuru",
+        "gender": "female",
+        "relationship": "Sister",
+        "category": "siblings",
+        "path": [
+          "Full Sibling"
+        ]
+      },
+      "fd26db0a-7e43-47d8-bb1c-55b1b84026c2": {
+        "person_id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
+        "full_name": "Rada Galeti",
+        "gender": "female",
+        "relationship": "Sister",
+        "category": "siblings",
+        "path": [
+          "Full Sibling"
+        ]
+      },
+      "c16eda13-8aae-4dd1-bd93-ffce2303c173": {
+        "person_id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
+        "full_name": "Meghana Konukuru",
+        "gender": "female",
+        "relationship": "Niece",
+        "category": "nephews_nieces",
+        "path": [
+          "Sibling (Suguna Konukuru) -> Child (Meghana Konukuru)"
+        ]
+      },
+      "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05": {
+        "person_id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
+        "full_name": "Shanmuga Vardhan Konukuru",
+        "gender": "male",
+        "relationship": "Nephew",
+        "category": "nephews_nieces",
+        "path": [
+          "Sibling (Suguna Konukuru) -> Child (Shanmuga Vardhan Konukuru)"
+        ]
+      },
+      "e363ae76-6ecd-4810-a20b-06e10852afd7": {
+        "person_id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
+        "full_name": "Navaneeth Galeti",
+        "gender": "male",
+        "relationship": "Nephew",
+        "category": "nephews_nieces",
+        "path": [
+          "Sibling (Rada Galeti) -> Child (Navaneeth Galeti)"
+        ]
+      },
+      "b19dee44-9906-4c46-84b6-70d2fa70a5b5": {
+        "person_id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
+        "full_name": "Jagannadham Konukuru",
+        "gender": "male",
+        "relationship": "Brother-in-law",
+        "category": "in_laws",
+        "path": [
+          "Sibling (Suguna Konukuru) -> Spouse (Jagannadham Konukuru)"
+        ]
+      },
+      "901d8c3f-0bd1-4947-9678-fbfd685d77c1": {
+        "person_id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
+        "full_name": "Munirathnam Galeti",
+        "gender": "male",
+        "relationship": "Brother-in-law",
+        "category": "in_laws",
+        "path": [
+          "Sibling (Rada Galeti) -> Spouse (Munirathnam Galeti)"
+        ]
+      }
+    },
+    "total_count": 9
   }
 }

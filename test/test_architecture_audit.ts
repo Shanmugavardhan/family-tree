@@ -331,20 +331,20 @@ export async function runAuditTests() {
   // --------------------------------------------------------------------------
   console.log('\n--- MODULE 4: Data Model & Graph Partitioning ---');
 
-  await testCase('TEST-ARCH-04-01', 'Canonical database integrity: exactly 19 persons and 29 relationships without corruption', async () => {
+  await testCase('TEST-ARCH-04-01', 'Canonical database integrity: exactly 20 persons and 31 relationships without corruption', async () => {
     const persons = await repo.getAllPersons();
     const relationships = await repo.getAllRelationships();
 
-    assert.strictEqual(persons.length, 19, 'Canonical database must have exactly 19 persons');
-    assert.strictEqual(relationships.length, 29, 'Canonical database must have exactly 29 relationships');
+    assert.strictEqual(persons.length, 20, 'Canonical database must have exactly 20 persons');
+    assert.strictEqual(relationships.length, 31, 'Canonical database must have exactly 31 relationships');
   });
 
-  await testCase('TEST-ARCH-04-02', 'Deterministic graph partitioning: Konukuru partitioned to 14 nodes; Paradarami partitioned to 9 nodes (including vertical linear descendants)', async () => {
+  await testCase('TEST-ARCH-04-02', 'Deterministic graph partitioning: Konukuru partitioned to 14 nodes; Paradarami partitioned to 10 nodes (including vertical linear descendants)', async () => {
     const konukuruGraph = await graphService.buildFamilyGraph({ lineage: 'konukuru' });
     assert.strictEqual(konukuruGraph.nodes.length, 14, 'Konukuru partition must have exactly 14 nodes');
 
     const paradaramiGraph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
-    assert.strictEqual(paradaramiGraph.nodes.length, 9, 'Paradarami partition must have exactly 9 nodes');
+    assert.strictEqual(paradaramiGraph.nodes.length, 10, 'Paradarami partition must have exactly 10 nodes');
   });
 
   await testCase('TEST-ARCH-04-03', 'Layout geometry: standard 190x160 dimensions and 320px spouse spacing', async () => {

@@ -85,7 +85,7 @@ async function runFrontendIntegrationTests() {
     const listRes = await fetch(`${baseUrl}/persons`);
     const listData = await listRes.json();
     assert(listRes.status === 200, 'GET /api/persons returns 200');
-    assert(listData.data.length === 19, `Expected all 19 canonical members, got ${listData.data.length}`);
+    assert(listData.data.length === 20, `Expected all 20 canonical members, got ${listData.data.length}`);
 
     // --- Test 3: Search by name ---
     const searchRes = await fetch(`${baseUrl}/persons?search=Shanmuga`);
@@ -126,7 +126,7 @@ async function runFrontendIntegrationTests() {
     // --- Test 6: Verify new person appears in list ---
     const updatedListRes = await fetch(`${baseUrl}/persons`);
     const updatedListData = await updatedListRes.json();
-    assert(updatedListData.data.length === 20, 'Updated directory now contains 20 members');
+    assert(updatedListData.data.length === 21, 'Updated directory now contains 21 members');
 
     // --- Test 7: Verify parent relationships were created atomically ---
     const relsRes = await fetch(`${baseUrl}/relationships?personId=${newPersonId}`);
@@ -197,11 +197,11 @@ async function runFrontendIntegrationTests() {
 
     // Default list excludes archived
     const listWithoutArchived = await (await fetch(`${baseUrl}/persons`)).json();
-    assert(listWithoutArchived.data.length === 19, 'Archived person is excluded from default list');
+    assert(listWithoutArchived.data.length === 20, 'Archived person is excluded from default list');
 
     // includeArchived=true includes them
     const listWithArchived = await (await fetch(`${baseUrl}/persons?includeArchived=true`)).json();
-    assert(listWithArchived.data.length === 20, 'Archived person is included when includeArchived=true');
+    assert(listWithArchived.data.length === 21, 'Archived person is included when includeArchived=true');
 
     // Restore person
     const restoreRes = await fetch(`${baseUrl}/persons/${newPersonId}/restore`, { method: 'POST' });
@@ -226,8 +226,8 @@ async function runFrontendIntegrationTests() {
     // --- Test 14: Canonical database integrity ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 19, `Original database has exactly 19 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 29, `Original database has exactly 29 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 20, `Original database has exactly 20 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 31, `Original database has exactly 31 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.8 Frontend Integration tests PASSED!`);
   } finally {

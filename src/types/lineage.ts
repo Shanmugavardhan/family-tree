@@ -27,7 +27,7 @@ export const KNOWN_LINEAGES: Record<string, LineageInfo> = {
     headOfHouse: 'Ramayya Chetty Paradarami',
     patriarch: 'Ramayya Chetty & Achamma',
     description: 'Maternal ancestral lineage of Ramayya Chetty Paradarami',
-    memberCount: 9,
+    memberCount: 10,
   },
 };
 

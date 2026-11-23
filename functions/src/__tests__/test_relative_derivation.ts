@@ -88,16 +88,18 @@ async function runRelativeDerivationTests() {
     assert(mGrandmother && mGrandmother.full_name.includes('Achamma'), 'Maternal Grandmother derived as Achamma');
 
     // Uncles & Aunts (Jagannadham's siblings + Suguna's siblings)
-    // Chandra Babu (male -> Paternal Uncle), Giri Babu (male -> Paternal Uncle), Chandrakala (female -> Paternal Aunt), Rada Galeti (female -> Maternal Aunt)
-    assert(rels.uncles_aunts.length === 4, `Expected 4 uncles/aunts for Shanmuga, got ${rels.uncles_aunts.length}`);
+    // Chandra Babu (male -> Paternal Uncle), Giri Babu (male -> Paternal Uncle), Chandrakala (female -> Paternal Aunt), Rada Galeti (female -> Maternal Aunt), Srivalli Narayanaswamy (female -> Maternal Aunt)
+    assert(rels.uncles_aunts.length === 5, `Expected 5 uncles/aunts for Shanmuga, got ${rels.uncles_aunts.length}`);
     const chandraBabu = rels.uncles_aunts.find((p: any) => p.full_name.includes('Chandra'));
     const giriBabu = rels.uncles_aunts.find((p: any) => p.full_name.includes('Giri'));
     const chandrakala = rels.uncles_aunts.find((p: any) => p.full_name.includes('Chandrakala'));
     const rada = rels.uncles_aunts.find((p: any) => p.full_name.includes('Rada'));
+    const srivalli = rels.uncles_aunts.find((p: any) => p.full_name.includes('Srivalli'));
     assert(chandraBabu && chandraBabu.relationship === 'Paternal Uncle', 'Chandra Babu derived as Paternal Uncle');
     assert(giriBabu && giriBabu.relationship === 'Paternal Uncle', 'Giri Babu derived as Paternal Uncle');
     assert(chandrakala && chandrakala.relationship === 'Paternal Aunt', 'Chandrakala derived as Paternal Aunt');
     assert(rada && rada.relationship === 'Maternal Aunt', 'Rada Galeti derived as Maternal Aunt');
+    assert(srivalli && srivalli.relationship === 'Maternal Aunt', 'Srivalli Narayanaswamy derived as Maternal Aunt');
 
     // Cousins (Children of uncles & aunts)
     // Chandra Babu's children: Revati, Pranavi. Chandrakala's child: Hemanth Etigadda. Rada Galeti's child: Navaneeth Galeti.
@@ -481,8 +483,8 @@ async function runRelativeDerivationTests() {
     // --- Test 14: Original production database integrity check ---
     const origPersons = JSON.parse(await fs.readFile(path.join(rootDataDir, 'persons.json'), 'utf-8')).persons;
     const origRels = JSON.parse(await fs.readFile(path.join(rootDataDir, 'relationships.json'), 'utf-8')).relationships;
-    assert(origPersons.length === 19, `Original database has exactly 19 persons (verified: ${origPersons.length})`);
-    assert(origRels.length === 29, `Original database has exactly 29 relationships (verified: ${origRels.length})`);
+    assert(origPersons.length === 20, `Original database has exactly 20 persons (verified: ${origPersons.length})`);
+    assert(origRels.length === 31, `Original database has exactly 31 relationships (verified: ${origRels.length})`);
 
     console.log(`\n🎉 All ${passed}/${total} Milestone 2.6 Relative Derivation tests PASSED!`);
   } finally {

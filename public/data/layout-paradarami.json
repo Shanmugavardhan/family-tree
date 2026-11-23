@@ -2,7 +2,7 @@
   "nodes": [
     {
       "id": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
-      "x": 650,
+      "x": 703,
       "y": 2340,
       "width": 190,
       "height": 160,
@@ -25,7 +25,7 @@
     },
     {
       "id": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
-      "x": 650,
+      "x": 703,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -48,7 +48,7 @@
     },
     {
       "id": "901d8c3f-0bd1-4947-9678-fbfd685d77c1",
-      "x": 1380,
+      "x": 1433,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -71,7 +71,7 @@
     },
     {
       "id": "b19dee44-9906-4c46-84b6-70d2fa70a5b5",
-      "x": 970,
+      "x": 1023,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -122,8 +122,31 @@
       }
     },
     {
+      "id": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+      "x": 2163,
+      "y": 2780,
+      "width": 190,
+      "height": 160,
+      "generationId": "gen_x",
+      "generationOrder": 3,
+      "personId": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+      "firstName": "Srivalli",
+      "middleName": null,
+      "lastName": "Narayanaswamy",
+      "birthDate": null,
+      "birthYear": null,
+      "generationName": "Generation X",
+      "photoPath": null,
+      "gender": "female",
+      "isLiving": true,
+      "isArchived": false,
+      "isInferredGeneration": true,
+      "hasExternalLineage": false,
+      "externalLineage": null
+    },
+    {
       "id": "c16eda13-8aae-4dd1-bd93-ffce2303c173",
-      "x": 810,
+      "x": 863,
       "y": 3660,
       "width": 190,
       "height": 160,
@@ -146,7 +169,7 @@
     },
     {
       "id": "dadbde6b-4a42-4eb6-86e3-9a6b6d02bd05",
-      "x": 1220,
+      "x": 1273,
       "y": 3660,
       "width": 190,
       "height": 160,
@@ -169,7 +192,7 @@
     },
     {
       "id": "e363ae76-6ecd-4810-a20b-06e10852afd7",
-      "x": 1630,
+      "x": 1683,
       "y": 3660,
       "width": 190,
       "height": 160,
@@ -192,7 +215,7 @@
     },
     {
       "id": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
-      "x": 970,
+      "x": 1023,
       "y": 2340,
       "width": 190,
       "height": 160,
@@ -215,7 +238,7 @@
     },
     {
       "id": "fd26db0a-7e43-47d8-bb1c-55b1b84026c2",
-      "x": 1700,
+      "x": 1753,
       "y": 2780,
       "width": 190,
       "height": 160,
@@ -242,6 +265,13 @@
       "id": "edge-pc-1ae73a4b-b739-40d3-8b50-071bbf1b07eb-5c561a7d-3fee-4112-af6e-286f7a8ad61b",
       "source": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
       "target": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-1ae73a4b-b739-40d3-8b50-071bbf1b07eb-bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+      "source": "1ae73a4b-b739-40d3-8b50-071bbf1b07eb",
+      "target": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
       "type": "parent_child",
       "parentType": "biological"
     },
@@ -291,6 +321,13 @@
       "id": "edge-pc-e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b-5c561a7d-3fee-4112-af6e-286f7a8ad61b",
       "source": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
       "target": "5c561a7d-3fee-4112-af6e-286f7a8ad61b",
+      "type": "parent_child",
+      "parentType": "biological"
+    },
+    {
+      "id": "edge-pc-e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b-bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
+      "source": "e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b",
+      "target": "bde77be0-8530-4ce6-93a5-f3751cbc3f6a",
       "type": "parent_child",
       "parentType": "biological"
     },
@@ -409,7 +446,7 @@
       "order": 3,
       "y": 2640,
       "height": 440,
-      "nodeCount": 4,
+      "nodeCount": 5,
       "startYear": 1965,
       "endYear": 1980,
       "backgroundColor": "#202C43",
@@ -464,14 +501,14 @@
       "textColor": "#F1E9D7"
     }
   ],
-  "width": 1970,
+  "width": 2433,
   "height": 4840,
   "metadata": {
-    "totalNodes": 9,
-    "totalEdges": 13,
+    "totalNodes": 10,
+    "totalEdges": 15,
     "totalLanes": 11,
-    "width": 1970,
+    "width": 2433,
     "height": 4840,
-    "calculatedAt": "2026-11-23T07:45:09.043Z"
+    "calculatedAt": "2026-11-23T09:18:42.413Z"
   }
 }
