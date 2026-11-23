@@ -1,20 +1,35 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, UserPlus, AlertCircle, AlertTriangle } from 'lucide-react';
+import { X, UserPlus, AlertCircle, AlertTriangle, Upload, Crop, Trash2 } from 'lucide-react';
 import { Person, Gender, CreatePersonInput } from '../../types/person';
+import { PositionedNode, PositionedEdge } from '../../types/layout';
 import { personApi } from '../../services/personApi';
 import { useTheme } from '../../context/ThemeContext';
 import { normalizeDateInput } from '../../utils/dateUtils';
+import { ImageCropperModal } from '../photos/ImageCropperModal';
+import {
+  findDuplicateLineageMembers,
+  inferKinshipRelations,
+  KinshipNode,
+  KinshipEdge,
+} from '../../utils/kinshipInference';
+
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
 
 interface FloatingAddPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveSuccess: (createdPerson: Person) => void;
+  layoutNodes?: PositionedNode[];
+  layoutEdges?: PositionedEdge[];
 }
 
 export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   isOpen,
   onClose,
   onSaveSuccess,
+  layoutNodes = [],
+  layoutEdges = [],
 }) => {
   const { isDark } = useTheme();
 
@@ -31,12 +46,22 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
 
+  // Photo Attachment & Cropping States (Requirements 6 & 8)
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [croppedPhotoFile, setCroppedPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Parent / Spouse / Child Linking States
   const [existingPersons, setExistingPersons] = useState<Person[]>([]);
   const [fatherId, setFatherId] = useState<string>('');
   const [motherId, setMotherId] = useState<string>('');
   const [spouseId, setSpouseId] = useState<string>('');
   const [childId, setChildId] = useState<string>('');
+
+  // Kinship Auto-Inference Feedback (Requirement 11)
+  const [inferenceNotice, setInferenceNotice] = useState<string | null>(null);
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -47,7 +72,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load existing persons for kinship dropdowns
+  // Load existing persons fallback if layoutNodes not provided
   useEffect(() => {
     if (!isOpen) {
       setShowUnsavedPrompt(false);
@@ -69,6 +94,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setMotherId('');
     setSpouseId('');
     setChildId('');
+    setSelectedPhotoFile(null);
+    setCroppedPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    setIsCropperOpen(false);
+    setInferenceNotice(null);
     setClientErrors({});
     setSaveError(null);
     setShowUnsavedPrompt(false);
@@ -82,6 +112,46 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       })
       .catch(() => {});
   }, [isOpen]);
+
+  // Derive kinship nodes & edges from layoutNodes (Requirement 5: restricted to this house lineage)
+  const effectiveKinshipNodes: KinshipNode[] = useMemo(() => {
+    if (layoutNodes && layoutNodes.length > 0) {
+      return layoutNodes.map((n) => ({
+        id: (n as any).personId || n.id,
+        firstName: n.firstName || '',
+        middleName: n.middleName || null,
+        lastName: n.lastName || null,
+        gender: n.gender || 'male',
+        birthDate: n.birthDate || null,
+        birthYear: n.birthYear || null,
+      }));
+    }
+    return existingPersons.map((p) => ({
+      id: p.id,
+      firstName: p.first_name,
+      middleName: p.middle_name,
+      lastName: p.last_name,
+      gender: p.gender,
+      birthDate: p.birth_date,
+      birthYear: p.birth_date ? parseInt(p.birth_date.slice(0, 4), 10) : null,
+    }));
+  }, [layoutNodes, existingPersons]);
+
+  const effectiveKinshipEdges: KinshipEdge[] = useMemo(() => {
+    if (layoutEdges && layoutEdges.length > 0) {
+      return layoutEdges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        type: e.type,
+      }));
+    }
+    return [];
+  }, [layoutEdges]);
+
+  // Requirement 1: Duplicate lineage member suggestions / warning
+  const duplicateMatches = useMemo(() => {
+    return findDuplicateLineageMembers(firstName, lastName, effectiveKinshipNodes);
+  }, [firstName, lastName, effectiveKinshipNodes]);
 
   // Dirty detection: check if any field has user input
   const isDirty = useMemo(() => {
@@ -101,7 +171,8 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       fatherId !== '' ||
       motherId !== '' ||
       spouseId !== '' ||
-      childId !== ''
+      childId !== '' ||
+      croppedPhotoFile !== null
     );
   }, [
     isOpen,
@@ -120,6 +191,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     motherId,
     spouseId,
     childId,
+    croppedPhotoFile,
   ]);
 
   // Request close: prompt if dirty, else close immediately
@@ -145,6 +217,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     await handleSubmit();
   };
 
+  // Requirement 10: Mandatory relation validation
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
     if (!firstName.trim()) {
@@ -153,8 +226,120 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     if (isLiving && deathDate) {
       errors.death_date = 'Living persons cannot have a date of death.';
     }
+    // Requirement 10: At least one relation must be specified
+    if (!fatherId && !motherId && !spouseId && !childId) {
+      errors.relations =
+        'Please select at least one family relationship (Father, Mother, Spouse, or Child) to connect this person to the family lineage.';
+    }
     setClientErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // Requirement 11: Auto-infer relations when one relation is selected
+  const handleFatherSelect = (newFatherId: string) => {
+    setFatherId(newFatherId);
+    if (newFatherId) {
+      const res = inferKinshipRelations({
+        triggerField: 'father',
+        triggerValue: newFatherId,
+        currentFatherId: newFatherId,
+        currentMotherId: motherId,
+        currentSpouseId: spouseId,
+        currentChildId: childId,
+        subjectGender: gender,
+        nodes: effectiveKinshipNodes,
+        edges: effectiveKinshipEdges,
+      });
+      if (res.inferredMotherId && !motherId) {
+        setMotherId(res.inferredMotherId);
+        setInferenceNotice(res.reason || null);
+      }
+    }
+  };
+
+  const handleMotherSelect = (newMotherId: string) => {
+    setMotherId(newMotherId);
+    if (newMotherId) {
+      const res = inferKinshipRelations({
+        triggerField: 'mother',
+        triggerValue: newMotherId,
+        currentFatherId: fatherId,
+        currentMotherId: newMotherId,
+        currentSpouseId: spouseId,
+        currentChildId: childId,
+        subjectGender: gender,
+        nodes: effectiveKinshipNodes,
+        edges: effectiveKinshipEdges,
+      });
+      if (res.inferredFatherId && !fatherId) {
+        setFatherId(res.inferredFatherId);
+        setInferenceNotice(res.reason || null);
+      }
+    }
+  };
+
+  const handleChildSelect = (newChildId: string) => {
+    setChildId(newChildId);
+    if (newChildId) {
+      const res = inferKinshipRelations({
+        triggerField: 'child',
+        triggerValue: newChildId,
+        currentFatherId: fatherId,
+        currentMotherId: motherId,
+        currentSpouseId: spouseId,
+        currentChildId: newChildId,
+        subjectGender: gender,
+        nodes: effectiveKinshipNodes,
+        edges: effectiveKinshipEdges,
+      });
+      if (res.inferredSpouseId && !spouseId) {
+        setSpouseId(res.inferredSpouseId);
+        setInferenceNotice(res.reason || null);
+      }
+    }
+  };
+
+  const handleSpouseSelect = (newSpouseId: string) => {
+    setSpouseId(newSpouseId);
+    if (newSpouseId) {
+      const res = inferKinshipRelations({
+        triggerField: 'spouse',
+        triggerValue: newSpouseId,
+        currentFatherId: fatherId,
+        currentMotherId: motherId,
+        currentSpouseId: newSpouseId,
+        currentChildId: childId,
+        subjectGender: gender,
+        nodes: effectiveKinshipNodes,
+        edges: effectiveKinshipEdges,
+      });
+      if (res.inferredChildId && !childId) {
+        setChildId(res.inferredChildId);
+        setInferenceNotice(res.reason || null);
+      }
+    }
+  };
+
+  // Photo handlers (Requirements 6 & 8)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPhotoFile(file);
+      setIsCropperOpen(true);
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, previewUrl: string) => {
+    setCroppedPhotoFile(croppedFile);
+    setPhotoPreviewUrl(previewUrl);
+    setIsCropperOpen(false);
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhotoFile(null);
+    setCroppedPhotoFile(null);
+    setPhotoPreviewUrl(null);
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -185,7 +370,18 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     try {
       const res = await personApi.create(input);
       if (res.success && res.data) {
-        onSaveSuccess(res.data);
+        const createdPerson = res.data;
+
+        // If a photo was cropped, upload it now
+        if (croppedPhotoFile) {
+          try {
+            await personApi.uploadPhoto(createdPerson.id, croppedPhotoFile);
+          } catch (photoErr) {
+            console.error('Failed to upload photo for created member:', photoErr);
+          }
+        }
+
+        onSaveSuccess(createdPerson);
         onClose();
         return true;
       } else {
@@ -207,7 +403,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       onClick={handleRequestClose}
       style={{
         position: 'fixed',
-        top: '64px', // Requirement 6: Strictly positioned below the header
+        top: '64px',
         left: 0,
         right: 0,
         bottom: 0,
@@ -221,14 +417,14 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Floating Window Dialog (stops click propagation so clicking inside doesn't close) */}
+      {/* Floating Window Dialog */}
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
         className="floating-add-dialog"
         style={{
-          width: 'min(720px, calc(100vw - 16px))',
-          maxWidth: 720,
+          width: 'min(740px, calc(100vw - 16px))',
+          maxWidth: 740,
           maxHeight: 'calc(100vh - 64px - 32px)',
           backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,
@@ -245,7 +441,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           animation: 'floatingModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Header - ONLY Close Button, NO Back Button (Requirement 5) */}
+        {/* Header */}
         <div
           style={{
             padding: '16px 22px',
@@ -260,8 +456,8 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
               style={{
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: 8,
                 backgroundColor: isDark ? 'rgba(214, 177, 92, 0.15)' : '#fef3c7',
                 border: '1px solid rgba(214, 177, 92, 0.3)',
@@ -293,7 +489,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
             </div>
           </div>
 
-          {/* Top-Right ONLY Close Button (Requirement 5) */}
           <button
             type="button"
             onClick={handleRequestClose}
@@ -309,14 +504,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = isDark ? '#F1E9D7' : '#101318';
-              e.currentTarget.style.backgroundColor = isDark ? '#252E3A' : '#e2e8f0';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = isDark ? '#9BA3AF' : '#64748b';
-              e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             <X size={20} />
@@ -346,6 +533,164 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           )}
 
           <form onSubmit={handleSubmit} id="floating-add-person-form">
+            {/* Profile Photo Attachment & Cropping (Requirements 6 & 8) */}
+            <div
+              style={{
+                backgroundColor: isDark ? '#1D2633' : '#f8fafc',
+                border: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
+                borderRadius: 12,
+                padding: '16px 18px',
+                marginBottom: 18,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 20,
+              }}
+            >
+              {/* Circular Gold Medallion Avatar Preview */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  padding: 3,
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b8972e 50%, #854d0e 100%)',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(214, 177, 92, 0.35)',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    backgroundColor: '#101318',
+                  }}
+                >
+                  <img
+                    src={photoPreviewUrl || (gender === 'female' ? avatarFemale : avatarMale)}
+                    alt="Member Preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Photo Controls */}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13.5px', fontWeight: 650, color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                  Member Photograph
+                </div>
+                <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', marginTop: 2, marginBottom: 10 }}>
+                  Upload a royal portrait or profile photo with interactive crop & zoom.
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+
+                  {!photoPreviewUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 7,
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                        color: '#D6B15C',
+                        border: '1px solid rgba(214, 177, 92, 0.4)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Upload size={14} />
+                      <span>Upload Photo</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsCropperOpen(true)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 14px',
+                          borderRadius: 7,
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                          color: '#D6B15C',
+                          border: '1px solid rgba(214, 177, 92, 0.4)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Crop size={14} />
+                        <span>Edit / Crop</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 12px',
+                          borderRadius: 7,
+                          fontSize: '12.5px',
+                          fontWeight: 500,
+                          backgroundColor: isDark ? '#252E3A' : '#ffffff',
+                          color: isDark ? '#F1E9D7' : '#334155',
+                          border: `1px solid ${isDark ? '#343D49' : '#cbd5e1'}`,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>Change</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 12px',
+                          borderRadius: 7,
+                          fontSize: '12.5px',
+                          fontWeight: 500,
+                          backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                          color: '#f87171',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        <span>Remove</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Basic Identification */}
             <div
               style={{
@@ -414,6 +759,30 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </div>
               </div>
 
+              {/* Requirement 1: Duplicate Lineage Member Warning / Suggestion */}
+              {duplicateMatches.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    color: '#f59e0b',
+                    fontSize: '12.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong>Notice:</strong> A member named <strong>"{duplicateMatches[0].fullName}"</strong> already exists in this lineage{' '}
+                    {duplicateMatches[0].birthYear ? `(Born: ${duplicateMatches[0].birthYear})` : ''}. Did you mean to edit them instead?
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
@@ -428,28 +797,53 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   />
                 </div>
 
+                {/* Requirement 2: Gender Dot Check Radio Options */}
                 <div>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
                     Gender *
                   </label>
-                  <select
-                    className="form-select"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value as Gender)}
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="unknown">Unknown</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+                    {(['male', 'female', 'other'] as Gender[]).map((g) => (
+                      <label
+                        key={g}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          cursor: 'pointer',
+                          padding: '5px 10px',
+                          borderRadius: 7,
+                          backgroundColor: gender === g ? (isDark ? 'rgba(214, 177, 92, 0.15)' : '#fef3c7') : 'transparent',
+                          border: `1px solid ${gender === g ? '#D6B15C' : (isDark ? '#343D49' : '#cbd5e1')}`,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="gender-add"
+                          value={g}
+                          checked={gender === g}
+                          onChange={() => setGender(g)}
+                          style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
+                        />
+                        <span
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: gender === g ? 600 : 450,
+                            textTransform: 'capitalize',
+                            color: gender === g ? '#D6B15C' : (isDark ? '#e2e8f0' : '#334155'),
+                          }}
+                        >
+                          {g}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Requirement 7: Deceased Checkbox (Standard fixed label) */}
+                {/* Requirement 3: Deceased Checkbox WITHOUT "Status" header */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Status
-                  </label>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 4 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 14 }}>
                     <input
                       type="checkbox"
                       checked={!isLiving}
@@ -461,9 +855,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                           setDeathPlace('');
                         }
                       }}
-                      style={{ width: 17, height: 17, accentColor: '#D6B15C' }}
+                      style={{ width: 17, height: 17, accentColor: '#D6B15C', cursor: 'pointer' }}
                     />
-                    <span style={{ fontSize: '13.5px', fontWeight: 500, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
+                    <span style={{ fontSize: '13.5px', fontWeight: 550, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
                       Deceased
                     </span>
                   </label>
@@ -522,7 +916,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </div>
               </div>
 
-              {/* Requirement 7: Show Date of Death and Place of Passing ONLY if Deceased */}
               {!isLiving && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
                   <div>
@@ -557,7 +950,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
               )}
             </div>
 
-            {/* Lineage Kinship Links (Optional Father, Mother, Spouse) */}
+            {/* Requirement 4: Lineage Relationships (Without "(Optional)") */}
             <div
               style={{
                 backgroundColor: isDark ? '#1D2633' : '#f8fafc',
@@ -574,12 +967,64 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   letterSpacing: '0.01em',
                   textTransform: 'uppercase',
                   color: isDark ? '#D6B15C' : '#92400e',
-                  marginBottom: 14,
+                  marginBottom: 6,
                 }}
               >
-                Lineage Relationships (Optional)
+                Lineage Relationships
               </h3>
+              <p style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 14px' }}>
+                Connect this member to people shown in this house lineage. At least one relationship is required.
+              </p>
 
+              {/* Requirement 10: Relationship Validation Error Message */}
+              {clientErrors.relations && (
+                <div
+                  style={{
+                    marginBottom: 14,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#f87171',
+                    fontSize: '12.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{clientErrors.relations}</span>
+                </div>
+              )}
+
+              {/* Requirement 11: Auto-Inference Notice */}
+              {inferenceNotice && (
+                <div
+                  style={{
+                    marginBottom: 14,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                    border: '1px solid rgba(214, 177, 92, 0.4)',
+                    color: '#D6B15C',
+                    fontSize: '12.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span>{inferenceNotice}</span>
+                  <button
+                    type="button"
+                    onClick={() => setInferenceNotice(null)}
+                    style={{ background: 'none', border: 'none', color: '#D6B15C', cursor: 'pointer', padding: 2 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Requirement 5: Dropdowns only show members from this house lineage */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
@@ -588,14 +1033,14 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   <select
                     className="form-select"
                     value={fatherId}
-                    onChange={(e) => setFatherId(e.target.value)}
+                    onChange={(e) => handleFatherSelect(e.target.value)}
                   >
                     <option value="">-- None / Unknown --</option>
-                    {existingPersons
+                    {effectiveKinshipNodes
                       .filter((p) => p.gender === 'male')
                       .map((p) => (
                         <option key={p.id} value={p.id}>
-                          {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
+                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
                         </option>
                       ))}
                   </select>
@@ -608,14 +1053,14 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   <select
                     className="form-select"
                     value={motherId}
-                    onChange={(e) => setMotherId(e.target.value)}
+                    onChange={(e) => handleMotherSelect(e.target.value)}
                   >
                     <option value="">-- None / Unknown --</option>
-                    {existingPersons
+                    {effectiveKinshipNodes
                       .filter((p) => p.gender === 'female')
                       .map((p) => (
                         <option key={p.id} value={p.id}>
-                          {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
+                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
                         </option>
                       ))}
                   </select>
@@ -628,12 +1073,12 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   <select
                     className="form-select"
                     value={spouseId}
-                    onChange={(e) => setSpouseId(e.target.value)}
+                    onChange={(e) => handleSpouseSelect(e.target.value)}
                   >
                     <option value="">-- None --</option>
-                    {existingPersons.map((p) => (
+                    {effectiveKinshipNodes.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
+                        {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
                       </option>
                     ))}
                   </select>
@@ -646,14 +1091,14 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   <select
                     className="form-select"
                     value={childId}
-                    onChange={(e) => setChildId(e.target.value)}
+                    onChange={(e) => handleChildSelect(e.target.value)}
                   >
                     <option value="">-- None --</option>
-                    {existingPersons
+                    {effectiveKinshipNodes
                       .filter((p) => p.id !== fatherId && p.id !== motherId && p.id !== spouseId)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
-                          {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')}
+                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
                         </option>
                       ))}
                   </select>
@@ -696,7 +1141,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           </form>
         </div>
 
-        {/* Modal Footer (Cancel & Add Member buttons) */}
+        {/* Modal Footer */}
         <div
           style={{
             padding: '14px 22px',
@@ -876,6 +1321,14 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Image Cropper Modal (Requirements 6 & 8) */}
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        imageFile={selectedPhotoFile}
+        onClose={() => setIsCropperOpen(false)}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 };

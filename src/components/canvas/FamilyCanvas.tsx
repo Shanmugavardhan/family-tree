@@ -995,6 +995,8 @@ const FamilyCanvasInternal: React.FC = () => {
         onSaveSuccess={(_updatedPerson) => {
           fetchLayout();
         }}
+        layoutNodes={layout?.nodes}
+        layoutEdges={layout?.edges}
       />
 
       {/* Requirement 5: Square floating button on screen with pencil icon for adding a member */}
@@ -1042,6 +1044,8 @@ const FamilyCanvasInternal: React.FC = () => {
         onSaveSuccess={(_createdPerson) => {
           fetchLayout();
         }}
+        layoutNodes={layout?.nodes}
+        layoutEdges={layout?.edges}
       />
       </div>
 

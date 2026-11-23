@@ -1,17 +1,30 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, X, Save, AlertCircle, AlertTriangle, UserCheck, Plus, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, X, Save, AlertCircle, AlertTriangle, UserCheck, Plus, Trash2, Users, Upload, Crop } from 'lucide-react';
 import { Person, Gender, UpdatePersonInput } from '../../types/person';
+import { PositionedNode, PositionedEdge } from '../../types/layout';
 import { personApi } from '../../services/personApi';
 import { relationshipApi } from '../../services/relationshipApi';
 import { Relationship } from '../../types/relationship';
 import { useTheme } from '../../context/ThemeContext';
 import { normalizeDateInput } from '../../utils/dateUtils';
+import { ImageCropperModal } from '../photos/ImageCropperModal';
+import {
+  findDuplicateLineageMembers,
+  inferKinshipRelations,
+  KinshipNode,
+  KinshipEdge,
+} from '../../utils/kinshipInference';
+
+import avatarMale from '../../assets/avatar_male.png';
+import avatarFemale from '../../assets/avatar_female.png';
 
 interface FloatingPersonEditModalProps {
   personId: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSaveSuccess: (updatedPerson: Person) => void;
+  layoutNodes?: PositionedNode[];
+  layoutEdges?: PositionedEdge[];
 }
 
 export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = ({
@@ -19,6 +32,8 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   isOpen,
   onClose,
   onSaveSuccess,
+  layoutNodes = [],
+  layoutEdges = [],
 }) => {
   const { isDark } = useTheme();
 
@@ -39,6 +54,14 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
 
+  // Photo Attachment & Cropping States (Requirements 6, 7 & 8)
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [croppedPhotoFile, setCroppedPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState<boolean>(false);
+  const [isCropperOpen, setIsCropperOpen] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Family Relationships State
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [allPersons, setAllPersons] = useState<Person[]>([]);
@@ -49,6 +72,9 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [newRelTargetId, setNewRelTargetId] = useState<string>('');
   const [savingRelation, setSavingRelation] = useState(false);
 
+  // Kinship Auto-Inference Notice (Requirement 11)
+  const [relInferenceNotice, setRelInferenceNotice] = useState<string | null>(null);
+
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -57,6 +83,47 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Derive lineage members & edges (Requirement 5: restricted to this house lineage)
+  const effectiveKinshipNodes: KinshipNode[] = useMemo(() => {
+    if (layoutNodes && layoutNodes.length > 0) {
+      return layoutNodes.map((n) => ({
+        id: (n as any).personId || n.id,
+        firstName: n.firstName || '',
+        middleName: n.middleName || null,
+        lastName: n.lastName || null,
+        gender: n.gender || 'male',
+        birthDate: n.birthDate || null,
+        birthYear: n.birthYear || null,
+      }));
+    }
+    return allPersons.map((p) => ({
+      id: p.id,
+      firstName: p.first_name,
+      middleName: p.middle_name,
+      lastName: p.last_name,
+      gender: p.gender,
+      birthDate: p.birth_date,
+      birthYear: p.birth_date ? parseInt(p.birth_date.slice(0, 4), 10) : null,
+    }));
+  }, [layoutNodes, allPersons]);
+
+  const effectiveKinshipEdges: KinshipEdge[] = useMemo(() => {
+    if (layoutEdges && layoutEdges.length > 0) {
+      return layoutEdges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        type: e.type,
+      }));
+    }
+    return [];
+  }, [layoutEdges]);
+
+  // Requirement 1 & 7: Duplicate Lineage Member warning
+  const duplicateMatches = useMemo(() => {
+    if (!personId) return [];
+    return findDuplicateLineageMembers(firstName, lastName, effectiveKinshipNodes, personId);
+  }, [firstName, lastName, effectiveKinshipNodes, personId]);
 
   const loadRelationships = async (id: string) => {
     setLoadingRels(true);
@@ -112,6 +179,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       if (res.success) {
         setIsAddingRelation(false);
         setNewRelTargetId('');
+        setRelInferenceNotice(null);
         await loadRelationships(personId);
         if (person) onSaveSuccess(person);
       } else {
@@ -124,7 +192,15 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     }
   };
 
+  // Requirement 10: Cannot delete the last remaining relationship
   const handleDeleteRelation = async (relId: string) => {
+    if (relationships.length <= 1) {
+      setRelActionError(
+        'Every member must have at least one family relationship in the tree. You cannot remove the only remaining relationship.'
+      );
+      return;
+    }
+
     if (!confirm('Are you sure you want to remove this family relationship?')) return;
     setRelActionError(null);
     try {
@@ -140,12 +216,40 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     }
   };
 
+  // Requirement 11: Auto-infer companion relations in Edit Modal
+  const handleTargetRelationChange = (targetId: string) => {
+    setNewRelTargetId(targetId);
+    if (!targetId) {
+      setRelInferenceNotice(null);
+      return;
+    }
+
+    const fieldType = newRelType === 'parent' ? 'father' : newRelType === 'child' ? 'child' : 'spouse';
+    const res = inferKinshipRelations({
+      triggerField: fieldType,
+      triggerValue: targetId,
+      subjectGender: gender,
+      nodes: effectiveKinshipNodes,
+      edges: effectiveKinshipEdges,
+    });
+    if (res.reason) {
+      setRelInferenceNotice(res.reason);
+    } else {
+      setRelInferenceNotice(null);
+    }
+  };
+
   // Fetch person details when opened
   useEffect(() => {
     if (!isOpen || !personId) {
       setPerson(null);
       setFetchError(null);
       setShowUnsavedPrompt(false);
+      setSelectedPhotoFile(null);
+      setCroppedPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      setPhotoRemoved(false);
+      setIsCropperOpen(false);
       return;
     }
 
@@ -157,6 +261,12 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     setShowUnsavedPrompt(false);
     setIsAddingRelation(false);
     setNewRelTargetId('');
+    setRelInferenceNotice(null);
+    setSelectedPhotoFile(null);
+    setCroppedPhotoFile(null);
+    setPhotoRemoved(false);
+    setIsCropperOpen(false);
+
     loadRelationships(personId);
 
     personApi
@@ -177,6 +287,15 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
           setBirthPlace(p.birth_place || '');
           setDeathPlace(p.death_place || '');
           setBiography(p.biography || '');
+
+          if (p.profile_photo) {
+            const photoUrl = p.profile_photo.startsWith('http') || p.profile_photo.startsWith('data:')
+              ? p.profile_photo
+              : `/api/persons/${p.id}/photo`;
+            setPhotoPreviewUrl(photoUrl);
+          } else {
+            setPhotoPreviewUrl(null);
+          }
         } else {
           setFetchError(res.error?.message || 'Could not load person profile');
         }
@@ -208,7 +327,9 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       deathDate !== (person.death_date || '') ||
       birthPlace.trim() !== (person.birth_place || '').trim() ||
       deathPlace.trim() !== (person.death_place || '').trim() ||
-      biography.trim() !== (person.biography || '').trim()
+      biography.trim() !== (person.biography || '').trim() ||
+      croppedPhotoFile !== null ||
+      photoRemoved
     );
   }, [
     person,
@@ -223,11 +344,10 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     birthPlace,
     deathPlace,
     biography,
+    croppedPhotoFile,
+    photoRemoved,
   ]);
 
-  // Unified IF / ELSE close handler required by user:
-  // IF no edits made -> close automatically
-  // ELSE edits made -> prompt: Cancel (discard), Continue edit, Save
   const handleRequestClose = () => {
     if (!isDirty) {
       onClose();
@@ -236,7 +356,6 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     }
   };
 
-  // Keyboard shortcut listener for Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -252,6 +371,30 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isDirty, showUnsavedPrompt]);
 
+  // Photo handlers (Requirements 6, 7 & 8)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPhotoFile(file);
+      setIsCropperOpen(true);
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, previewUrl: string) => {
+    setCroppedPhotoFile(croppedFile);
+    setPhotoPreviewUrl(previewUrl);
+    setPhotoRemoved(false);
+    setIsCropperOpen(false);
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhotoFile(null);
+    setCroppedPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    setPhotoRemoved(true);
+  };
+
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (!firstName.trim()) {
@@ -259,6 +402,11 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     }
     if (isLiving && deathDate.trim()) {
       errs.death_date = 'Living person cannot have a death date.';
+    }
+    // Requirement 10: Must have at least one relationship
+    if (relationships.length === 0) {
+      errs.relations =
+        'Every member must have at least one family relationship in the tree. Please connect a parent, spouse, or child.';
     }
     setClientErrors(errs);
     return Object.keys(errs).length === 0;
@@ -288,6 +436,21 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     try {
       const res = await personApi.update(personId, updatePayload);
       if (res.success && res.data) {
+        // Handle photo upload / delete
+        if (croppedPhotoFile) {
+          try {
+            await personApi.uploadPhoto(personId, croppedPhotoFile);
+          } catch (photoErr) {
+            console.error('Failed to update photo:', photoErr);
+          }
+        } else if (photoRemoved) {
+          try {
+            await personApi.deletePhoto(personId);
+          } catch (photoErr) {
+            console.error('Failed to remove photo:', photoErr);
+          }
+        }
+
         onSaveSuccess(res.data);
         onClose();
         return true;
@@ -314,7 +477,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       onClick={handleRequestClose}
       style={{
         position: 'fixed',
-        top: '64px', // Requirement 6: Strictly positioned below the header
+        top: '64px',
         left: 0,
         right: 0,
         bottom: 0,
@@ -328,15 +491,15 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
         boxSizing: 'border-box',
       }}
     >
-      {/* Floating Window Dialog (stops click propagation so clicking inside doesn't close) */}
+      {/* Floating Window Dialog */}
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
         className="floating-edit-dialog"
         style={{
-          width: 'min(720px, calc(100vw - 16px))',
-          maxWidth: 720,
-          maxHeight: 'calc(100vh - 64px - 32px)', // Fits completely within viewport below header
+          width: 'min(740px, calc(100vw - 16px))',
+          maxWidth: 740,
+          maxHeight: 'calc(100vh - 64px - 32px)',
           backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,
           boxShadow: isDark
@@ -364,7 +527,6 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
             flexShrink: 0,
           }}
         >
-          {/* Back button on the top left */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               type="button"
@@ -410,7 +572,6 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
             </div>
           </div>
 
-          {/* Close button on top right */}
           <button
             type="button"
             onClick={handleRequestClose}
@@ -500,6 +661,167 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                 </div>
               )}
 
+              {/* Profile Photo Attachment & Cropping (Requirements 6, 7 & 8) */}
+              <div
+                style={{
+                  backgroundColor: isDark ? '#1D2633' : '#f8fafc',
+                  border: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
+                  borderRadius: 12,
+                  padding: '16px 18px',
+                  marginBottom: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 20,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'relative',
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    padding: 3,
+                    background: 'linear-gradient(135deg, #d4af37 0%, #b8972e 50%, #854d0e 100%)',
+                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(214, 177, 92, 0.35)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      backgroundColor: '#101318',
+                    }}
+                  >
+                    <img
+                      src={photoPreviewUrl || (gender === 'female' ? avatarFemale : avatarMale)}
+                      alt="Profile Avatar"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 650, color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                    Profile Photograph
+                  </div>
+                  <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', marginTop: 2, marginBottom: 10 }}>
+                    Upload or crop member photo with royal medallion aperture.
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+
+                    {!photoPreviewUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 14px',
+                          borderRadius: 7,
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                          color: '#D6B15C',
+                          border: '1px solid rgba(214, 177, 92, 0.4)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>Upload Photo</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedPhotoFile) {
+                              setIsCropperOpen(true);
+                            } else {
+                              fileInputRef.current?.click();
+                            }
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 14px',
+                            borderRadius: 7,
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                            color: '#D6B15C',
+                            border: '1px solid rgba(214, 177, 92, 0.4)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Crop size={14} />
+                          <span>Edit / Crop</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            borderRadius: 7,
+                            fontSize: '12.5px',
+                            fontWeight: 500,
+                            backgroundColor: isDark ? '#252E3A' : '#ffffff',
+                            color: isDark ? '#F1E9D7' : '#334155',
+                            border: `1px solid ${isDark ? '#343D49' : '#cbd5e1'}`,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Upload size={14} />
+                          <span>Change</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            borderRadius: 7,
+                            fontSize: '12.5px',
+                            fontWeight: 500,
+                            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          <span>Remove</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Basic Identification */}
               <div
                 style={{
@@ -572,6 +894,30 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                   </div>
                 </div>
 
+                {/* Requirement 1 & 7: Duplicate Lineage Member Warning */}
+                {duplicateMatches.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                      color: '#f59e0b',
+                      fontSize: '12.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                    <div>
+                      <strong>Notice:</strong> Another member named <strong>"{duplicateMatches[0].fullName}"</strong> already exists in this lineage{' '}
+                      {duplicateMatches[0].birthYear ? `(Born: ${duplicateMatches[0].birthYear})` : ''}.
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
@@ -586,27 +932,53 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     />
                   </div>
 
+                  {/* Requirement 2 & 7: Gender Dot Check Radio Options */}
                   <div>
                     <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
                       Gender *
                     </label>
-                    <select
-                      className="form-select"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value as Gender)}
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="unknown">Unknown</option>
-                    </select>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+                      {(['male', 'female', 'other'] as Gender[]).map((g) => (
+                        <label
+                          key={g}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            cursor: 'pointer',
+                            padding: '5px 10px',
+                            borderRadius: 7,
+                            backgroundColor: gender === g ? (isDark ? 'rgba(214, 177, 92, 0.15)' : '#fef3c7') : 'transparent',
+                            border: `1px solid ${gender === g ? '#D6B15C' : (isDark ? '#343D49' : '#cbd5e1')}`,
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="gender-edit"
+                            value={g}
+                            checked={gender === g}
+                            onChange={() => setGender(g)}
+                            style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
+                          />
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: gender === g ? 600 : 450,
+                              textTransform: 'capitalize',
+                              color: gender === g ? '#D6B15C' : (isDark ? '#e2e8f0' : '#334155'),
+                            }}
+                          >
+                            {g}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
+                  {/* Requirement 3 & 7: Deceased Checkbox WITHOUT "Status" header */}
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                      Status
-                    </label>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 4 }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 14 }}>
                       <input
                         type="checkbox"
                         checked={!isLiving}
@@ -618,9 +990,9 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                             setDeathPlace('');
                           }
                         }}
-                        style={{ width: 17, height: 17, accentColor: '#D6B15C' }}
+                        style={{ width: 17, height: 17, accentColor: '#D6B15C', cursor: 'pointer' }}
                       />
-                      <span style={{ fontSize: '13.5px', fontWeight: 500, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 550, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
                         Deceased
                       </span>
                     </label>
@@ -746,7 +1118,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                 </div>
               </div>
 
-              {/* Family Relationships & Add Relation */}
+              {/* Requirement 4, 5, 7, 10 & 11: Family Relationships & Add Relation */}
               <div
                 style={{
                   backgroundColor: isDark ? '#1D2633' : '#f8fafc',
@@ -764,22 +1136,27 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     marginBottom: 14,
                   }}
                 >
-                  <h3
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 650,
-                      letterSpacing: '0.01em',
-                      textTransform: 'uppercase',
-                      color: isDark ? '#D6B15C' : '#92400e',
-                      margin: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    <Users size={16} />
-                    Family Relationships
-                  </h3>
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 650,
+                        letterSpacing: '0.01em',
+                        textTransform: 'uppercase',
+                        color: isDark ? '#D6B15C' : '#92400e',
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Users size={16} />
+                      <span>Lineage Relationships</span>
+                    </h3>
+                    <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: isDark ? '#9BA3AF' : '#64748b' }}>
+                      Members connected to this person in the family tree. At least one relationship must be preserved.
+                    </p>
+                  </div>
 
                   {!isAddingRelation && (
                     <button
@@ -788,6 +1165,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         setIsAddingRelation(true);
                         setRelActionError(null);
                         setNewRelTargetId('');
+                        setRelInferenceNotice(null);
                       }}
                       className="btn btn-secondary"
                       style={{
@@ -840,6 +1218,23 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     <div style={{ fontSize: '13px', fontWeight: 650, marginBottom: 10, color: '#D6B15C' }}>
                       Connect New Relationship
                     </div>
+
+                    {relInferenceNotice && (
+                      <div
+                        style={{
+                          marginBottom: 10,
+                          padding: '7px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                          border: '1px solid rgba(214, 177, 92, 0.35)',
+                          color: '#D6B15C',
+                          fontSize: '12px',
+                        }}
+                      >
+                        {relInferenceNotice}
+                      </div>
+                    )}
+
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, marginBottom: 4 }}>
@@ -851,6 +1246,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                           onChange={(e) => {
                             setNewRelType(e.target.value as any);
                             setNewRelTargetId('');
+                            setRelInferenceNotice(null);
                           }}
                           style={{ fontSize: '13px', padding: '6px 10px' }}
                         >
@@ -860,6 +1256,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         </select>
                       </div>
 
+                      {/* Requirement 5: Target selection restricted to members of this lineage */}
                       <div>
                         <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, marginBottom: 4 }}>
                           Select Member
@@ -867,15 +1264,15 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         <select
                           className="form-select"
                           value={newRelTargetId}
-                          onChange={(e) => setNewRelTargetId(e.target.value)}
+                          onChange={(e) => handleTargetRelationChange(e.target.value)}
                           style={{ fontSize: '13px', padding: '6px 10px' }}
                         >
-                          <option value="">-- Choose Member --</option>
-                          {allPersons
+                          <option value="">-- Choose Lineage Member --</option>
+                          {effectiveKinshipNodes
                             .filter((p) => p.id !== personId)
                             .map((p) => (
                               <option key={p.id} value={p.id}>
-                                {[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')} {p.alias ? `(${p.alias})` : ''}
+                                {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
                               </option>
                             ))}
                         </select>
@@ -888,6 +1285,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                         onClick={() => {
                           setIsAddingRelation(false);
                           setRelActionError(null);
+                          setRelInferenceNotice(null);
                         }}
                         className="btn btn-secondary"
                         disabled={savingRelation}
@@ -921,8 +1319,8 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                     Loading family connections...
                   </div>
                 ) : relationships.length === 0 ? (
-                  <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', fontStyle: 'italic', padding: '6px 0' }}>
-                    No family relationships linked yet. Click "+ Add Relation" above to connect parents, spouse, or children.
+                  <div style={{ fontSize: '12px', color: '#f87171', fontStyle: 'italic', padding: '6px 0' }}>
+                    No family relationships linked yet. Every member must have at least one relationship. Click "+ Add Relation" above.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1018,7 +1416,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
           )}
         </div>
 
-        {/* Footer with Cancel and Save Changes buttons */}
+        {/* Footer */}
         <div
           style={{
             padding: '16px 24px',
@@ -1069,7 +1467,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
           </div>
         </div>
 
-        {/* Unsaved Changes Confirmation Prompt: Cancel (discard) | Continue edit | Save */}
+        {/* Unsaved Changes Confirmation Prompt */}
         {showUnsavedPrompt && (
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1140,7 +1538,6 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
                 You have unsaved edits for <strong>{fullName}</strong>. What would you like to do before closing?
               </p>
 
-              {/* Three action buttons matching user specification: Cancel | Continue edit | Save */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button
                   type="button"
@@ -1201,7 +1598,14 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
           </div>
         )}
       </div>
+
+      {/* Image Cropper Modal (Requirements 6, 7 & 8) */}
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        imageFile={selectedPhotoFile}
+        onClose={() => setIsCropperOpen(false)}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 };
-
