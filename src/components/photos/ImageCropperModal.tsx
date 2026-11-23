@@ -24,7 +24,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const CROP_SIZE = 280; // Size of the crop frame in modal
+  const CROP_WIDTH = 240; // Width of vertical rectangular crop frame
+  const CROP_HEIGHT = 300; // Height of vertical rectangular crop frame
 
   // Load image when file changes
   useEffect(() => {
@@ -46,7 +47,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     reader.readAsDataURL(imageFile);
   }, [imageFile, isOpen]);
 
-  // Render canvas with circular overlay
+  // Render canvas with vertical rectangular overlay
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !imageObj) return;
@@ -70,7 +71,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     const centerY = height / 2;
 
     // Calculate base scale to fit image into crop area
-    const baseScale = Math.max(CROP_SIZE / imageObj.width, CROP_SIZE / imageObj.height);
+    const baseScale = Math.max(CROP_WIDTH / imageObj.width, CROP_HEIGHT / imageObj.height);
     const currentScale = baseScale * zoom;
 
     const drawW = imageObj.width * currentScale;
@@ -84,21 +85,31 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
     ctx.restore();
 
-    // Draw dark semi-transparent mask outside crop circle
+    // Draw dark semi-transparent mask outside crop rectangle
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
     ctx.beginPath();
     ctx.rect(0, 0, width, height);
-    ctx.arc(centerX, centerY, CROP_SIZE / 2, 0, Math.PI * 2, true);
-    ctx.fill();
+    const cropX = centerX - CROP_WIDTH / 2;
+    const cropY = centerY - CROP_HEIGHT / 2;
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT, 10);
+    } else {
+      ctx.rect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT);
+    }
+    ctx.fill('evenodd');
 
-    // Draw gold medallion circle guide
+    // Draw gold medallion vertical rectangle guide
     ctx.beginPath();
-    ctx.arc(centerX, centerY, CROP_SIZE / 2, 0, Math.PI * 2, false);
-    ctx.lineWidth = 3;
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT, 10);
+    } else {
+      ctx.rect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT);
+    }
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = '#D6B15C';
     ctx.shadowColor = 'rgba(214, 177, 92, 0.6)';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8;
     ctx.stroke();
 
     ctx.restore();
@@ -130,29 +141,26 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const handleSaveCrop = () => {
     if (!imageObj) return;
 
-    // High resolution output canvas (400x400)
+    // High resolution output canvas (360x450, 4:5 vertical portrait aspect ratio)
+    const exportW = 360;
+    const exportH = 450;
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = 400;
-    exportCanvas.height = 400;
+    exportCanvas.width = exportW;
+    exportCanvas.height = exportH;
     const exportCtx = exportCanvas.getContext('2d');
     if (!exportCtx) return;
 
-    const baseScale = Math.max(CROP_SIZE / imageObj.width, CROP_SIZE / imageObj.height);
+    const baseScale = Math.max(CROP_WIDTH / imageObj.width, CROP_HEIGHT / imageObj.height);
     const currentScale = baseScale * zoom;
 
-    // Ratio between exportCanvas (400px) and preview CROP_SIZE (280px)
-    const exportRatio = 400 / CROP_SIZE;
+    // Ratio between exportCanvas and preview CROP area
+    const exportRatio = exportW / CROP_WIDTH;
 
     const exportDrawW = imageObj.width * currentScale * exportRatio;
     const exportDrawH = imageObj.height * currentScale * exportRatio;
 
-    const exportImgX = 200 - exportDrawW / 2 + pan.x * exportRatio;
-    const exportImgY = 200 - exportDrawH / 2 + pan.y * exportRatio;
-
-    // Optional circular clip for output
-    exportCtx.beginPath();
-    exportCtx.arc(200, 200, 200, 0, Math.PI * 2);
-    exportCtx.clip();
+    const exportImgX = exportW / 2 - exportDrawW / 2 + pan.x * exportRatio;
+    const exportImgY = exportH / 2 - exportDrawH / 2 + pan.y * exportRatio;
 
     exportCtx.drawImage(imageObj, exportImgX, exportImgY, exportDrawW, exportDrawH);
 
@@ -380,3 +388,4 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     </div>
   );
 };
+

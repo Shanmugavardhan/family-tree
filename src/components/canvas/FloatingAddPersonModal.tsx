@@ -46,7 +46,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
 
-  // Photo Attachment & Cropping States (Requirements 6 & 8)
+  // Photo Attachment & Cropping States (Vertical Rectangle Box)
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
   const [croppedPhotoFile, setCroppedPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -60,7 +60,10 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [spouseId, setSpouseId] = useState<string>('');
   const [childId, setChildId] = useState<string>('');
 
-  // Kinship Auto-Inference Feedback (Requirement 11)
+  // Which Relation dot options state ('father' | 'mother' | 'spouse' | 'child')
+  const [selectedRelationType, setSelectedRelationType] = useState<'father' | 'mother' | 'spouse' | 'child'>('father');
+
+  // Kinship Auto-Inference Feedback
   const [inferenceNotice, setInferenceNotice] = useState<string | null>(null);
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -72,7 +75,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load existing persons fallback if layoutNodes not provided
+  // Reset form when modal opens
   useEffect(() => {
     if (!isOpen) {
       setShowUnsavedPrompt(false);
@@ -94,6 +97,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setMotherId('');
     setSpouseId('');
     setChildId('');
+    setSelectedRelationType('father');
     setSelectedPhotoFile(null);
     setCroppedPhotoFile(null);
     setPhotoPreviewUrl(null);
@@ -113,7 +117,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       .catch(() => {});
   }, [isOpen]);
 
-  // Derive kinship nodes & edges from layoutNodes (Requirement 5: restricted to this house lineage)
+  // Derive kinship nodes & edges from layoutNodes (restricted to this house lineage)
   const effectiveKinshipNodes: KinshipNode[] = useMemo(() => {
     if (layoutNodes && layoutNodes.length > 0) {
       return layoutNodes.map((n) => ({
@@ -148,12 +152,38 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     return [];
   }, [layoutEdges]);
 
-  // Requirement 1: Duplicate lineage member suggestions / warning
+  // Duplicate member suggestion in real time
   const duplicateMatches = useMemo(() => {
     return findDuplicateLineageMembers(firstName, lastName, effectiveKinshipNodes);
   }, [firstName, lastName, effectiveKinshipNodes]);
 
-  // Dirty detection: check if any field has user input
+  // Filter available members for the "Who" dropdown based on "Which Relation"
+  const availableMembersForSelectedRelation = useMemo(() => {
+    if (selectedRelationType === 'father') {
+      return effectiveKinshipNodes.filter((m) => m.gender === 'male');
+    }
+    if (selectedRelationType === 'mother') {
+      return effectiveKinshipNodes.filter((m) => m.gender === 'female');
+    }
+    if (selectedRelationType === 'child') {
+      return effectiveKinshipNodes.filter(
+        (m) => m.id !== fatherId && m.id !== motherId && m.id !== spouseId
+      );
+    }
+    // Spouse: any other lineage member
+    return effectiveKinshipNodes.filter(
+      (m) => m.id !== fatherId && m.id !== motherId && m.id !== childId
+    );
+  }, [selectedRelationType, effectiveKinshipNodes, fatherId, motherId, spouseId, childId]);
+
+  // Helper to get formatted name of an ID
+  const getMemberName = (id: string): string => {
+    const found = effectiveKinshipNodes.find((m) => m.id === id);
+    if (!found) return id;
+    return [found.firstName, found.middleName, found.lastName].filter(Boolean).join(' ');
+  };
+
+  // Dirty detection
   const isDirty = useMemo(() => {
     if (!isOpen) return false;
     return (
@@ -194,7 +224,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     croppedPhotoFile,
   ]);
 
-  // Request close: prompt if dirty, else close immediately
   const handleRequestClose = () => {
     if (isDirty) {
       setShowUnsavedPrompt(true);
@@ -217,7 +246,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     await handleSubmit();
   };
 
-  // Requirement 10: Mandatory relation validation
+  // Mandatory relationship validation
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
     if (!firstName.trim()) {
@@ -226,7 +255,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     if (isLiving && deathDate) {
       errors.death_date = 'Living persons cannot have a date of death.';
     }
-    // Requirement 10: At least one relation must be specified
     if (!fatherId && !motherId && !spouseId && !childId) {
       errors.relations =
         'Please select at least one family relationship (Father, Mother, Spouse, or Child) to connect this person to the family lineage.';
@@ -235,7 +263,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  // Requirement 11: Auto-infer relations when one relation is selected
+  // Auto-inference when relations are selected
   const handleFatherSelect = (newFatherId: string) => {
     setFatherId(newFatherId);
     if (newFatherId) {
@@ -320,7 +348,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     }
   };
 
-  // Photo handlers (Requirements 6 & 8)
+  // Photo handlers
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -372,7 +400,6 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       if (res.success && res.data) {
         const createdPerson = res.data;
 
-        // If a photo was cropped, upload it now
         if (croppedPhotoFile) {
           try {
             await personApi.uploadPhoto(createdPerson.id, croppedPhotoFile);
@@ -417,14 +444,13 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Floating Window Dialog */}
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
         className="floating-add-dialog"
         style={{
-          width: 'min(740px, calc(100vw - 16px))',
-          maxWidth: 740,
+          width: 'min(760px, calc(100vw - 16px))',
+          maxWidth: 760,
           maxHeight: 'calc(100vh - 64px - 32px)',
           backgroundColor: isDark ? '#151922' : '#ffffff',
           borderRadius: 16,
@@ -533,165 +559,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
           )}
 
           <form onSubmit={handleSubmit} id="floating-add-person-form">
-            {/* Profile Photo Attachment & Cropping (Requirements 6 & 8) */}
-            <div
-              style={{
-                backgroundColor: isDark ? '#1D2633' : '#f8fafc',
-                border: `1px solid ${isDark ? '#343D49' : '#e2e8f0'}`,
-                borderRadius: 12,
-                padding: '16px 18px',
-                marginBottom: 18,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 20,
-              }}
-            >
-              {/* Circular Gold Medallion Avatar Preview */}
-              <div
-                style={{
-                  position: 'relative',
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  padding: 3,
-                  background: 'linear-gradient(135deg, #d4af37 0%, #b8972e 50%, #854d0e 100%)',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(214, 177, 92, 0.35)',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                    backgroundColor: '#101318',
-                  }}
-                >
-                  <img
-                    src={photoPreviewUrl || (gender === 'female' ? avatarFemale : avatarMale)}
-                    alt="Member Preview"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Photo Controls */}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13.5px', fontWeight: 650, color: isDark ? '#F1E9D7' : '#1e293b' }}>
-                  Member Photograph
-                </div>
-                <div style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', marginTop: 2, marginBottom: 10 }}>
-                  Upload a royal portrait or profile photo with interactive crop & zoom.
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
-
-                  {!photoPreviewUrl ? (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '6px 14px',
-                        borderRadius: 7,
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        backgroundColor: 'rgba(214, 177, 92, 0.15)',
-                        color: '#D6B15C',
-                        border: '1px solid rgba(214, 177, 92, 0.4)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Upload size={14} />
-                      <span>Upload Photo</span>
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setIsCropperOpen(true)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 14px',
-                          borderRadius: 7,
-                          fontSize: '12.5px',
-                          fontWeight: 600,
-                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
-                          color: '#D6B15C',
-                          border: '1px solid rgba(214, 177, 92, 0.4)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Crop size={14} />
-                        <span>Edit / Crop</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 7,
-                          fontSize: '12.5px',
-                          fontWeight: 500,
-                          backgroundColor: isDark ? '#252E3A' : '#ffffff',
-                          color: isDark ? '#F1E9D7' : '#334155',
-                          border: `1px solid ${isDark ? '#343D49' : '#cbd5e1'}`,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Upload size={14} />
-                        <span>Change</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleRemovePhoto}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 7,
-                          fontSize: '12.5px',
-                          fontWeight: 500,
-                          backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                          color: '#f87171',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Trash2 size={14} />
-                        <span>Remove</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Basic Identification */}
+            {/* Basic Identification with Vertical Rectangle Photo Box on Left */}
             <div
               style={{
                 backgroundColor: isDark ? '#1D2633' : '#f8fafc',
@@ -708,159 +576,340 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                   letterSpacing: '0.01em',
                   textTransform: 'uppercase',
                   color: isDark ? '#D6B15C' : '#92400e',
-                  marginBottom: 14,
+                  marginBottom: 16,
                 }}
               >
                 Basic Identification
               </h3>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    First Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="e.g. Vikram"
-                    required
-                  />
-                  {clientErrors.first_name && (
-                    <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.first_name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Middle Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={middleName}
-                    onChange={(e) => setMiddleName(e.target.value)}
-                    placeholder="e.g. Prasad"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Last Name / Family Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="e.g. Sharma"
-                  />
-                </div>
-              </div>
-
-              {/* Requirement 1: Duplicate Lineage Member Warning / Suggestion */}
-              {duplicateMatches.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 14,
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                    border: '1px solid rgba(245, 158, 11, 0.4)',
-                    color: '#f59e0b',
-                    fontSize: '12.5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}
-                >
-                  <AlertTriangle size={18} style={{ flexShrink: 0 }} />
-                  <div>
-                    <strong>Notice:</strong> A member named <strong>"{duplicateMatches[0].fullName}"</strong> already exists in this lineage{' '}
-                    {duplicateMatches[0].birthYear ? `(Born: ${duplicateMatches[0].birthYear})` : ''}. Did you mean to edit them instead?
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Alias / Known As
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={alias}
-                    onChange={(e) => setAlias(e.target.value)}
-                    placeholder="e.g. Raju"
-                  />
-                </div>
-
-                {/* Requirement 2: Gender Dot Check Radio Options */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Gender *
-                  </label>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-                    {(['male', 'female', 'other'] as Gender[]).map((g) => (
-                      <label
-                        key={g}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          cursor: 'pointer',
-                          padding: '5px 10px',
-                          borderRadius: 7,
-                          backgroundColor: gender === g ? (isDark ? 'rgba(214, 177, 92, 0.15)' : '#fef3c7') : 'transparent',
-                          border: `1px solid ${gender === g ? '#D6B15C' : (isDark ? '#343D49' : '#cbd5e1')}`,
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="gender-add"
-                          value={g}
-                          checked={gender === g}
-                          onChange={() => setGender(g)}
-                          style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
-                        />
-                        <span
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {/* Vertical Rectangle Photo Upload Box */}
+                <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div
+                    onClick={() => !photoPreviewUrl && fileInputRef.current?.click()}
+                    title={photoPreviewUrl ? 'Member portrait' : 'Click to upload portrait photo'}
+                    style={{
+                      width: 140,
+                      height: 180,
+                      borderRadius: 12,
+                      border: `1.5px ${photoPreviewUrl ? 'solid' : 'dashed'} ${isDark ? '#D6B15C' : '#b8972e'}`,
+                      backgroundColor: isDark ? '#10141d' : '#f1f5f9',
+                      boxShadow: isDark
+                        ? '0 6px 18px rgba(0, 0, 0, 0.6), 0 0 10px rgba(214, 177, 92, 0.25)'
+                        : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: photoPreviewUrl ? 'default' : 'pointer',
+                      position: 'relative',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {photoPreviewUrl ? (
+                      <img
+                        src={photoPreviewUrl}
+                        alt="Portrait"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 12, textAlign: 'center' }}>
+                        <div
                           style={{
-                            fontSize: '13px',
-                            fontWeight: gender === g ? 600 : 450,
-                            textTransform: 'capitalize',
-                            color: gender === g ? '#D6B15C' : (isDark ? '#e2e8f0' : '#334155'),
+                            width: 72,
+                            height: 90,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            marginBottom: 8,
+                            border: '1px solid rgba(214, 177, 92, 0.3)',
                           }}
                         >
-                          {g}
+                          <img
+                            src={gender === 'female' ? avatarFemale : avatarMale}
+                            alt="Default Avatar"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#D6B15C', fontSize: '11px', fontWeight: 650 }}>
+                          <Upload size={12} />
+                          <span>Upload Photo</span>
+                        </div>
+                        <span style={{ fontSize: '10px', color: isDark ? '#9BA3AF' : '#64748b', marginTop: 2 }}>
+                          Click to browse
                         </span>
-                      </label>
-                    ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Photo action buttons */}
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    {!photoPreviewUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          width: '100%',
+                          padding: '5px 8px',
+                          borderRadius: 6,
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                          color: '#D6B15C',
+                          border: '1px solid rgba(214, 177, 92, 0.35)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Upload size={13} />
+                        <span>Upload Photo</span>
+                      </button>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, width: '100%' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsCropperOpen(true)}
+                          title="Edit / Crop Photo"
+                          style={{
+                            padding: '5px 6px',
+                            borderRadius: 6,
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                            color: '#D6B15C',
+                            border: '1px solid rgba(214, 177, 92, 0.35)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 3,
+                          }}
+                        >
+                          <Crop size={12} />
+                          <span>Crop</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          title="Change Photo"
+                          style={{
+                            padding: '5px 6px',
+                            borderRadius: 6,
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            backgroundColor: isDark ? '#252E3A' : '#ffffff',
+                            color: isDark ? '#F1E9D7' : '#334155',
+                            border: `1px solid ${isDark ? '#343D49' : '#cbd5e1'}`,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 3,
+                          }}
+                        >
+                          <Upload size={12} />
+                          <span>Change</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          title="Remove Photo"
+                          style={{
+                            gridColumn: 'span 2',
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 3,
+                          }}
+                        >
+                          <Trash2 size={12} />
+                          <span>Remove Photo</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Requirement 3: Deceased Checkbox WITHOUT "Status" header */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 14 }}>
-                    <input
-                      type="checkbox"
-                      checked={!isLiving}
-                      onChange={(e) => {
-                        const deceased = e.target.checked;
-                        setIsLiving(!deceased);
-                        if (!deceased) {
-                          setDeathDate('');
-                          setDeathPlace('');
-                        }
+                {/* Right Form Fields */}
+                <div style={{ flex: 1, minWidth: 260 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="e.g. Vikram"
+                        required
+                      />
+                      {clientErrors.first_name && (
+                        <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.first_name}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
+                        Middle Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={middleName}
+                        onChange={(e) => setMiddleName(e.target.value)}
+                        placeholder="e.g. Prasad"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
+                        Last Name / Family Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="e.g. Sharma"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
+                        Alias / Known As
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={alias}
+                        onChange={(e) => setAlias(e.target.value)}
+                        placeholder="e.g. Raju"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duplicate Member Warning */}
+                  {duplicateMatches.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        color: '#f59e0b',
+                        fontSize: '12.5px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
                       }}
-                      style={{ width: 17, height: 17, accentColor: '#D6B15C', cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: '13.5px', fontWeight: 550, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
-                      Deceased
-                    </span>
-                  </label>
+                    >
+                      <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                      <div>
+                        <strong>Notice:</strong> A member named <strong>"{duplicateMatches[0].fullName}"</strong> already exists in this lineage{' '}
+                        {duplicateMatches[0].birthYear ? `(Born: ${duplicateMatches[0].birthYear})` : ''}.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gender and Deceased in dedicated non-overlapping row */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 16,
+                      marginTop: 16,
+                      paddingTop: 14,
+                      borderTop: `1px solid ${isDark ? '#2a3441' : '#e2e8f0'}`,
+                    }}
+                  >
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 6 }}>
+                        Gender *
+                      </label>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {(['male', 'female', 'other'] as Gender[]).map((g) => (
+                          <label
+                            key={g}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              cursor: 'pointer',
+                              padding: '5px 12px',
+                              borderRadius: 7,
+                              backgroundColor: gender === g ? (isDark ? 'rgba(214, 177, 92, 0.18)' : '#fef3c7') : 'transparent',
+                              border: `1.5px solid ${gender === g ? '#D6B15C' : (isDark ? '#343D49' : '#cbd5e1')}`,
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="gender-add"
+                              value={g}
+                              checked={gender === g}
+                              onChange={() => setGender(g)}
+                              style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
+                            />
+                            <span
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: gender === g ? 650 : 450,
+                                textTransform: 'capitalize',
+                                color: gender === g ? '#D6B15C' : (isDark ? '#e2e8f0' : '#334155'),
+                              }}
+                            >
+                              {g}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dedicated Deceased Checkbox */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: 18 }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!isLiving}
+                          onChange={(e) => {
+                            const deceased = e.target.checked;
+                            setIsLiving(!deceased);
+                            if (!deceased) {
+                              setDeathDate('');
+                              setDeathPlace('');
+                            }
+                          }}
+                          style={{ width: 17, height: 17, accentColor: '#D6B15C', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '13.5px', fontWeight: 600, color: !isLiving ? '#f87171' : (isDark ? '#F1E9D7' : '#1e293b') }}>
+                          Deceased
+                        </span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -950,7 +999,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
               )}
             </div>
 
-            {/* Requirement 4: Lineage Relationships (Without "(Optional)") */}
+            {/* Lineage Relationships with Dot Options of "Which Relation" and Dropdown of "Who" */}
             <div
               style={{
                 backgroundColor: isDark ? '#1D2633' : '#f8fafc',
@@ -972,11 +1021,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
               >
                 Lineage Relationships
               </h3>
-              <p style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 14px' }}>
-                Connect this member to people shown in this house lineage. At least one relationship is required.
+              <p style={{ fontSize: '12px', color: isDark ? '#9BA3AF' : '#64748b', margin: '0 0 16px' }}>
+                Select which relation to connect, then choose who from this house lineage. At least one relation is required.
               </p>
 
-              {/* Requirement 10: Relationship Validation Error Message */}
+              {/* Relationship Validation Error Message */}
               {clientErrors.relations && (
                 <div
                   style={{
@@ -997,7 +1046,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </div>
               )}
 
-              {/* Requirement 11: Auto-Inference Notice */}
+              {/* Auto-Inference Notice */}
               {inferenceNotice && (
                 <div
                   style={{
@@ -1024,86 +1073,209 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </div>
               )}
 
-              {/* Requirement 5: Dropdowns only show members from this house lineage */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Father
-                  </label>
-                  <select
-                    className="form-select"
-                    value={fatherId}
-                    onChange={(e) => handleFatherSelect(e.target.value)}
-                  >
-                    <option value="">-- None / Unknown --</option>
-                    {effectiveKinshipNodes
-                      .filter((p) => p.gender === 'male')
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+              {/* Dot Options: "Which Relation" */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 8, color: isDark ? '#D6B15C' : '#92400e' }}>
+                  Which Relation *
+                </label>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {[
+                    { type: 'father', label: 'Father' },
+                    { type: 'mother', label: 'Mother' },
+                    { type: 'spouse', label: 'Spouse' },
+                    { type: 'child', label: 'Son / Daughter' },
+                  ].map((rel) => {
+                    const isSelected = selectedRelationType === rel.type;
+                    const isAlreadyLinked =
+                      rel.type === 'father' ? Boolean(fatherId) :
+                      rel.type === 'mother' ? Boolean(motherId) :
+                      rel.type === 'spouse' ? Boolean(spouseId) :
+                      Boolean(childId);
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Mother
-                  </label>
-                  <select
-                    className="form-select"
-                    value={motherId}
-                    onChange={(e) => handleMotherSelect(e.target.value)}
-                  >
-                    <option value="">-- None / Unknown --</option>
-                    {effectiveKinshipNodes
-                      .filter((p) => p.gender === 'female')
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Spouse
-                  </label>
-                  <select
-                    className="form-select"
-                    value={spouseId}
-                    onChange={(e) => handleSpouseSelect(e.target.value)}
-                  >
-                    <option value="">-- None --</option>
-                    {effectiveKinshipNodes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                    Son / Daughter
-                  </label>
-                  <select
-                    className="form-select"
-                    value={childId}
-                    onChange={(e) => handleChildSelect(e.target.value)}
-                  >
-                    <option value="">-- None --</option>
-                    {effectiveKinshipNodes
-                      .filter((p) => p.id !== fatherId && p.id !== motherId && p.id !== spouseId)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {[p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ')}
-                        </option>
-                      ))}
-                  </select>
+                    return (
+                      <label
+                        key={rel.type}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          cursor: 'pointer',
+                          padding: '6px 14px',
+                          borderRadius: 8,
+                          backgroundColor: isSelected
+                            ? (isDark ? 'rgba(214, 177, 92, 0.18)' : '#fef3c7')
+                            : (isDark ? '#151922' : '#ffffff'),
+                          border: `1.5px solid ${isSelected ? '#D6B15C' : (isDark ? '#343D49' : '#cbd5e1')}`,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="which-relation-add"
+                          value={rel.type}
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedRelationType(rel.type as any);
+                            setInferenceNotice(null);
+                          }}
+                          style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
+                        />
+                        <span
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: isSelected ? 650 : 500,
+                            color: isSelected ? '#D6B15C' : (isDark ? '#e2e8f0' : '#334155'),
+                          }}
+                        >
+                          {rel.label} {isAlreadyLinked && '✓'}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Dropdown: "Who" */}
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 6 }}>
+                  Who ({selectedRelationType === 'father' ? 'Father' : selectedRelationType === 'mother' ? 'Mother' : selectedRelationType === 'spouse' ? 'Spouse' : 'Son / Daughter'}) *
+                </label>
+                <select
+                  className="form-select"
+                  value={
+                    selectedRelationType === 'father' ? fatherId :
+                    selectedRelationType === 'mother' ? motherId :
+                    selectedRelationType === 'spouse' ? spouseId :
+                    childId
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (selectedRelationType === 'father') handleFatherSelect(val);
+                    else if (selectedRelationType === 'mother') handleMotherSelect(val);
+                    else if (selectedRelationType === 'spouse') handleSpouseSelect(val);
+                    else handleChildSelect(val);
+                  }}
+                  style={{ width: '100%', fontSize: '13.5px', padding: '9px 12px' }}
+                >
+                  <option value="">-- Choose Member from this Lineage --</option>
+                  {availableMembersForSelectedRelation.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {[m.firstName, m.middleName, m.lastName].filter(Boolean).join(' ')} {m.birthYear ? `(Born: ${m.birthYear})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Connected Relationships Badges */}
+              {(fatherId || motherId || spouseId || childId) && (
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${isDark ? '#2a3441' : '#e2e8f0'}` }}>
+                  <div style={{ fontSize: '11.5px', fontWeight: 600, color: isDark ? '#9BA3AF' : '#64748b', marginBottom: 8 }}>
+                    Currently Connected Relations for this Person:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {fatherId && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                          border: '1px solid rgba(59, 130, 246, 0.4)',
+                          color: '#60a5fa',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <strong>Father:</strong> {getMemberName(fatherId)}
+                        <button
+                          type="button"
+                          onClick={() => setFatherId('')}
+                          title="Remove Father"
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {motherId && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                          border: '1px solid rgba(236, 72, 153, 0.4)',
+                          color: '#f472b6',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <strong>Mother:</strong> {getMemberName(motherId)}
+                        <button
+                          type="button"
+                          onClick={() => setMotherId('')}
+                          title="Remove Mother"
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {spouseId && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(214, 177, 92, 0.15)',
+                          border: '1px solid rgba(214, 177, 92, 0.4)',
+                          color: '#D6B15C',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <strong>Spouse:</strong> {getMemberName(spouseId)}
+                        <button
+                          type="button"
+                          onClick={() => setSpouseId('')}
+                          title="Remove Spouse"
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {childId && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                          border: '1px solid rgba(34, 197, 94, 0.4)',
+                          color: '#4ade80',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <strong>Son / Daughter:</strong> {getMemberName(childId)}
+                        <button
+                          type="button"
+                          onClick={() => setChildId('')}
+                          title="Remove Child"
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Biography & Notes */}
@@ -1322,7 +1494,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         )}
       </div>
 
-      {/* Image Cropper Modal (Requirements 6 & 8) */}
+      {/* Image Cropper Modal with vertical rectangular portrait guide */}
       <ImageCropperModal
         isOpen={isCropperOpen}
         imageFile={selectedPhotoFile}
