@@ -161,7 +161,9 @@ const FamilyCanvasInternal: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
 
   const [includeArchived, setIncludeArchived] = React.useState(false);
-  const [compactLanes, setCompactLanes] = React.useState(false);
+  const [compactLanes, setCompactLanes] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
   
   // Requirement 9: MiniMap visible strictly during zoom activity only
   const [isZooming, setIsZooming] = React.useState(false);
@@ -924,6 +926,7 @@ const FamilyCanvasInternal: React.FC = () => {
 
         {/* MiniMap: Automatically visible ONLY during zoom activity (Requirement 9) */}
         <div
+          className="canvas-minimap-container"
           style={{
             position: 'absolute',
             bottom: 24,
@@ -1001,7 +1004,7 @@ const FamilyCanvasInternal: React.FC = () => {
         layoutEdges={layout?.edges}
       />
 
-      {/* Requirement 5: Square floating button on screen with pencil icon for adding a member */}
+      {/* Requirement 5: Floating button on screen with pencil icon for adding a member (Inverted gold palette on desktop, right-bottom on mobile) */}
       <button
         onClick={() => setIsAddMemberOpen(true)}
         className="canvas-floating-add-btn"
@@ -1009,34 +1012,32 @@ const FamilyCanvasInternal: React.FC = () => {
         aria-label="Add Family Member"
         style={{
           position: 'fixed',
-          bottom: 24,
-          left: 24,
-          width: 48,
-          height: 48,
-          borderRadius: 12,
-          backgroundColor: '#161c26',
-          border: '1.5px solid #D6B15C',
-          color: '#D6B15C',
+          bottom: 28,
+          left: 28,
+          width: 56,
+          height: 56,
+          borderRadius: 14,
+          background: 'linear-gradient(135deg, #F5D77F 0%, #D6B15C 50%, #B8972E 100%)',
+          border: '1.5px solid #F5D77F',
+          color: '#10141D',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.75), 0 0 14px rgba(214, 177, 92, 0.3)',
+          boxShadow: '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)',
           cursor: 'pointer',
-          zIndex: 40,
+          zIndex: 46,
           transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.08)';
-          e.currentTarget.style.backgroundColor = '#1d2634';
-          e.currentTarget.style.boxShadow = '0 6px 24px rgba(0, 0, 0, 0.85), 0 0 18px rgba(214, 177, 92, 0.45)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(214, 177, 92, 0.65), 0 4px 12px rgba(0, 0, 0, 0.6)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.backgroundColor = '#161c26';
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.75), 0 0 14px rgba(214, 177, 92, 0.3)';
+          e.currentTarget.style.boxShadow = '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)';
         }}
       >
-        <Pencil size={22} />
+        <Pencil size={26} strokeWidth={2.3} />
       </button>
 
       {/* Requirement 5: Floating Add Member Window on the Canvas */}

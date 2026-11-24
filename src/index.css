@@ -273,7 +273,9 @@ button, input, select, textarea {
   display: flex !important;
 }
 
-.mobile-canvas-floating-bar {
+.mobile-canvas-floating-bar,
+.mobile-canvas-zoom-bar,
+.mobile-canvas-actions-bar {
   display: none !important;
 }
 
@@ -306,7 +308,10 @@ button, input, select, textarea {
   .desktop-header-canvas-actions {
     display: none !important;
   }
-  .mobile-canvas-floating-bar {
+  .mobile-canvas-zoom-bar {
+    display: flex !important;
+  }
+  .mobile-canvas-actions-bar {
     display: flex !important;
   }
   .header-nav-desktop {
@@ -919,15 +924,38 @@ html, body {
   }
 
   .canvas-floating-add-btn {
+    left: auto !important;
+    right: 14px !important;
     bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
-    left: 16px !important;
-    width: 44px !important;
-    height: 44px !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 12px !important;
   }
 
-  .mobile-canvas-floating-bar {
-    bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+  .mobile-canvas-zoom-bar {
+    position: fixed !important;
     right: 14px !important;
+    bottom: max(74px, calc(env(safe-area-inset-bottom, 16px) + 58px)) !important;
+    z-index: 45 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .mobile-canvas-actions-bar {
+    position: fixed !important;
+    left: 14px !important;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+    z-index: 45 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .canvas-minimap-container {
+    display: none !important;
   }
 
   .floating-add-dialog,

@@ -11,20 +11,19 @@ const isLocal =
 
 export function augmentLayoutWithCustomPersons(
   baseLayout: FamilyLayout,
-  lineage: string
+  lineage: string,
+  options?: LayoutOptions
 ): FamilyLayout {
   const customPersons = getLocalCustomPersons();
   const customRels = getLocalCustomRelationships();
-
-  if (customPersons.length === 0) {
-    return baseLayout;
-  }
 
   const nodes = [...baseLayout.nodes];
   const edges = [...baseLayout.edges];
   const existingNodeIds = new Set(nodes.map((n) => n.id));
   const existingEdgeIds = new Set(edges.map((e) => e.id));
   const baseNodeIds = new Set(baseLayout.nodes.map((n) => n.id));
+
+  if (customPersons.length > 0) {
 
   for (const person of customPersons) {
     if (existingNodeIds.has(person.id)) continue;
@@ -278,6 +277,7 @@ export function augmentLayoutWithCustomPersons(
       }
     }
   }
+}
 
   // 4. Canonical orientation for all spouse edges:
   // source must ALWAYS be the leftmost spouse, target must be the rightmost spouse.
@@ -302,11 +302,39 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
+  // 6. Support compactLanes mode on the fly
+  let finalLanes = baseLayout.lanes;
+  if (options?.compactLanes) {
+    const populatedOrders = new Set(
+      nodes.map((n) => n.generationOrder).filter((g): g is number => typeof g === 'number')
+    );
+    const compactLanesList = baseLayout.lanes.filter((l) => l.order !== null && populatedOrders.has(l.order));
+    if (compactLanesList.length > 0) {
+      let curY = 0;
+      for (const l of compactLanesList) {
+        l.y = curY;
+        curY += l.height;
+      }
+      for (const node of nodes) {
+        const targetLane = compactLanesList.find((l) => l.order === node.generationOrder);
+        if (targetLane) {
+          node.y = targetLane.y + Math.round((targetLane.height - (node.height || 160)) / 2);
+        }
+      }
+      finalLanes = compactLanesList;
+    }
+  }
+
   return {
     ...baseLayout,
+    lanes: finalLanes,
     nodes,
     edges,
     width: maxX,
+    height:
+      options?.compactLanes && finalLanes.length > 0
+        ? finalLanes[finalLanes.length - 1].y + finalLanes[finalLanes.length - 1].height
+        : baseLayout.height,
     metadata: {
       ...baseLayout.metadata,
       width: maxX,
@@ -349,11 +377,18 @@ export const layoutApi = {
 
     // 2. In production / static hosting CDN (or local fallback): load pre-rendered static layout directly
     try {
-      const staticUrl = `/data/layout-${lineage}.json?v=${Date.now()}`;
-      const staticRes = await fetch(staticUrl, { cache: 'no-cache' });
+      const isCompact = Boolean(options?.compactLanes);
+      const staticUrl = isCompact
+        ? `/data/layout-${lineage}-compact.json?v=${Date.now()}`
+        : `/data/layout-${lineage}.json?v=${Date.now()}`;
+      let staticRes = await fetch(staticUrl, { cache: 'no-cache' });
+      if (!staticRes.ok && isCompact) {
+        // Fallback to standard static layout if compact variant not yet on CDN
+        staticRes = await fetch(`/data/layout-${lineage}.json?v=${Date.now()}`, { cache: 'no-cache' });
+      }
       if (staticRes.ok) {
         const fallbackData = await staticRes.json();
-        const augmented = augmentLayoutWithCustomPersons(fallbackData, lineage);
+        const augmented = augmentLayoutWithCustomPersons(fallbackData, lineage, options);
         return {
           success: true,
           data: augmented,

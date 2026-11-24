@@ -372,246 +372,244 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         actionsSlotEl
       )}
 
-      {/* 3. Mobile Vertical Floating Action Bar (Requirement 3: Pathfinder, Focus, Timeline, Archive as icons at right bottom) */}
+      {/* 3. Mobile Vertical Floating Navigation Bar (Fit to view, Zoom in, Zoom out ONLY) */}
       <div
-        className="mobile-canvas-floating-bar"
+        className="mobile-canvas-zoom-bar"
         style={{
           position: 'fixed',
           right: 14,
-          bottom: 18,
+          bottom: 74,
           zIndex: 45,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 8,
+          gap: 4,
+          backgroundColor: isDark ? 'rgba(21, 25, 34, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderRadius: 12,
+          padding: 4,
+          border: isDark ? '1px solid rgba(214, 177, 92, 0.35)' : '1px solid rgba(197, 155, 39, 0.35)',
+          boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.65)' : '0 4px 12px rgba(0, 0, 0, 0.12)',
           pointerEvents: 'auto',
         }}
       >
-        {/* Mobile Zoom Controls Mini Group */}
-        <div
+        <button
+          onClick={handleFitView}
+          className="mobile-canvas-floating-btn"
+          title="Fit Tree to View"
+          aria-label="Fit to View"
           style={{
+            width: 38,
+            height: 38,
+            borderRadius: 8,
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: isDark ? '#D6B15C' : '#854d0e',
             display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            backgroundColor: isDark ? 'rgba(21, 25, 34, 0.94)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            borderRadius: 12,
-            padding: 4,
-            border: isDark ? '1px solid rgba(214, 177, 92, 0.3)' : '1px solid rgba(197, 155, 39, 0.3)',
-            boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.65)' : '0 4px 12px rgba(0, 0, 0, 0.12)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
           }}
         >
-          <button
-            onClick={handleFitView}
-            className="mobile-canvas-floating-btn"
-            title="Fit Tree to View"
-            aria-label="Fit to View"
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: isDark ? '#D6B15C' : '#854d0e',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Maximize2 size={17} />
-          </button>
-          <button
-            onClick={handleZoomInClick}
-            className="mobile-canvas-floating-btn"
-            title="Zoom In"
-            aria-label="Zoom In"
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: isDark ? '#cbd5e1' : '#475569',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ZoomIn size={17} />
-          </button>
-          <button
-            onClick={handleZoomOutClick}
-            className="mobile-canvas-floating-btn"
-            title="Zoom Out"
-            aria-label="Zoom Out"
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: isDark ? '#cbd5e1' : '#475569',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ZoomOut size={17} />
-          </button>
-        </div>
-
-        {/* Primary Action Buttons (Pathfinder, Focus, Timeline, Archive) */}
-        <div
+          <Maximize2 size={17} />
+        </button>
+        <button
+          onClick={handleZoomInClick}
+          className="mobile-canvas-floating-btn"
+          title="Zoom In"
+          aria-label="Zoom In"
           style={{
+            width: 38,
+            height: 38,
+            borderRadius: 8,
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: isDark ? '#cbd5e1' : '#475569',
             display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            backgroundColor: isDark ? 'rgba(21, 25, 34, 0.95)' : 'rgba(255, 255, 255, 0.96)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderRadius: 14,
-            padding: 5,
-            border: isDark ? '1px solid rgba(214, 177, 92, 0.45)' : '1px solid rgba(197, 155, 39, 0.45)',
-            boxShadow: isDark
-              ? '0 6px 20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(214, 177, 92, 0.2)'
-              : '0 6px 18px rgba(120, 53, 15, 0.15), 0 0 0 1px rgba(197, 155, 39, 0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
           }}
         >
-          {/* 1. Pathfinder */}
-          <button
-            onClick={onOpenPathfinder}
-            className="mobile-canvas-floating-btn"
-            title="Pathfinder (Trace Kinship Path)"
-            aria-label="Pathfinder"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: activePathSummary
-                ? '1.5px solid #f59e0b'
-                : isDark
-                ? '1px solid rgba(214, 177, 92, 0.35)'
-                : '1px solid rgba(180, 83, 9, 0.35)',
-              backgroundColor: activePathSummary
-                ? isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7'
-                : isDark ? 'rgba(214, 177, 92, 0.16)' : '#fffbeb',
-              color: isDark ? '#e5c158' : '#b45309',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              position: 'relative',
-              boxShadow: activePathSummary ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
-            }}
-          >
-            <Compass size={19} />
-            {activePathSummary && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 3,
-                  right: 3,
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  backgroundColor: '#f59e0b',
-                  boxShadow: '0 0 6px #f59e0b',
-                }}
-              />
-            )}
-          </button>
+          <ZoomIn size={17} />
+        </button>
+        <button
+          onClick={handleZoomOutClick}
+          className="mobile-canvas-floating-btn"
+          title="Zoom Out"
+          aria-label="Zoom Out"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 8,
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: isDark ? '#cbd5e1' : '#475569',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <ZoomOut size={17} />
+        </button>
+      </div>
 
-          {/* 2. Focus Mode */}
-          <button
-            onClick={() => onToggleFocusMode(!focusMode)}
-            className="mobile-canvas-floating-btn"
-            title={focusMode ? 'Focus Mode: Active' : 'Focus Mode: Off'}
-            aria-label="Focus Mode"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: focusMode
-                ? '1.5px solid #3b82f6'
-                : isDark
-                ? '1px solid rgba(255, 255, 255, 0.12)'
-                : '1px solid rgba(0, 0, 0, 0.12)',
-              backgroundColor: focusMode
-                ? isDark ? 'rgba(59, 130, 246, 0.3)' : '#eff6ff'
-                : isDark ? '#151922' : '#f8fafc',
-              color: focusMode ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#9BA3AF' : '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: focusMode ? '0 0 10px rgba(59, 130, 246, 0.45)' : 'none',
-            }}
-          >
-            <Eye size={18} />
-          </button>
+      {/* 4. Mobile Horizontal Floating Action Bar (Pathfinder, Focus, Timeline, Archive) */}
+      <div
+        className="mobile-canvas-actions-bar"
+        style={{
+          position: 'fixed',
+          left: 14,
+          bottom: 16,
+          zIndex: 45,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: isDark ? 'rgba(21, 25, 34, 0.95)' : 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRadius: 14,
+          padding: '5px 8px',
+          border: isDark ? '1px solid rgba(214, 177, 92, 0.45)' : '1px solid rgba(197, 155, 39, 0.45)',
+          boxShadow: isDark
+            ? '0 6px 20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(214, 177, 92, 0.2)'
+            : '0 6px 18px rgba(120, 53, 15, 0.15), 0 0 0 1px rgba(197, 155, 39, 0.2)',
+          pointerEvents: 'auto',
+        }}
+      >
+        {/* 1. Pathfinder */}
+        <button
+          onClick={onOpenPathfinder}
+          className="mobile-canvas-floating-btn"
+          title="Pathfinder (Trace Kinship Path)"
+          aria-label="Pathfinder"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: activePathSummary
+              ? '1.5px solid #f59e0b'
+              : isDark
+              ? '1px solid rgba(214, 177, 92, 0.35)'
+              : '1px solid rgba(180, 83, 9, 0.35)',
+            backgroundColor: activePathSummary
+              ? isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7'
+              : isDark ? 'rgba(214, 177, 92, 0.16)' : '#fffbeb',
+            color: isDark ? '#e5c158' : '#b45309',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            position: 'relative',
+            boxShadow: activePathSummary ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
+          }}
+        >
+          <Compass size={18} />
+          {activePathSummary && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                right: 3,
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                backgroundColor: '#f59e0b',
+                boxShadow: '0 0 6px #f59e0b',
+              }}
+            />
+          )}
+        </button>
 
-          {/* 3. Timeline */}
-          <button
-            onClick={() => onToggleCompactLanes(!compactLanes)}
-            className="mobile-canvas-floating-btn"
-            title={compactLanes ? 'Timeline: Compact' : 'Timeline: All Cohorts'}
-            aria-label="Timeline"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: compactLanes
-                ? '1.5px solid #D6B15C'
-                : isDark
-                ? '1px solid rgba(255, 255, 255, 0.12)'
-                : '1px solid rgba(0, 0, 0, 0.12)',
-              backgroundColor: compactLanes
-                ? isDark ? 'rgba(214, 177, 92, 0.25)' : '#fef3c7'
-                : isDark ? '#151922' : '#f8fafc',
-              color: compactLanes ? (isDark ? '#D6B15C' : '#92400e') : isDark ? '#9BA3AF' : '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: compactLanes ? '0 0 10px rgba(214, 177, 92, 0.4)' : 'none',
-            }}
-          >
-            <Layers size={18} />
-          </button>
+        {/* 2. Focus Mode */}
+        <button
+          onClick={() => onToggleFocusMode(!focusMode)}
+          className="mobile-canvas-floating-btn"
+          title={focusMode ? 'Focus Mode: Active' : 'Focus Mode: Off'}
+          aria-label="Focus Mode"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: focusMode
+              ? '1.5px solid #3b82f6'
+              : isDark
+              ? '1px solid rgba(255, 255, 255, 0.12)'
+              : '1px solid rgba(0, 0, 0, 0.12)',
+            backgroundColor: focusMode
+              ? isDark ? 'rgba(59, 130, 246, 0.3)' : '#eff6ff'
+              : isDark ? '#151922' : '#f8fafc',
+            color: focusMode ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#9BA3AF' : '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: focusMode ? '0 0 10px rgba(59, 130, 246, 0.45)' : 'none',
+          }}
+        >
+          <Eye size={18} />
+        </button>
 
-          {/* 4. Archive */}
-          <button
-            onClick={() => onToggleIncludeArchived(!includeArchived)}
-            className="mobile-canvas-floating-btn"
-            title={includeArchived ? 'Archive: Showing All' : 'Archive: Hidden'}
-            aria-label="Archive"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              border: includeArchived
-                ? '1.5px solid #D6B15C'
-                : isDark
-                ? '1px solid rgba(255, 255, 255, 0.12)'
-                : '1px solid rgba(0, 0, 0, 0.12)',
-              backgroundColor: includeArchived
-                ? isDark ? 'rgba(214, 177, 92, 0.25)' : '#fef3c7'
-                : isDark ? '#151922' : '#f8fafc',
-              color: includeArchived ? '#D6B15C' : isDark ? '#9BA3AF' : '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: includeArchived ? '0 0 10px rgba(214, 177, 92, 0.4)' : 'none',
-            }}
-          >
-            <Archive size={18} />
-          </button>
-        </div>
+        {/* 3. Timeline / Compact */}
+        <button
+          onClick={() => onToggleCompactLanes(!compactLanes)}
+          className="mobile-canvas-floating-btn"
+          title={compactLanes ? 'Timeline: Compact' : 'Timeline: All Cohorts'}
+          aria-label="Timeline"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: compactLanes
+              ? '1.5px solid #D6B15C'
+              : isDark
+              ? '1px solid rgba(255, 255, 255, 0.12)'
+              : '1px solid rgba(0, 0, 0, 0.12)',
+            backgroundColor: compactLanes
+              ? isDark ? 'rgba(214, 177, 92, 0.25)' : '#fef3c7'
+              : isDark ? '#151922' : '#f8fafc',
+            color: compactLanes ? (isDark ? '#D6B15C' : '#92400e') : isDark ? '#9BA3AF' : '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: compactLanes ? '0 0 10px rgba(214, 177, 92, 0.4)' : 'none',
+          }}
+        >
+          <Layers size={18} />
+        </button>
+
+        {/* 4. Archive */}
+        <button
+          onClick={() => onToggleIncludeArchived(!includeArchived)}
+          className="mobile-canvas-floating-btn"
+          title={includeArchived ? 'Archive: Showing All' : 'Archive: Hidden'}
+          aria-label="Archive"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: includeArchived
+              ? '1.5px solid #D6B15C'
+              : isDark
+              ? '1px solid rgba(255, 255, 255, 0.12)'
+              : '1px solid rgba(0, 0, 0, 0.12)',
+            backgroundColor: includeArchived
+              ? isDark ? 'rgba(214, 177, 92, 0.25)' : '#fef3c7'
+              : isDark ? '#151922' : '#f8fafc',
+            color: includeArchived ? '#D6B15C' : isDark ? '#9BA3AF' : '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: includeArchived ? '0 0 10px rgba(214, 177, 92, 0.4)' : 'none',
+          }}
+        >
+          <Archive size={18} />
+        </button>
       </div>
 
       {/* 3. Sleek Floating Active Path Banner (Only when pathfinder result is active) */}

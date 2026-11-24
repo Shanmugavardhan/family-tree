@@ -18,10 +18,14 @@ async function main() {
   const konuGraph = await graphService.buildFamilyGraph({ lineage: 'konukuru' });
   const konuLayout = layoutService.calculateLayout(konuGraph, { compactLanes: false, inferGenerations: true });
   fs.writeFileSync(path.join(publicDataDir, 'layout-konukuru.json'), JSON.stringify(konuLayout, null, 2));
+  const konuCompactLayout = layoutService.calculateLayout(konuGraph, { compactLanes: true, inferGenerations: true });
+  fs.writeFileSync(path.join(publicDataDir, 'layout-konukuru-compact.json'), JSON.stringify(konuCompactLayout, null, 2));
 
   const paraGraph = await graphService.buildFamilyGraph({ lineage: 'paradarami' });
   const paraLayout = layoutService.calculateLayout(paraGraph, { compactLanes: false, inferGenerations: true });
   fs.writeFileSync(path.join(publicDataDir, 'layout-paradarami.json'), JSON.stringify(paraLayout, null, 2));
+  const paraCompactLayout = layoutService.calculateLayout(paraGraph, { compactLanes: true, inferGenerations: true });
+  fs.writeFileSync(path.join(publicDataDir, 'layout-paradarami-compact.json'), JSON.stringify(paraCompactLayout, null, 2));
 
   // 2. Export canonical persons and relationships
   const persons = await repo.getAllPersons(true);
