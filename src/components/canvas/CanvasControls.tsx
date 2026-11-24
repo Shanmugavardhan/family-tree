@@ -431,7 +431,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
         </button>
       </div>
 
-      {/* 4. Mobile Horizontal Floating Action Bar (Pathfinder, Focus, Timeline, Archive) */}
+      {/* 4. Mobile Horizontal Floating Action Bar (Pathfinder, Focus, Archive) */}
       <div
         className="mobile-canvas-actions-bar"
         style={{

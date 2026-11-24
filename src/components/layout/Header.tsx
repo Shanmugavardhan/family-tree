@@ -191,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({ isCanvasPage = false }) => {
 
         {/* Right: Desktop Actions & Member Count (Desktop View Only - Hidden on Mobile via CSS) */}
         <div className="header-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Canvas Actions Slot (Pathfinder, Focus Mode, Timeline, Zoom) */}
+          {/* Canvas Actions Slot (Pathfinder, Focus Mode, Zoom) */}
           <div id="header-canvas-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }} />
 
           {/* Requirement 4: Header Family Code text box */}

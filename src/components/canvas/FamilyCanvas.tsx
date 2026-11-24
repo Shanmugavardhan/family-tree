@@ -267,7 +267,6 @@ const FamilyCanvasInternal: React.FC = () => {
     // Dynamic lineage handling: both Konukuru and Paradarami layouts use the unified deterministic layout engine
     const res = await layoutApi.getLayout({
       includeArchived,
-      compactLanes: true,
       inferGenerations: true,
       lineage: activeLineageId,
     });

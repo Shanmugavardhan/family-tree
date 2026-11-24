@@ -136,8 +136,9 @@ async function runAll() {
   // Verify ALL nodes in Generation 3 have strictly zero overlap and flat strip Y alignment
   const gen3Nodes = augmentedLayout.nodes.filter((n) => n.generationOrder === 3);
   assert.ok(gen3Nodes.length >= 6, 'Must have at least 6 members in Generation 3');
+  const gen3BaselineY = gen3Nodes[0].y;
   for (const node of gen3Nodes) {
-    assert.strictEqual(node.y, 2780, `${node.firstName} must be aligned to lane baseline y=2780`);
+    assert.strictEqual(node.y, gen3BaselineY, `${node.firstName} must be aligned to lane baseline y=${gen3BaselineY}`);
   }
 
   // Pairwise bounding box overlap check

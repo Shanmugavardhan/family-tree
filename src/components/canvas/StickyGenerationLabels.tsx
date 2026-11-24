@@ -122,7 +122,7 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               {lane.name}
             </div>
 
-            {/* Timeline Period ONLY */}
+            {/* Generation Period */}
             <div
               style={{
                 display: 'flex',

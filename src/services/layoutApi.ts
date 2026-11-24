@@ -1,6 +1,6 @@
 import { request } from './apiClient';
 import { ApiResponse } from '../types/api';
-import { FamilyLayout, LayoutOptions, PositionedNode } from '../types/layout';
+import { FamilyLayout, LayoutOptions, PositionedNode, CohortLane } from '../types/layout';
 import { getLocalCustomPersons } from './personApi';
 import { getLocalCustomRelationships } from './relationshipApi';
 
@@ -382,26 +382,62 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
-  // 6. Support compactLanes mode on the fly
-  let finalLanes = baseLayout.lanes;
-  if (options?.compactLanes) {
-    const populatedOrders = new Set(
-      nodes.map((n) => n.generationOrder).filter((g): g is number => typeof g === 'number')
-    );
-    const compactLanesList = baseLayout.lanes.filter((l) => l.order !== null && populatedOrders.has(l.order));
-    if (compactLanesList.length > 0) {
-      let curY = 0;
-      for (const l of compactLanesList) {
-        l.y = curY;
-        curY += l.height;
-      }
-      for (const node of nodes) {
-        const targetLane = compactLanesList.find((l) => l.order === node.generationOrder);
-        if (targetLane) {
-          node.y = targetLane.y + Math.round((targetLane.height - (node.height || 160)) / 2);
-        }
-      }
-      finalLanes = compactLanesList;
+  // 6. Unified active generations: strictly populated cohorts only.
+  // Empty generations (like Gilded, Missionary, Lost, Greatest, Silent, Alpha, Beta when unrepresented)
+  // are permanently omitted from both desktop and mobile views.
+  const populatedOrders = Array.from(
+    new Set(
+      nodes
+        .map((n) => n.generationOrder)
+        .filter((g): g is number => typeof g === 'number')
+    )
+  ).sort((a, b) => a - b);
+
+  const finalLanes: CohortLane[] = [];
+  let curY = 0;
+  for (const order of populatedOrders) {
+    const existingLane = baseLayout.lanes.find((l) => l.order === order);
+    const bandDef = GENERATION_BANDS.find((b) => b.order === order);
+    const laneHeight = existingLane?.height || 440;
+    const lane: CohortLane = {
+      id: existingLane?.id || bandDef?.id || `gen_order_${order}`,
+      name: existingLane?.name || bandDef?.name || `Generation ${order}`,
+      order,
+      y: curY,
+      height: laneHeight,
+      nodeCount: nodes.filter((n) => n.generationOrder === order).length,
+      startYear: existingLane?.startYear ?? bandDef?.start,
+      endYear: existingLane?.endYear ?? bandDef?.end,
+      backgroundColor: existingLane?.backgroundColor,
+      textColor: existingLane?.textColor,
+    };
+    finalLanes.push(lane);
+    curY += laneHeight;
+  }
+
+  // Handle unknown birth year lane if any nodes have null generationOrder
+  const hasUnknownNodes = nodes.some((n) => n.generationOrder === null);
+  if (hasUnknownNodes) {
+    const existingUnknownLane = baseLayout.lanes.find((l) => l.order === null);
+    const laneHeight = existingUnknownLane?.height || 440;
+    finalLanes.push({
+      id: 'unknown_birth_year',
+      name: 'Birth Year Unknown',
+      order: null,
+      y: curY,
+      height: laneHeight,
+      nodeCount: nodes.filter((n) => n.generationOrder === null).length,
+      backgroundColor: '#64748b',
+      textColor: '#ffffff',
+    });
+    curY += laneHeight;
+  }
+
+  // Position nodes within their respective generational lane
+  for (const node of nodes) {
+    const targetLane = finalLanes.find((l) => l.order === node.generationOrder);
+    if (targetLane) {
+      node.y = targetLane.y + Math.round((targetLane.height - (node.height || 160)) / 2);
     }
   }
 
@@ -416,10 +452,7 @@ export function augmentLayoutWithCustomPersons(
     nodes: finalNodes,
     edges,
     width: maxX,
-    height:
-      (options?.compactLanes !== false) && finalLanes.length > 0
-        ? finalLanes[finalLanes.length - 1].y + finalLanes[finalLanes.length - 1].height
-        : baseLayout.height,
+    height: finalLanes.length > 0 ? curY : baseLayout.height,
     metadata: {
       ...baseLayout.metadata,
       width: maxX,
@@ -438,7 +471,7 @@ export const layoutApi = {
       try {
         const query = new URLSearchParams();
         if (options?.includeArchived) query.set('includeArchived', 'true');
-        if (options?.compactLanes !== false) query.set('compactLanes', 'true');
+        query.set('compactLanes', 'true');
         query.set('inferGenerations', (options?.inferGenerations ?? true).toString());
         if (options?.nodeWidth) query.set('nodeWidth', options.nodeWidth.toString());
         if (options?.nodeHeight) query.set('nodeHeight', options.nodeHeight.toString());
@@ -462,13 +495,9 @@ export const layoutApi = {
 
     // 2. In production / static hosting CDN (or local fallback): load pre-rendered static layout directly
     try {
-      const isCompact = options?.compactLanes !== false;
-      const staticUrl = isCompact
-        ? `/data/layout-${lineage}-compact.json?v=${Date.now()}`
-        : `/data/layout-${lineage}.json?v=${Date.now()}`;
+      const staticUrl = `/data/layout-${lineage}-compact.json?v=${Date.now()}`;
       let staticRes = await fetch(staticUrl, { cache: 'no-cache' });
-      if (!staticRes.ok && isCompact) {
-        // Fallback to standard static layout if compact variant not yet on CDN
+      if (!staticRes.ok) {
         staticRes = await fetch(`/data/layout-${lineage}.json?v=${Date.now()}`, { cache: 'no-cache' });
       }
       if (staticRes.ok) {
