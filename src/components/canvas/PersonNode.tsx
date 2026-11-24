@@ -80,6 +80,17 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [nodeData.photoPath, (nodeData as any).photoUrl]);
+
+  const rawPhoto = nodeData.photoPath || (nodeData as any).photoUrl;
+  const resolvedPhotoSrc = rawPhoto
+    ? (rawPhoto.startsWith('http') || rawPhoto.startsWith('data:') || rawPhoto.startsWith('/')
+        ? rawPhoto
+        : `/api/persons/${nodeData.personId || nodeId}/photo`)
+    : null;
+
   // Responsive mobile detection to strictly prevent tiles from crossing generational boundaries
   const [isMobile, setIsMobile] = React.useState(() =>
     typeof window !== 'undefined' ? window.innerWidth <= 768 : false
@@ -342,9 +353,9 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
               >
                 <Lock size={36} color="#D6B15C" />
               </div>
-            ) : nodeData.photoPath && !imageFailed ? (
+            ) : resolvedPhotoSrc && !imageFailed ? (
               <img
-                src={nodeData.photoPath}
+                src={resolvedPhotoSrc}
                 alt={fullName}
                 onError={() => setImageFailed(true)}
                 style={{

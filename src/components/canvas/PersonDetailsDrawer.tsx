@@ -55,6 +55,9 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
 
   React.useEffect(() => {
     setImageFailed(false);
+  }, [activeNode?.photoPath, personId]);
+
+  React.useEffect(() => {
     if (!personId) {
       setPerson(null);
       setRelatives(null);
@@ -160,8 +163,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: isDark ? '#D6B15C' : '#78350f', fontSize: '0.95rem', fontFamily: "'Marcellus', Georgia, serif", fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <span>⚔️</span>
-          <span>Kinship Record</span>
+          <span>Family Member Details</span>
         </div>
         <button
           onClick={onClose}

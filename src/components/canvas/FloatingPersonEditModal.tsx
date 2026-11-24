@@ -559,18 +559,47 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
     e.target.value = '';
   };
 
-  const handleCropComplete = (croppedFile: File, previewUrl: string) => {
+  const handleCropComplete = async (croppedFile: File, previewUrl: string) => {
     setCroppedPhotoFile(croppedFile);
     setPhotoPreviewUrl(previewUrl);
     setPhotoRemoved(false);
     setIsCropperOpen(false);
+
+    // Immediately persist photo to the person record and update canvas tiles
+    if (personId) {
+      try {
+        const uploadRes = await personApi.uploadPhoto(personId, croppedFile);
+        if (uploadRes.success && uploadRes.data?.person) {
+          onSaveSuccess(uploadRes.data.person);
+        } else {
+          // Direct fallback update with previewUrl
+          const updateRes = await personApi.update(personId, { profile_photo: previewUrl });
+          if (updateRes.success && updateRes.data) {
+            onSaveSuccess(updateRes.data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to immediately save photo:', err);
+      }
+    }
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
     setSelectedPhotoFile(null);
     setCroppedPhotoFile(null);
     setPhotoPreviewUrl(null);
     setPhotoRemoved(true);
+
+    if (personId) {
+      try {
+        const deleteRes = await personApi.deletePhoto(personId);
+        if (deleteRes.success && deleteRes.data?.person) {
+          onSaveSuccess(deleteRes.data.person);
+        }
+      } catch (err) {
+        console.error('Failed to immediately delete photo:', err);
+      }
+    }
   };
 
   const validate = (): boolean => {

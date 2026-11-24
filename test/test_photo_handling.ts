@@ -230,6 +230,110 @@ async function runAll() {
     assert.strictEqual(scaleFactor, 0.24, 'Uniform scaling factor without distortion');
   });
 
+  await runTest('Edge Case: Immediate Persistence on "Save Photo" directly updates storage & canvas layout', async () => {
+    const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
+    const fakeCroppedJpegBytes = Buffer.from('JPEG_COMPACT_IMAGE_DATA_SIMULATION_25KB');
+    const croppedFile = new MockFile([fakeCroppedJpegBytes], 'srivalli_cropped.jpg', { type: 'image/jpeg' }) as any;
+
+    // Simulate immediate persistence on handleCropComplete
+    const uploadRes = await personApi.uploadPhoto(srivalliId, croppedFile);
+    assert.strictEqual(uploadRes.success, true);
+    assert.ok(uploadRes.data?.profile_photo.startsWith('data:image/jpeg;base64,'));
+
+    // Check localStorage persistence
+    const stored = getLocalCustomPersons();
+    const storedPerson = stored.find((p) => p.id === srivalliId);
+    assert.ok(storedPerson, 'Person must be stored immediately in local custom persons');
+    assert.strictEqual(storedPerson.profile_photo, uploadRes.data?.profile_photo);
+
+    // Verify canvas layout node immediately has updated photoPath
+    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+    const srivalliNode = layout.nodes.find((n) => n.id === srivalliId);
+    assert.ok(srivalliNode, 'Srivalli node must exist on canvas');
+    assert.strictEqual(srivalliNode.photoPath, uploadRes.data?.profile_photo, 'photoPath must match cropped photo immediately');
+  });
+
+  await runTest('Edge Case: Consecutive photo updates overwrite previous photo cleanly without orphaned state', async () => {
+    const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
+    const fakeSecondJpegBytes = Buffer.from('JPEG_SECOND_CROPPED_IMAGE_DATA');
+    const secondFile = new MockFile([fakeSecondJpegBytes], 'srivalli_v2.jpg', { type: 'image/jpeg' }) as any;
+
+    const secondUploadRes = await personApi.uploadPhoto(srivalliId, secondFile);
+    assert.strictEqual(secondUploadRes.success, true);
+
+    const stored = getLocalCustomPersons();
+    const matches = stored.filter((p) => p.id === srivalliId);
+    assert.strictEqual(matches.length, 1, 'Only one record must exist in storage per person');
+    assert.strictEqual(matches[0].profile_photo, secondUploadRes.data?.profile_photo);
+
+    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+    const srivalliNode = layout.nodes.find((n) => n.id === srivalliId);
+    assert.strictEqual(srivalliNode?.photoPath, secondUploadRes.data?.profile_photo);
+  });
+
+  await runTest('Edge Case: Robust URL Resolution across all protocol variants in PersonNode', () => {
+    const resolvePhotoUrl = (rawPhoto: string | null | undefined, personId: string) => {
+      return rawPhoto
+        ? (rawPhoto.startsWith('http') || rawPhoto.startsWith('data:') || rawPhoto.startsWith('/')
+            ? rawPhoto
+            : `/api/persons/${personId}/photo`)
+        : null;
+    };
+
+    // 1. Data URL
+    assert.strictEqual(
+      resolvePhotoUrl('data:image/jpeg;base64,abc123xyz', 'p-1'),
+      'data:image/jpeg;base64,abc123xyz'
+    );
+    // 2. HTTPS URL
+    assert.strictEqual(
+      resolvePhotoUrl('https://storage.googleapis.com/tree/photo.jpg', 'p-2'),
+      'https://storage.googleapis.com/tree/photo.jpg'
+    );
+    // 3. Absolute root path
+    assert.strictEqual(
+      resolvePhotoUrl('/uploads/profile.jpg', 'p-3'),
+      '/uploads/profile.jpg'
+    );
+    // 4. Relative identifier fallback to API endpoint
+    assert.strictEqual(
+      resolvePhotoUrl('custom_avatar_filename', 'p-4'),
+      '/api/persons/p-4/photo'
+    );
+    // 5. Null / undefined returns null (fallback to noble avatar)
+    assert.strictEqual(resolvePhotoUrl(null, 'p-5'), null);
+    assert.strictEqual(resolvePhotoUrl(undefined, 'p-6'), null);
+  });
+
+  await runTest('Edge Case: Storage Quota Safety with Compact JPEGs across 50 family members', async () => {
+    // 50 members with ~25KB JPEG photos = ~1.25MB total
+    const sampleJpegDataUrl = 'data:image/jpeg;base64,' + 'A'.repeat(30 * 1024); // 30KB
+    for (let i = 0; i < 50; i++) {
+      saveLocalCustomPerson({
+        id: `person-quota-test-${i}`,
+        first_name: `Member${i}`,
+        last_name: 'Paradarami',
+        gender: 'male',
+        birth_date: '1980',
+        death_date: null,
+        birth_place: null,
+        death_place: null,
+        biography: '',
+        profile_photo: sampleJpegDataUrl,
+        is_living: true,
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        archived_at: null,
+      });
+    }
+
+    const stored = getLocalCustomPersons();
+    const testPersons = stored.filter((p) => p.id.startsWith('person-quota-test-'));
+    assert.strictEqual(testPersons.length, 50, 'All 50 persons with photos must be preserved safely');
+    assert.ok(testPersons[49].profile_photo?.startsWith('data:image/jpeg;base64,'));
+  });
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);

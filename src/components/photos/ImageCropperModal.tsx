@@ -218,15 +218,16 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     exportCanvas.toBlob(
       (blob) => {
         if (!blob) return;
-        const croppedFile = new File([blob], imageFile?.name || 'profile_cropped.png', {
-          type: 'image/png',
+        const fileName = (imageFile?.name ? imageFile.name.replace(/\.[^.]+$/, '') : 'profile_cropped') + '.jpg';
+        const croppedFile = new File([blob], fileName, {
+          type: 'image/jpeg',
         });
-        const previewUrl = exportCanvas.toDataURL('image/png');
+        const previewUrl = exportCanvas.toDataURL('image/jpeg', 0.88);
         onCropComplete(croppedFile, previewUrl);
         onClose();
       },
-      'image/png',
-      0.95
+      'image/jpeg',
+      0.88
     );
   };
 
