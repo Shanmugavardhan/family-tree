@@ -6,7 +6,6 @@ import {
   ZoomOut,
   Maximize2,
   Search,
-  Layers,
   Archive,
   Eye,
   Navigation,
@@ -20,8 +19,6 @@ interface CanvasControlsProps {
   nodes: PositionedNode[];
   includeArchived: boolean;
   onToggleIncludeArchived: (val: boolean) => void;
-  compactLanes: boolean;
-  onToggleCompactLanes: (val: boolean) => void;
   onSelectPerson: (personId: string) => void;
   focusMode: boolean;
   onToggleFocusMode: (val: boolean) => void;
@@ -35,8 +32,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   nodes,
   includeArchived,
   onToggleIncludeArchived,
-  compactLanes,
-  onToggleCompactLanes,
   onSelectPerson,
   focusMode,
   onToggleFocusMode,
@@ -276,31 +271,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           >
             <Eye size={14} />
             <span>{focusMode ? 'Focus On' : 'Focus'}</span>
-          </button>
-
-          {/* Toggle Compact Lanes */}
-          <button
-            onClick={() => onToggleCompactLanes(!compactLanes)}
-            title={compactLanes ? 'Showing only represented cohorts' : 'Showing all timeline cohorts'}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '6px 10px',
-              borderRadius: 8,
-              border: isDark ? '1px solid #343D49' : '1px solid rgba(0, 0, 0, 0.12)',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '0.8rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              backgroundColor: compactLanes
-                ? isDark ? 'rgba(214, 177, 92, 0.2)' : '#fef3c7'
-                : isDark ? '#151922' : '#f8fafc',
-              color: compactLanes ? (isDark ? '#D6B15C' : '#92400e') : isDark ? '#9BA3AF' : '#64748b',
-            }}
-          >
-            <Layers size={14} />
-            <span>{compactLanes ? 'Compact' : 'Timeline'}</span>
           </button>
 
           {/* Toggle Include Archived */}
@@ -558,36 +528,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           <Eye size={18} />
         </button>
 
-        {/* 3. Timeline / Compact */}
-        <button
-          onClick={() => onToggleCompactLanes(!compactLanes)}
-          className="mobile-canvas-floating-btn"
-          title={compactLanes ? 'Timeline: Compact' : 'Timeline: All Cohorts'}
-          aria-label="Timeline"
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 10,
-            border: compactLanes
-              ? '1.5px solid #D6B15C'
-              : isDark
-              ? '1px solid rgba(255, 255, 255, 0.12)'
-              : '1px solid rgba(0, 0, 0, 0.12)',
-            backgroundColor: compactLanes
-              ? isDark ? 'rgba(214, 177, 92, 0.25)' : '#fef3c7'
-              : isDark ? '#151922' : '#f8fafc',
-            color: compactLanes ? (isDark ? '#D6B15C' : '#92400e') : isDark ? '#9BA3AF' : '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: compactLanes ? '0 0 10px rgba(214, 177, 92, 0.4)' : 'none',
-          }}
-        >
-          <Layers size={18} />
-        </button>
-
-        {/* 4. Archive */}
+        {/* 3. Archive */}
         <button
           onClick={() => onToggleIncludeArchived(!includeArchived)}
           className="mobile-canvas-floating-btn"

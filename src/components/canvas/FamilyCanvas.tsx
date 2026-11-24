@@ -161,9 +161,6 @@ const FamilyCanvasInternal: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
 
   const [includeArchived, setIncludeArchived] = React.useState(false);
-  const [compactLanes, setCompactLanes] = React.useState(
-    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
-  );
   
   // Requirement 9: MiniMap visible strictly during zoom activity only
   const [isZooming, setIsZooming] = React.useState(false);
@@ -270,7 +267,7 @@ const FamilyCanvasInternal: React.FC = () => {
     // Dynamic lineage handling: both Konukuru and Paradarami layouts use the unified deterministic layout engine
     const res = await layoutApi.getLayout({
       includeArchived,
-      compactLanes,
+      compactLanes: true,
       inferGenerations: true,
       lineage: activeLineageId,
     });
@@ -281,7 +278,7 @@ const FamilyCanvasInternal: React.FC = () => {
       setError(res.error?.message || 'Failed to load family tree layout');
     }
     setLoading(false);
-  }, [activeLineageId, includeArchived, compactLanes]);
+  }, [activeLineageId, includeArchived]);
 
   React.useEffect(() => {
     fetchLayout();
@@ -878,8 +875,6 @@ const FamilyCanvasInternal: React.FC = () => {
         nodes={layout?.nodes || []}
         includeArchived={includeArchived}
         onToggleIncludeArchived={setIncludeArchived}
-        compactLanes={compactLanes}
-        onToggleCompactLanes={setCompactLanes}
         onSelectPerson={(id) => {
           selectPerson(id, true);
           if (layout) {

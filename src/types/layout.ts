@@ -13,10 +13,17 @@ export interface PositionedNode {
   firstName?: string;
   middleName?: string | null;
   lastName?: string | null;
+  fullName?: string;
+  alias?: string | null;
+  biography?: string | null;
+  birthPlace?: string | null;
+  deathPlace?: string | null;
   birthDate?: string | null;
+  deathDate?: string | null;
   birthYear?: number | null;
   generationName?: string | null;
   photoPath?: string | null;
+  photoUrl?: string | null;
   gender?: string;
   isLiving?: boolean;
   isArchived?: boolean;

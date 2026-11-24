@@ -482,6 +482,138 @@ async function runAll() {
   assert.ok(res.data.path.some((p) => p.includes('Ramayya')), 'Path must include shared parent Ramayya');
 });
 
+  await runTest('Edit Member Details: Editing existing pre-seeded person (Ramayya Chetty) updates profile & canvas node', async () => {
+  const { personApi } = await import('../src/services/personApi');
+  const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
+
+  // 1. Update Ramayya Chetty's details (alias, biography, birth_place)
+  const updateRes = await personApi.update(ramayyaId, {
+    alias: 'Pedda Ayya',
+    biography: 'Respected patriarch and founder of the Paradarami family estate.',
+    birth_place: 'Paradarami Heritage House',
+  });
+
+  assert.strictEqual(updateRes.success, true, 'personApi.update must succeed for existing pre-seeded person');
+  assert.ok(updateRes.data, 'Updated person data must be returned');
+  assert.strictEqual(updateRes.data.alias, 'Pedda Ayya', 'Alias must be updated');
+  assert.strictEqual(
+    updateRes.data.biography,
+    'Respected patriarch and founder of the Paradarami family estate.',
+    'Biography must be updated'
+  );
+  assert.strictEqual(updateRes.data.birth_place, 'Paradarami Heritage House', 'Birth place must be updated');
+
+  // 2. Verify personApi.getById returns the updated person
+  const getByIdRes = await personApi.getById(ramayyaId);
+  assert.strictEqual(getByIdRes.success, true);
+  assert.strictEqual(getByIdRes.data?.alias, 'Pedda Ayya', 'getById must return updated alias');
+  assert.strictEqual(getByIdRes.data?.birth_place, 'Paradarami Heritage House', 'getById must return updated birth place');
+
+  // 3. Verify personApi.getAll returns the updated person
+  const getAllRes = await personApi.getAll();
+  assert.strictEqual(getAllRes.success, true);
+  const foundInAll = getAllRes.data?.find((p) => p.id === ramayyaId);
+  assert.ok(foundInAll, 'Ramayya Chetty must be present in getAll');
+  assert.strictEqual(foundInAll.alias, 'Pedda Ayya', 'getAll must return updated alias');
+
+  // 4. Verify canvas layout node is updated with edited properties
+  const paraCompact: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  );
+  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+  const ramayyaNode = augmented.nodes.find((n) => n.id === ramayyaId);
+
+  assert.ok(ramayyaNode, 'Ramayya Chetty node must exist on canvas');
+  assert.strictEqual(ramayyaNode.alias, 'Pedda Ayya', 'Canvas node must reflect updated alias');
+  assert.strictEqual(
+    ramayyaNode.biography,
+    'Respected patriarch and founder of the Paradarami family estate.',
+    'Canvas node must reflect updated biography'
+  );
+  assert.strictEqual(ramayyaNode.birthPlace, 'Paradarami Heritage House', 'Canvas node must reflect updated birth place');
+
+  // 5. Verify relationship integrity is preserved after edit
+  const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
+  const relRes = await personApi.getRelationshipTo(srivalliId, ramayyaId);
+  assert.strictEqual(relRes.success, true);
+  assert.strictEqual(relRes.data?.relationship, 'Father', 'Srivalli relationship to Ramayya must remain Father');
+  assert.strictEqual(relRes.data?.reverse_relationship, 'Daughter', 'Ramayya reverse relationship to Srivalli must remain Daughter');
+});
+
+  await runTest('Edit Member Details: Editing custom-added person updates persistent storage and layout node', async () => {
+  const { personApi } = await import('../src/services/personApi');
+  const customId = 'surendrababu-paradarami-uuid';
+
+  // Update Surendrababu's details
+  const updateRes = await personApi.update(customId, {
+    alias: 'Babu',
+    biography: 'Custom biography updated via edit member form',
+    birth_place: 'Paradarami Town',
+  });
+
+  assert.strictEqual(updateRes.success, true, 'personApi.update must succeed for custom added person');
+  assert.strictEqual(updateRes.data?.alias, 'Babu', 'Custom person alias must be updated');
+  assert.strictEqual(updateRes.data?.biography, 'Custom biography updated via edit member form', 'Custom biography must be updated');
+
+  // Verify getById
+  const getByIdRes = await personApi.getById(customId);
+  assert.strictEqual(getByIdRes.success, true);
+  assert.strictEqual(getByIdRes.data?.alias, 'Babu');
+
+  // Verify layout node
+  const paraCompact: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  );
+  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+  const customNode = augmented.nodes.find((n) => n.id === customId);
+  assert.ok(customNode, 'Custom node must exist on canvas');
+  assert.strictEqual(customNode.alias, 'Babu', 'Canvas node must reflect updated alias for custom member');
+  assert.strictEqual(customNode.biography, 'Custom biography updated via edit member form');
+});
+
+  await runTest('Edit Member Details: Non-existent person update returns PERSON_NOT_FOUND', async () => {
+  const { personApi } = await import('../src/services/personApi');
+  const res = await personApi.update('non-existent-uuid-12345', {
+    alias: 'Ghost',
+  });
+
+  assert.strictEqual(res.success, false, 'Update on non-existent person must fail');
+  assert.strictEqual(res.error?.code, 'PERSON_NOT_FOUND', 'Error code must be PERSON_NOT_FOUND');
+});
+
+  await runTest('Default Compact View: Canvas defaults to compact lanes without empty generational cohorts', () => {
+  const paraCompact: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  );
+  const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+
+  // In compact mode, empty cohorts (e.g. Greatest Generation 1901-1927, Silent Generation 1928-1945) must not be rendered
+  const laneNames = layout.lanes.map((l) => l.name);
+  assert.ok(laneNames.includes('Baby Boomers'), 'Baby Boomers cohort must be present');
+  assert.ok(laneNames.includes('Generation X'), 'Generation X cohort must be present');
+  assert.ok(laneNames.includes('Generation Z'), 'Generation Z cohort must be present');
+  assert.strictEqual(
+    laneNames.includes('Greatest Generation'),
+    false,
+    'Empty Greatest Generation must be omitted in compact mode'
+  );
+  assert.strictEqual(
+    laneNames.includes('Silent Generation'),
+    false,
+    'Empty Silent Generation must be omitted in compact mode'
+  );
+  assert.strictEqual(
+    laneNames.includes('Generation Alpha'),
+    false,
+    'Empty Generation Alpha must be omitted in compact mode'
+  );
+  assert.strictEqual(
+    laneNames.includes('Generation Beta'),
+    false,
+    'Empty Generation Beta must be omitted in compact mode'
+  );
+});
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);

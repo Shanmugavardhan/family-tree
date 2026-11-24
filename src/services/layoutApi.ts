@@ -9,6 +9,21 @@ const isLocal =
   (window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1');
 
+// Historical generation bands (Order & Epochs)
+export const GENERATION_BANDS = [
+  { id: 'ancestral_gilded', name: 'Gilded Generation', start: 1843, end: 1859, order: -3 },
+  { id: 'missionary', name: 'Missionary Generation', start: 1860, end: 1882, order: -2 },
+  { id: 'lost', name: 'Lost Generation', start: 1883, end: 1900, order: -1 },
+  { id: 'greatest', name: 'Greatest Generation', start: 1901, end: 1927, order: 0 },
+  { id: 'silent', name: 'Silent Generation', start: 1928, end: 1945, order: 1 },
+  { id: 'baby_boomers', name: 'Baby Boomers', start: 1946, end: 1964, order: 2 },
+  { id: 'gen_x', name: 'Generation X', start: 1965, end: 1980, order: 3 },
+  { id: 'millennials', name: 'Millennials (Gen Y)', start: 1981, end: 1996, order: 4 },
+  { id: 'gen_z', name: 'Generation Z', start: 1997, end: 2012, order: 5 },
+  { id: 'gen_alpha', name: 'Generation Alpha', start: 2013, end: 2024, order: 6 },
+  { id: 'gen_beta', name: 'Generation Beta', start: 2025, end: 2039, order: 7 },
+];
+
 export function augmentLayoutWithCustomPersons(
   baseLayout: FamilyLayout,
   lineage: string,
@@ -24,9 +39,45 @@ export function augmentLayoutWithCustomPersons(
   const baseNodeIds = new Set(baseLayout.nodes.map((n) => n.id));
 
   if (customPersons.length > 0) {
+    for (const person of customPersons) {
+      if (existingNodeIds.has(person.id)) {
+        // It's an existing node that was edited: update node attributes
+        const existingNode = nodes.find((n) => n.id === person.id);
+        if (existingNode) {
+          if (person.first_name !== undefined) existingNode.firstName = person.first_name;
+          if (person.last_name !== undefined) existingNode.lastName = person.last_name;
+          existingNode.fullName = [person.first_name, person.middle_name, person.last_name].filter(Boolean).join(' ');
+          if (person.alias !== undefined) existingNode.alias = person.alias || undefined;
+          if (person.gender !== undefined) existingNode.gender = person.gender;
+          if (person.birth_date !== undefined) existingNode.birthDate = person.birth_date || undefined;
+          if (person.death_date !== undefined) existingNode.deathDate = person.death_date || undefined;
+          if (person.birth_place !== undefined) existingNode.birthPlace = person.birth_place || undefined;
+          if (person.death_place !== undefined) existingNode.deathPlace = person.death_place || undefined;
+          if (person.biography !== undefined) existingNode.biography = person.biography || undefined;
+          if (person.is_living !== undefined) existingNode.isLiving = person.is_living;
+          if (person.profile_photo !== undefined) {
+            existingNode.photoUrl = person.profile_photo || undefined;
+            existingNode.photoPath = person.profile_photo || null;
+          }
+          if (person.is_archived !== undefined) existingNode.isArchived = person.is_archived;
 
-  for (const person of customPersons) {
-    if (existingNodeIds.has(person.id)) continue;
+          // If birth date changed, update generation cohort
+          if (person.birth_date) {
+            const bYear = parseInt(person.birth_date.slice(0, 4), 10);
+            if (!isNaN(bYear) && bYear > 1800 && bYear < 2100) {
+              const matchedBand = GENERATION_BANDS.find(
+                (b) => bYear >= b.start && bYear <= b.end
+              );
+              if (matchedBand) {
+                existingNode.generationOrder = matchedBand.order;
+                existingNode.generationId = matchedBand.id;
+                existingNode.generationName = matchedBand.name;
+              }
+            }
+          }
+        }
+        continue;
+      }
 
     // Check all relationships for this person
     const personRels = customRels.filter(
@@ -84,21 +135,6 @@ export function augmentLayoutWithCustomPersons(
         birthYear !== null && !isNaN(birthYear) && birthYear > 1800 && birthYear < 2100
           ? birthYear
           : null;
-
-      // Historical generation bands (Order & Epochs)
-      const GENERATION_BANDS = [
-        { id: 'ancestral_gilded', name: 'Gilded Generation', start: 1843, end: 1859, order: -3 },
-        { id: 'missionary', name: 'Missionary Generation', start: 1860, end: 1882, order: -2 },
-        { id: 'lost', name: 'Lost Generation', start: 1883, end: 1900, order: -1 },
-        { id: 'greatest', name: 'Greatest Generation', start: 1901, end: 1927, order: 0 },
-        { id: 'silent', name: 'Silent Generation', start: 1928, end: 1945, order: 1 },
-        { id: 'baby_boomers', name: 'Baby Boomers', start: 1946, end: 1964, order: 2 },
-        { id: 'gen_x', name: 'Generation X', start: 1965, end: 1980, order: 3 },
-        { id: 'millennials', name: 'Millennials (Gen Y)', start: 1981, end: 1996, order: 4 },
-        { id: 'gen_z', name: 'Generation Z', start: 1997, end: 2012, order: 5 },
-        { id: 'gen_alpha', name: 'Generation Alpha', start: 2013, end: 2024, order: 6 },
-        { id: 'gen_beta', name: 'Generation Beta', start: 2025, end: 2039, order: 7 },
-      ];
 
       let genOrder: number;
       let genId: string;
@@ -165,7 +201,12 @@ export function augmentLayoutWithCustomPersons(
         firstName: person.first_name,
         middleName: person.middle_name || null,
         lastName: person.last_name || null,
+        alias: person.alias || undefined,
+        biography: person.biography || undefined,
+        birthPlace: person.birth_place || undefined,
+        deathPlace: person.death_place || undefined,
         birthDate: person.birth_date || null,
+        deathDate: person.death_date || undefined,
         birthYear: validBirthYear,
         generationId: genId,
         generationOrder: genOrder,
@@ -363,20 +404,25 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
+  let finalNodes = nodes;
+  if (!options?.includeArchived) {
+    finalNodes = finalNodes.filter((n) => !n.isArchived);
+  }
+
   return {
     ...baseLayout,
     lanes: finalLanes,
-    nodes,
+    nodes: finalNodes,
     edges,
     width: maxX,
     height:
-      options?.compactLanes && finalLanes.length > 0
+      (options?.compactLanes !== false) && finalLanes.length > 0
         ? finalLanes[finalLanes.length - 1].y + finalLanes[finalLanes.length - 1].height
         : baseLayout.height,
     metadata: {
       ...baseLayout.metadata,
       width: maxX,
-      totalNodes: nodes.length,
+      totalNodes: finalNodes.length,
       totalEdges: edges.length,
     },
   };
@@ -391,7 +437,7 @@ export const layoutApi = {
       try {
         const query = new URLSearchParams();
         if (options?.includeArchived) query.set('includeArchived', 'true');
-        if (options?.compactLanes) query.set('compactLanes', 'true');
+        if (options?.compactLanes !== false) query.set('compactLanes', 'true');
         query.set('inferGenerations', (options?.inferGenerations ?? true).toString());
         if (options?.nodeWidth) query.set('nodeWidth', options.nodeWidth.toString());
         if (options?.nodeHeight) query.set('nodeHeight', options.nodeHeight.toString());
@@ -401,7 +447,7 @@ export const layoutApi = {
         const queryString = query.toString();
         const apiResult = await request<FamilyLayout>(`/layout${queryString ? `?${queryString}` : ''}`);
         if (apiResult.success && apiResult.data) {
-          const augmented = augmentLayoutWithCustomPersons(apiResult.data, lineage);
+          const augmented = augmentLayoutWithCustomPersons(apiResult.data, lineage, options);
           return {
             success: true,
             data: augmented,
@@ -415,7 +461,7 @@ export const layoutApi = {
 
     // 2. In production / static hosting CDN (or local fallback): load pre-rendered static layout directly
     try {
-      const isCompact = Boolean(options?.compactLanes);
+      const isCompact = options?.compactLanes !== false;
       const staticUrl = isCompact
         ? `/data/layout-${lineage}-compact.json?v=${Date.now()}`
         : `/data/layout-${lineage}.json?v=${Date.now()}`;

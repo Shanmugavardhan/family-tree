@@ -23,6 +23,15 @@ export function getLocalCustomRelationships(): Relationship[] {
   return [];
 }
 
+export function deleteLocalCustomRelationship(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalCustomRelationships();
+    const filtered = list.filter((r) => r.id !== id);
+    localStorage.setItem(LOCAL_CUSTOM_RELATIONSHIPS_KEY, JSON.stringify(filtered));
+  } catch {}
+}
+
 export function saveLocalCustomRelationship(rel: Relationship): void {
   if (typeof window === 'undefined') return;
   try {
@@ -178,11 +187,15 @@ export const relationshipApi = {
 
   delete: async (id: string): Promise<ApiResponse<{ deleted: true; id: string }>> => {
     if (isLocal) {
-      return request<{ deleted: true; id: string }>(`/relationships/${id}`, {
-        method: 'DELETE',
-      });
+      try {
+        const res = await request<{ deleted: true; id: string }>(`/relationships/${id}`, {
+          method: 'DELETE',
+        });
+        if (res.success && res.data) return res;
+      } catch {}
     }
 
+    deleteLocalCustomRelationship(id);
     if (cachedRelationships) {
       cachedRelationships = cachedRelationships.filter((r) => r.id !== id);
     }

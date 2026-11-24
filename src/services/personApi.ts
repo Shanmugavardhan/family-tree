@@ -273,6 +273,7 @@ export const personApi = {
   },
 
   update: async (id: string, data: UpdatePersonInput): Promise<ApiResponse<Person>> => {
+    let serverPerson: Person | null = null;
     if (isLocal) {
       try {
         const res = await request<Person>(`/persons/${id}`, {
@@ -280,60 +281,97 @@ export const personApi = {
           body: JSON.stringify(data),
         });
         if (res.success && res.data) {
-          return res;
+          serverPerson = res.data;
         }
       } catch {}
     }
 
     const list = await loadStaticPersons();
-    const found = list.find((p) => p.id === id);
-    if (!found) {
+    const localList = getLocalCustomPersons();
+    const found = localList.find((p) => p.id === id) || list.find((p) => p.id === id);
+    if (!found && !serverPerson) {
       return { success: false, data: null, error: { code: 'PERSON_NOT_FOUND', message: 'Person not found' } };
     }
-    Object.assign(found, data, { updated_at: new Date().toISOString() });
-    return { success: true, data: found, error: null };
+
+    const updated: Person = serverPerson || {
+      ...found!,
+      ...data,
+      updated_at: new Date().toISOString(),
+    };
+
+    saveLocalCustomPerson(updated);
+
+    if (cachedPersons) {
+      const idx = cachedPersons.findIndex((p) => p.id === id);
+      if (idx >= 0) cachedPersons[idx] = updated;
+      else cachedPersons.push(updated);
+    }
+
+    return { success: true, data: updated, error: null };
   },
 
   archive: async (id: string): Promise<ApiResponse<Person>> => {
+    let serverPerson: Person | null = null;
     if (isLocal) {
       try {
         const res = await request<Person>(`/persons/${id}/archive`, {
           method: 'POST',
         });
         if (res.success && res.data) {
-          return res;
+          serverPerson = res.data;
         }
       } catch {}
     }
 
     const list = await loadStaticPersons();
-    const found = list.find((p) => p.id === id);
-    if (found) {
-      found.is_archived = true;
-      found.archived_at = new Date().toISOString();
-      return { success: true, data: found, error: null };
+    const localList = getLocalCustomPersons();
+    const found = localList.find((p) => p.id === id) || list.find((p) => p.id === id);
+    if (found || serverPerson) {
+      const updated: Person = serverPerson || {
+        ...found!,
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      saveLocalCustomPerson(updated);
+      if (cachedPersons) {
+        const idx = cachedPersons.findIndex((p) => p.id === id);
+        if (idx >= 0) cachedPersons[idx] = updated;
+      }
+      return { success: true, data: updated, error: null };
     }
     return { success: false, data: null, error: { code: 'PERSON_NOT_FOUND', message: 'Person not found' } };
   },
 
   restore: async (id: string): Promise<ApiResponse<Person>> => {
+    let serverPerson: Person | null = null;
     if (isLocal) {
       try {
         const res = await request<Person>(`/persons/${id}/restore`, {
           method: 'POST',
         });
         if (res.success && res.data) {
-          return res;
+          serverPerson = res.data;
         }
       } catch {}
     }
 
     const list = await loadStaticPersons();
-    const found = list.find((p) => p.id === id);
-    if (found) {
-      found.is_archived = false;
-      found.archived_at = null;
-      return { success: true, data: found, error: null };
+    const localList = getLocalCustomPersons();
+    const found = localList.find((p) => p.id === id) || list.find((p) => p.id === id);
+    if (found || serverPerson) {
+      const updated: Person = serverPerson || {
+        ...found!,
+        is_archived: false,
+        archived_at: null,
+        updated_at: new Date().toISOString(),
+      };
+      saveLocalCustomPerson(updated);
+      if (cachedPersons) {
+        const idx = cachedPersons.findIndex((p) => p.id === id);
+        if (idx >= 0) cachedPersons[idx] = updated;
+      }
+      return { success: true, data: updated, error: null };
     }
     return { success: false, data: null, error: { code: 'PERSON_NOT_FOUND', message: 'Person not found' } };
   },
