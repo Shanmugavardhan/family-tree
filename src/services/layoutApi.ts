@@ -107,7 +107,10 @@ export function augmentLayoutWithCustomPersons(
 
       // 2. Determine initial candidate X
       let targetX = 700;
-      if (existingInGen.length > 0) {
+      if (isPersonSpouse && relativeNode) {
+        // Spouses must be placed side-by-side with partner
+        targetX = relativeNode.x + (relativeNode.width || 190) + 130;
+      } else if (existingInGen.length > 0) {
         // Place safely to the right of all existing members in this generation strip
         const maxXInLane = Math.max(...existingInGen.map((n) => n.x + (n.width || 190)));
         targetX = maxXInLane + 120;
@@ -176,8 +179,9 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
-  // 3. DETERMINISTIC GLOBAL COLLISION RESOLUTION PASS
-  // Guarantees zero overlapping tiles in any generational strip
+  // 3. DETERMINISTIC SPOUSE SIDE-BY-SIDE REARRANGEMENT & NON-OVERLAP PASS
+  // Rule: Any spouse relationships MUST stay side-by-side only with no intermediate nodes.
+  // The generational strip rearranges dynamically to accommodate the couple unit.
   const genGroups = new Map<number, PositionedNode[]>();
   for (const node of nodes) {
     const order = node.generationOrder ?? 0;
@@ -187,37 +191,90 @@ export function augmentLayoutWithCustomPersons(
     genGroups.get(order)!.push(node);
   }
 
+  const SPOUSE_GAP = 130; // 190px card + 130px gap = 320px standard couple spacing
+  const MIN_UNIT_GAP = 150; // Minimum gap between distinct family units
+
   for (const [_order, laneNodes] of genGroups) {
     if (laneNodes.length <= 1) continue;
 
-    // Unify Y coordinate to lane baseline
+    // A. Unify Y coordinate to lane baseline
     const baseNodes = laneNodes.filter((n) => baseNodeIds.has(n.id));
     const baselineY = baseNodes.length > 0 ? baseNodes[0].y : laneNodes[0].y;
     for (const node of laneNodes) {
       node.y = baselineY;
     }
 
-    // Sort left to right; if coordinates are close, base nodes precede custom nodes
-    laneNodes.sort((a, b) => {
-      if (Math.abs(a.x - b.x) < 30) {
-        const aIsBase = baseNodeIds.has(a.id);
-        const bIsBase = baseNodeIds.has(b.id);
-        if (aIsBase && !bIsBase) return -1;
-        if (!aIsBase && bIsBase) return 1;
+    // B. Group nodes into Couple Units and Single Units
+    const visited = new Set<string>();
+    interface LayoutUnit {
+      type: 'couple' | 'single';
+      members: PositionedNode[];
+      anchorX: number;
+    }
+    const units: LayoutUnit[] = [];
+
+    // Sort laneNodes by X first
+    laneNodes.sort((a, b) => a.x - b.x);
+
+    for (const node of laneNodes) {
+      if (visited.has(node.id)) continue;
+
+      const spEdge = edges.find(
+        (e) => e.type === 'spouse' && (e.source === node.id || e.target === node.id)
+      );
+
+      let spouseNode: PositionedNode | undefined;
+      if (spEdge) {
+        const otherId = spEdge.source === node.id ? spEdge.target : spEdge.source;
+        spouseNode = laneNodes.find((n) => n.id === otherId);
       }
-      return a.x - b.x;
-    });
 
-    // Sequential non-overlap sweep: minimum 80px gap between cards
-    const MIN_GAP = 80;
-    for (let i = 0; i < laneNodes.length - 1; i++) {
-      const current = laneNodes[i];
-      const next = laneNodes[i + 1];
-      const currentWidth = current.width || 190;
-      const minRequiredX = current.x + currentWidth + MIN_GAP;
+      if (spouseNode && !visited.has(spouseNode.id)) {
+        visited.add(node.id);
+        visited.add(spouseNode.id);
 
-      if (next.x < minRequiredX) {
-        next.x = minRequiredX;
+        // Keep order: prioritize existing base member first, otherwise preserve relative X
+        const pair = [node, spouseNode].sort((a, b) => {
+          const aIsBase = baseNodeIds.has(a.id);
+          const bIsBase = baseNodeIds.has(b.id);
+          if (aIsBase && !bIsBase) return -1;
+          if (!aIsBase && bIsBase) return 1;
+          return a.x - b.x;
+        });
+
+        units.push({
+          type: 'couple',
+          members: pair,
+          anchorX: pair[0].x,
+        });
+      } else {
+        visited.add(node.id);
+        units.push({
+          type: 'single',
+          members: [node],
+          anchorX: node.x,
+        });
+      }
+    }
+
+    // Sort all units by their anchorX
+    units.sort((a, b) => a.anchorX - b.anchorX);
+
+    // C. Sequentially arrange units along the strip, guaranteeing spouses are strictly adjacent
+    let currentX = units[0].anchorX;
+    for (let uIdx = 0; uIdx < units.length; uIdx++) {
+      const unit = units[uIdx];
+      if (unit.anchorX > currentX) {
+        currentX = unit.anchorX;
+      }
+
+      if (unit.type === 'couple') {
+        unit.members[0].x = currentX;
+        unit.members[1].x = currentX + (unit.members[0].width || 190) + SPOUSE_GAP;
+        currentX = unit.members[1].x + (unit.members[1].width || 190) + MIN_UNIT_GAP;
+      } else {
+        unit.members[0].x = currentX;
+        currentX = unit.members[0].x + (unit.members[0].width || 190) + MIN_UNIT_GAP;
       }
     }
   }

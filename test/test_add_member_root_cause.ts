@@ -186,6 +186,75 @@ runTest('Root Cause Fix: parseFullName auto-segregates single input into first, 
   assert.strictEqual(t4.lastName, 'Konukuru');
 });
 
+runTest('Spouse Side-by-Side Rearrangement: Narayanaswamy A sits directly beside Srivalli and Subramanyam rearranges rightwards', () => {
+  // Add Narayanaswamy A as spouse of Srivalli Narayanaswamy
+  const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
+  const narayanaswamy: Person = {
+    id: 'narayanaswamy-test-uuid',
+    first_name: 'Narayanaswamy',
+    middle_name: null,
+    last_name: 'A',
+    alias: null,
+    gender: 'male',
+    birth_date: '1970',
+    death_date: null,
+    birth_place: 'Paradarami',
+    death_place: null,
+    profile_photo: null,
+    biography: 'Husband of Srivalli Narayanaswamy',
+    is_living: true,
+    is_archived: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    archived_at: null,
+  };
+
+  saveLocalCustomPerson(narayanaswamy);
+
+  const spouseRel: Relationship = {
+    id: 'rel-srivalli-narayanaswamy',
+    person_id: 'narayanaswamy-test-uuid',
+    related_person_id: srivalliId,
+    relationship_type: 'spouse',
+    parent_type: null,
+    start_date: null,
+    end_date: null,
+    notes: null,
+    created_at: new Date().toISOString(),
+  };
+
+  saveLocalCustomRelationship(spouseRel);
+
+  const layout = augmentLayoutWithCustomPersons(baseParadaramiLayout, 'paradarami');
+
+  const srivalli = layout.nodes.find((n) => n.id === srivalliId);
+  const narayana = layout.nodes.find((n) => n.id === 'narayanaswamy-test-uuid');
+  const subramanyam = layout.nodes.find((n) => n.id === 'subramanyam-test-uuid');
+
+  assert.ok(srivalli, 'Srivalli must exist');
+  assert.ok(narayana, 'Narayanaswamy A must exist');
+  assert.ok(subramanyam, 'Subramanyam must exist');
+
+  // Rule: Spouses MUST be side-by-side with no intermediate node between them!
+  const spouseDistance = Math.abs(narayana.x - srivalli.x);
+  assert.strictEqual(spouseDistance, 320, 'Spouses must sit side-by-side at standard couple spacing (320px)');
+
+  // Rule: Subramanyam must be rearranged to the right of the couple
+  const coupleRightEdge = Math.max(srivalli.x, narayana.x) + 190;
+  assert.ok(
+    subramanyam.x >= coupleRightEdge,
+    `Subramanyam (${subramanyam.x}) must be to the right of the Srivalli-Narayanaswamy couple (${coupleRightEdge})`
+  );
+
+  // Check no other node sits between Srivalli and Narayanaswamy
+  const minSpouseX = Math.min(srivalli.x, narayana.x);
+  const maxSpouseX = Math.max(srivalli.x, narayana.x);
+  const betweenNodes = layout.nodes.filter(
+    (n) => n.generationOrder === 3 && n.x > minSpouseX && n.x < maxSpouseX
+  );
+  assert.strictEqual(betweenNodes.length, 0, 'No node may ever sit between spouses in the generational strip');
+});
+
 runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate nodes or edges', () => {
   const run1 = augmentLayoutWithCustomPersons(baseParadaramiLayout, 'paradarami');
   const run2 = augmentLayoutWithCustomPersons(run1, 'paradarami');
