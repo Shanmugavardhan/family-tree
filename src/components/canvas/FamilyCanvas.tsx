@@ -321,13 +321,17 @@ const FamilyCanvasInternal: React.FC = () => {
     } else {
       // First-time visit: Focus directly on family member cards with header-aware padding (Requirement 1)
       const personNodeRefs = layout.nodes.map((n) => ({ id: n.id }));
+      const isMobileScreen = typeof window !== 'undefined' && window.innerWidth <= 768;
+      const fitPadding = isMobileScreen
+        ? { top: 76, bottom: 24, left: 16, right: 16 }
+        : HEADER_AWARE_FIT_PADDING;
       setTimeout(() => {
         fitView({
           nodes: personNodeRefs,
-          padding: HEADER_AWARE_FIT_PADDING,
+          padding: fitPadding,
           duration: 700,
           maxZoom: 1.35,
-          minZoom: 0.85,
+          minZoom: isMobileScreen ? 0.2 : 0.85,
         });
       }, 150);
     }

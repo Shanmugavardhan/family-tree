@@ -95,11 +95,16 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   const handleFitView = () => {
     onZoomActivity?.();
     const personNodeRefs = nodes.map((n) => ({ id: n.id }));
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const fitPadding = isMobileScreen
+      ? { top: 76, bottom: 24, left: 16, right: 16 }
+      : HEADER_AWARE_FIT_PADDING;
     fitView({
       nodes: personNodeRefs.length > 0 ? personNodeRefs : undefined,
-      padding: HEADER_AWARE_FIT_PADDING,
+      padding: fitPadding,
       duration: 600,
       maxZoom: 1.35,
+      minZoom: isMobileScreen ? 0.2 : undefined,
     });
   };
 

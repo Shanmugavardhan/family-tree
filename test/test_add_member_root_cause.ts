@@ -286,6 +286,58 @@ runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate node
   assert.strictEqual(run2.edges.length, run1.edges.length, 'Edge count must not duplicate');
 });
 
+runTest('Generational Boundary Invariant: Person tiles are strictly contained inside their generational strip and never cross boundaries', () => {
+  // Test across both standard and compact layouts for both lineages
+  const konuStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru.json'), 'utf-8'));
+  const konuCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru-compact.json'), 'utf-8'));
+  const paraStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8'));
+  const paraCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8'));
+
+  const layoutsToTest = [
+    { name: 'Konukuru Standard', layout: augmentLayoutWithCustomPersons(konuStandard, 'konukuru') },
+    { name: 'Konukuru Compact', layout: augmentLayoutWithCustomPersons(konuCompact, 'konukuru', { compactLanes: true }) },
+    { name: 'Paradarami Standard', layout: augmentLayoutWithCustomPersons(paraStandard, 'paradarami') },
+    { name: 'Paradarami Compact', layout: augmentLayoutWithCustomPersons(paraCompact, 'paradarami', { compactLanes: true }) },
+  ];
+
+  const CARD_NATURAL_HEIGHT = 180; // Portrait medallion (96px) + margins (14px) + 2 text lines (42px) + status/spacing (28px)
+
+  for (const { name, layout } of layoutsToTest) {
+    for (const node of layout.nodes) {
+      const lane = layout.lanes.find((l) => l.order === node.generationOrder);
+      assert.ok(lane, `[${name}] Node ${node.firstName} must have a valid lane for genOrder ${node.generationOrder}`);
+
+      const laneTop = lane.y;
+      const laneBottom = lane.y + lane.height;
+
+      // 1. Node top must be safely below lane top
+      assert.ok(
+        node.y >= laneTop,
+        `[${name}] Node ${node.firstName} top (y=${node.y}) must be >= lane top (${laneTop})`
+      );
+
+      // 2. Node bottom (at mobile scale 1.0) must be strictly above lane bottom
+      const nodeBottom = node.y + CARD_NATURAL_HEIGHT;
+      assert.ok(
+        nodeBottom <= laneBottom,
+        `[${name}] Node ${node.firstName} bottom (y=${nodeBottom}) must be <= lane bottom (${laneBottom}) - crossed by ${nodeBottom - laneBottom}px!`
+      );
+
+      // 3. Must have comfortable breathing clearance (at least 30px on both sides)
+      const topClearance = node.y - laneTop;
+      const bottomClearance = laneBottom - nodeBottom;
+      assert.ok(
+        topClearance >= 40,
+        `[${name}] Node ${node.firstName} top clearance (${topClearance}px) must be >= 40px`
+      );
+      assert.ok(
+        bottomClearance >= 40,
+        `[${name}] Node ${node.firstName} bottom clearance (${bottomClearance}px) must be >= 40px`
+      );
+    }
+  }
+});
+
 console.log(`\nResults: ${passed} / ${total} tests passed.`);
 if (passed !== total) {
   process.exit(1);

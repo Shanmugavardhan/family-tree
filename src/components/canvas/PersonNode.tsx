@@ -80,6 +80,19 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const isHighlighted = nodeData.isHighlighted;
   const [imageFailed, setImageFailed] = React.useState(false);
 
+  // Responsive mobile detection to strictly prevent tiles from crossing generational boundaries
+  const [isMobile, setIsMobile] = React.useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Lineage expansion is only available if the person's parents belong to an external house
   // DIFFERENT from the currently active tree (e.g. Suguna in Konukuru, or Jagannadham in Paradarami).
   const staticLineage =
@@ -95,11 +108,19 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
     expandedLineagePersonId === nodeId ||
     expandedLineagePersonId === nodeData.personId;
 
-  // Requirement 2: Proportional zoom sizing (1:1.5 size:zoom ratio)
-  // At zoom=1.0 -> 1.0; at zoom=0.5 -> (1/0.5)^(1/1.5) = 2^(2/3) ≈ 1.587; at zoom=2.0 -> (1/2)^(2/3) ≈ 0.63
-  const baseScale = Math.min(2.5, Math.max(0.6, Math.pow(1 / Math.max(0.1, zoom), 1 / 1.5)));
-  // Requirement 1: Enlarge smoothly on hover
-  const scaleFactor = baseScale * (isHovered ? 1.08 : 1.0);
+  // Strict Generational Boundary Invariant:
+  // Each generational strip is 440px tall with node baseline at y = lane.y + 140.
+  // The available vertical space before the next generational strip is strictly 300px.
+  // In mobile view (and when zoomed out), tiles must NEVER scale up to 2.5x, because that
+  // causes the tile to expand to 450px+ and cross the 440px generational strip boundary.
+  // Whatever the zoom level, tiles must arrange strictly inside the generational strip.
+  const baseScale = isMobile
+    ? 1.0
+    : Math.min(1.15, Math.max(0.8, Math.pow(1 / Math.max(0.4, zoom), 0.35)));
+
+  const scaleFactor = isMobile
+    ? 1.0
+    : baseScale * (isHovered ? 1.05 : 1.0);
 
   // Sync handle internals on mount and whenever zoom, scaleFactor, or nodeId changes
   React.useLayoutEffect(() => {
@@ -159,7 +180,7 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
       }}
       style={{
         width: 190,
-        minHeight: Math.max(160, Math.round(180 * scaleFactor)),
+        minHeight: 160,
         backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
@@ -172,14 +193,14 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
         zIndex: isHovered ? 30 : isSelected ? 15 : 1,
       }}
     >
-      {/* Proportional Scaled Container (Enlarges on hover + 1:1 ratio with zoom out) */}
+      {/* Scaled Container (Enlarges on hover, strictly contained within generational strip) */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          transform: `scale(${scaleFactor})`,
+          transform: scaleFactor !== 1.0 ? `scale(${scaleFactor})` : undefined,
           transformOrigin: 'top center',
           transition: isHovered ? 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
           position: 'relative',
