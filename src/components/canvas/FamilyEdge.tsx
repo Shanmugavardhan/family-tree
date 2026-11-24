@@ -57,6 +57,8 @@ export const FamilyEdge: React.FC<any> = ({
           stroke: strokeColor,
           strokeWidth,
           strokeDasharray,
+          pointerEvents: 'none',
+          cursor: 'grab',
           // Requirement 1: Only transition stroke/opacity, never the SVG path geometry (prevents delayed edge rearrangement during zoom)
           transition: 'stroke 0.2s ease-in-out, opacity 0.2s ease-in-out',
         }}
@@ -69,7 +71,8 @@ export const FamilyEdge: React.FC<any> = ({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'all',
+              pointerEvents: 'none',
+              cursor: 'grab',
               zIndex: isPathEdge ? 35 : 10,
             }}
           >
@@ -87,6 +90,8 @@ export const FamilyEdge: React.FC<any> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#f59e0b',
+                  pointerEvents: 'none',
+                  cursor: 'grab',
                 }}
               >
                 <Navigation size={11} fill="#f59e0b" />
@@ -106,6 +111,8 @@ export const FamilyEdge: React.FC<any> = ({
                   justifyContent: 'center',
                   color: '#e11d48',
                   fontSize: 10,
+                  pointerEvents: 'none',
+                  cursor: 'grab',
                 }}
               >
                 <Heart size={12} fill="#e11d48" />
@@ -123,6 +130,8 @@ export const FamilyEdge: React.FC<any> = ({
                   border: '1px solid #cbd5e1',
                   color: '#475569',
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                  pointerEvents: 'none',
+                  cursor: 'grab',
                 }}
               >
                 {parentType}

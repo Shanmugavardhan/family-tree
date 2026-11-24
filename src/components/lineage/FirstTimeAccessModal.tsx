@@ -39,6 +39,7 @@ export const FirstTimeAccessModal: React.FC = () => {
       }}
     >
       <div
+        className="first-time-modal-dialog"
         style={{
           width: '100%',
           maxWidth: 440,

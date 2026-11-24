@@ -797,9 +797,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 Basic Identification
               </h3>
 
-              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div className="add-person-id-layout" style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {/* Vertical Rectangle Photo Upload Box */}
-                <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="add-person-photo-col" style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div
                     onClick={() => !photoPreviewUrl && fileInputRef.current?.click()}
                     title={photoPreviewUrl ? 'Member portrait' : 'Click to upload portrait photo'}
@@ -964,7 +964,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 </div>
 
                 {/* Right Form Fields */}
-                <div style={{ flex: 1, minWidth: 260 }}>
+                <div className="add-person-fields-col" style={{ flex: 1, minWidth: 260 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
                     <div style={{ gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>

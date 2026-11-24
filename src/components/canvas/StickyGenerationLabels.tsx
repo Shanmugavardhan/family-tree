@@ -20,21 +20,25 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
   const computeScale = (vz: number) =>
     Math.min(1.85, Math.max(0.65, Math.pow(1 / Math.max(0.18, vz), 0.58)));
 
+  const getLeftOffset = () => (typeof window !== 'undefined' && window.innerWidth <= 600 ? 14 : 36);
+
   // Directly sync vertical transform and inverse zoom scale with zero latency during drag/pan/zoom
   useOnViewportChange({
     onChange: ({ y: vy, zoom: vz }) => {
       const scale = computeScale(vz);
+      const left = getLeftOffset();
       activeLanes.forEach((lane) => {
         const el = labelRefs.current.get(lane.id);
         if (el) {
           const top = vy + (lane.y + 24) * vz;
-          el.style.transform = `translate3d(36px, ${top}px, 0) scale(${scale})`;
+          el.style.transform = `translate3d(${left}px, ${top}px, 0) scale(${scale})`;
         }
       });
     },
   });
 
   const initialScale = computeScale(zoom);
+  const initialLeft = getLeftOffset();
 
   return (
     <div
@@ -69,7 +73,7 @@ export const StickyGenerationLabels: React.FC<StickyGenerationLabelsProps> = ({ 
               flexDirection: 'column',
               userSelect: 'none',
               pointerEvents: 'none',
-              transform: `translate3d(36px, ${top}px, 0) scale(${initialScale})`,
+              transform: `translate3d(${initialLeft}px, ${top}px, 0) scale(${initialScale})`,
               transformOrigin: 'top left',
               willChange: 'transform',
               opacity: isDark ? 0.9 : 0.95,

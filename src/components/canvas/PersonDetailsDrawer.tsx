@@ -107,6 +107,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
 
   return (
     <div
+      className="person-details-drawer"
       style={{
         position: 'absolute',
         top: 64,
@@ -123,6 +124,30 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
         flexDirection: 'column',
       }}
     >
+      {/* Mobile Bottom Sheet Pull Pill */}
+      <div
+        className="drawer-drag-handle-container"
+        style={{
+          display: 'none',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: 8,
+          paddingBottom: 4,
+          backgroundColor: isDark ? '#1D2633' : '#f6efe2',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 4.5,
+            borderRadius: 3,
+            backgroundColor: isDark ? 'rgba(214, 177, 92, 0.45)' : 'rgba(180, 130, 40, 0.45)',
+          }}
+        />
+      </div>
+
       {/* Header */}
       <div
         style={{

@@ -855,10 +855,116 @@ html, body {
 
 .react-flow__pane {
   cursor: grab !important;
+  touch-action: none !important;
 }
 
 .react-flow__pane:active,
 .react-flow__pane.dragging {
   cursor: grabbing !important;
 }
+
+/* Relationship Lines & Edges: Always non-clickable, pass-through, and show grab cursor */
+.react-flow__edges,
+.react-flow__edge,
+.react-flow__edge-path,
+.react-flow__edge-interaction,
+.react-flow__edge-textwrapper,
+.react-flow__edge-text,
+.react-flow__edge-labels,
+.react-flow__edge-labels * {
+  pointer-events: none !important;
+  cursor: grab !important;
+}
+
+.react-flow__pane.dragging ~ .react-flow__edges,
+.react-flow__pane.dragging ~ .react-flow__edges *,
+.react-flow__pane:active ~ .react-flow__edges,
+.react-flow__pane:active ~ .react-flow__edges * {
+  cursor: grabbing !important;
+}
+
+/* ==========================================================================
+   Mobile Bottom Sheet & Responsive Upgrades
+   ========================================================================== */
+@keyframes drawerSlideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .person-details-drawer {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    max-height: 75vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-left: none !important;
+    border-top: 1.5px solid var(--gold-primary) !important;
+    box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.85) !important;
+    z-index: 60 !important;
+    animation: drawerSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .drawer-drag-handle-container {
+    display: flex !important;
+  }
+
+  .canvas-floating-add-btn {
+    bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+    left: 16px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .mobile-canvas-floating-bar {
+    bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+    right: 14px !important;
+  }
+
+  .floating-add-dialog,
+  .floating-edit-dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: 100vw !important;
+    max-height: calc(100vh - 72px) !important;
+    border-radius: 14px !important;
+  }
+
+  .add-person-id-layout {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 14px !important;
+  }
+
+  .add-person-photo-col {
+    width: 100% !important;
+    align-items: center !important;
+  }
+
+  .add-person-fields-col {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .first-time-modal-dialog {
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .pathfinder-modal-dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: 100vw !important;
+    max-height: calc(100vh - 72px) !important;
+  }
+}
+
 

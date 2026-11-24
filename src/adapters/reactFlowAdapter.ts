@@ -208,6 +208,10 @@ export function convertLayoutToReactFlow(
           isDimmed,
         },
         zIndex: isPathEdge ? 30 : isHighlighted ? 20 : 1,
+        selectable: false,
+        deletable: false,
+        focusable: false,
+        interactionWidth: 0,
       };
     } else {
       // Spouse edge: horizontal connection between spouses
@@ -248,6 +252,10 @@ export function convertLayoutToReactFlow(
           isDimmed,
         },
         zIndex: isPathEdge ? 30 : isHighlighted ? 20 : 2,
+        selectable: false,
+        deletable: false,
+        focusable: false,
+        interactionWidth: 0,
       };
     }
   });

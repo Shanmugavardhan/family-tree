@@ -910,6 +910,8 @@ const FamilyCanvasInternal: React.FC = () => {
         nodesDraggable={false} // Strictly locked to chronological coordinates
         nodesConnectable={false}
         elementsSelectable={true}
+        edgesFocusable={false}
+        edgesReconnectable={false}
         minZoom={0.2}
         maxZoom={4.0}
         zoomOnScroll={true} // Mouse scroll zooms in and out
