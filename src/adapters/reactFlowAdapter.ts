@@ -210,13 +210,28 @@ export function convertLayoutToReactFlow(
         zIndex: isPathEdge ? 30 : isHighlighted ? 20 : 1,
       };
     } else {
-      // Spouse edge: horizontal connection
+      // Spouse edge: horizontal connection between spouses
+      // Guarantee the edge ALWAYS flows from the inner right handle of the left spouse
+      // to the inner left handle of the right spouse, never slicing across medallions.
+      const sourceNode = layout.nodes.find((n) => n.id === e.source);
+      const targetNode = layout.nodes.find((n) => n.id === e.target);
+
+      let actualSource = e.source;
+      let actualTarget = e.target;
+      const actualSourceHandle = 'spouse-right';
+      const actualTargetHandle = 'spouse-left';
+
+      if (sourceNode && targetNode && sourceNode.x > targetNode.x) {
+        actualSource = targetNode.id;
+        actualTarget = sourceNode.id;
+      }
+
       return {
         id: e.id,
-        source: e.source,
-        target: e.target,
-        sourceHandle: 'spouse-right',
-        targetHandle: 'spouse-left',
+        source: actualSource,
+        target: actualTarget,
+        sourceHandle: actualSourceHandle,
+        targetHandle: actualTargetHandle,
         type: 'familyEdge',
         animated: isHighlighted || isPathEdge,
         style: {

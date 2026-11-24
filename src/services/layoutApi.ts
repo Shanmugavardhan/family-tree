@@ -279,7 +279,22 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
-  // 4. Adjust canvas width if any node extends beyond
+  // 4. Canonical orientation for all spouse edges:
+  // source must ALWAYS be the leftmost spouse, target must be the rightmost spouse.
+  // This guarantees that the spouse link line connects only between the adjacent edges
+  // of the two medallions and never cuts across either person's tile.
+  for (const edge of edges) {
+    if (edge.type === 'spouse') {
+      const srcNode = nodes.find((n) => n.id === edge.source);
+      const tgtNode = nodes.find((n) => n.id === edge.target);
+      if (srcNode && tgtNode && srcNode.x > tgtNode.x) {
+        edge.source = tgtNode.id;
+        edge.target = srcNode.id;
+      }
+    }
+  }
+
+  // 5. Adjust canvas width if any node extends beyond
   let maxX = baseLayout.width;
   for (const n of nodes) {
     if (n.x + (n.width || 190) + 120 > maxX) {

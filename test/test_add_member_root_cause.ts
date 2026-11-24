@@ -3,6 +3,7 @@ import { augmentLayoutWithCustomPersons } from '../src/services/layoutApi';
 import { saveLocalCustomPerson, getLocalCustomPersons } from '../src/services/personApi';
 import { saveLocalCustomRelationship, getLocalCustomRelationships } from '../src/services/relationshipApi';
 import { parseFullName } from '../src/utils/kinshipInference';
+import { convertLayoutToReactFlow } from '../src/adapters/reactFlowAdapter';
 import { Person } from '../src/types/person';
 import { Relationship } from '../src/types/relationship';
 import { FamilyLayout } from '../src/types/layout';
@@ -253,6 +254,28 @@ runTest('Spouse Side-by-Side Rearrangement: Narayanaswamy A sits directly beside
     (n) => n.generationOrder === 3 && n.x > minSpouseX && n.x < maxSpouseX
   );
   assert.strictEqual(betweenNodes.length, 0, 'No node may ever sit between spouses in the generational strip');
+
+  // Verify Spouse Edge Representation:
+  // Must connect from Srivalli (left, spouse-right) to Narayanaswamy (right, spouse-left)
+  // so the pink dotted line is ONLY in the gap and NEVER crosses either tile.
+  const spouseEdge = layout.edges.find(
+    (e) =>
+      e.type === 'spouse' &&
+      ((e.source === srivalliId && e.target === 'narayanaswamy-test-uuid') ||
+        (e.source === 'narayanaswamy-test-uuid' && e.target === srivalliId))
+  );
+  assert.ok(spouseEdge, 'Spouse edge between Srivalli and Narayanaswamy must exist');
+  assert.strictEqual(spouseEdge.source, srivalliId, 'Spouse edge source must be canonically oriented to the left node (Srivalli)');
+  assert.strictEqual(spouseEdge.target, 'narayanaswamy-test-uuid', 'Spouse edge target must be the right node (Narayanaswamy)');
+
+  // Verify in ReactFlow adapter conversion
+  const reactFlowData = convertLayoutToReactFlow(layout);
+  const rfSpouseEdge = reactFlowData.edges.find((e) => e.id === spouseEdge.id);
+  assert.ok(rfSpouseEdge, 'React Flow spouse edge must exist');
+  assert.strictEqual(rfSpouseEdge.source, srivalliId, 'RF edge source must be Srivalli');
+  assert.strictEqual(rfSpouseEdge.target, 'narayanaswamy-test-uuid', 'RF edge target must be Narayanaswamy');
+  assert.strictEqual(rfSpouseEdge.sourceHandle, 'spouse-right', 'RF edge sourceHandle must be spouse-right (pointing right)');
+  assert.strictEqual(rfSpouseEdge.targetHandle, 'spouse-left', 'RF edge targetHandle must be spouse-left (pointing left)');
 });
 
 runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate nodes or edges', () => {

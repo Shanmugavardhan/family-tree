@@ -216,7 +216,7 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
             }}
           />
 
-          {/* Exact left boundary handle for horizontal spouse connection */}
+          {/* Exact left boundary handle for horizontal spouse connection (as target or source) */}
           <Handle
             type="target"
             position={Position.Left}
@@ -235,12 +235,48 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
               zIndex: 5,
             }}
           />
+          <Handle
+            type="source"
+            position={Position.Left}
+            id="spouse-left-source"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
+              zIndex: 5,
+            }}
+          />
 
-          {/* Exact right boundary handle for horizontal spouse connection */}
+          {/* Exact right boundary handle for horizontal spouse connection (as source or target) */}
           <Handle
             type="source"
             position={Position.Right}
             id="spouse-right"
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 2,
+              height: 2,
+              opacity: 0,
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent',
+              zIndex: 5,
+            }}
+          />
+          <Handle
+            type="target"
+            position={Position.Right}
+            id="spouse-right-target"
             style={{
               position: 'absolute',
               right: 0,
