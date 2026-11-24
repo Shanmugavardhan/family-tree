@@ -23,9 +23,11 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [pinchStartDistance, setPinchStartDistance] = useState<number | null>(null);
+  const [pinchStartZoom, setPinchStartZoom] = useState<number>(1);
 
-  const CROP_WIDTH = 240; // Width of vertical rectangular crop frame
-  const CROP_HEIGHT = 300; // Height of vertical rectangular crop frame
+  const CROP_RADIUS = 110; // 220px diameter circular medallion crop guide
+  const CROP_DIAMETER = CROP_RADIUS * 2;
 
   // Load image when file changes
   useEffect(() => {
@@ -47,7 +49,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     reader.readAsDataURL(imageFile);
   }, [imageFile, isOpen]);
 
-  // Render canvas with vertical rectangular overlay
+  // Render canvas with circular medallion overlay
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !imageObj) return;
@@ -60,8 +62,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
     ctx.clearRect(0, 0, width, height);
 
-    // Draw background grid/checker
-    ctx.fillStyle = isDark ? '#11151c' : '#f1f5f9';
+    // Draw background
+    ctx.fillStyle = isDark ? '#0b0e14' : '#f1f5f9';
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
@@ -70,8 +72,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Calculate base scale to fit image into crop area
-    const baseScale = Math.max(CROP_WIDTH / imageObj.width, CROP_HEIGHT / imageObj.height);
+    // Calculate base scale to fill circular crop area
+    const baseScale = Math.max(CROP_DIAMETER / imageObj.width, CROP_DIAMETER / imageObj.height);
     const currentScale = baseScale * zoom;
 
     const drawW = imageObj.width * currentScale;
@@ -82,34 +84,35 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     const imgY = centerY - drawH / 2 + pan.y;
 
     ctx.drawImage(imageObj, imgX, imgY, drawW, drawH);
-
     ctx.restore();
 
-    // Draw dark semi-transparent mask outside crop rectangle
+    // Draw dark semi-transparent mask with circular aperture
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillStyle = 'rgba(10, 13, 20, 0.72)';
     ctx.beginPath();
     ctx.rect(0, 0, width, height);
-    const cropX = centerX - CROP_WIDTH / 2;
-    const cropY = centerY - CROP_HEIGHT / 2;
-    if (typeof (ctx as any).roundRect === 'function') {
-      (ctx as any).roundRect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT, 10);
-    } else {
-      ctx.rect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT);
-    }
-    ctx.fill('evenodd');
+    ctx.arc(centerX, centerY, CROP_RADIUS, 0, Math.PI * 2, true);
+    ctx.fill();
 
-    // Draw gold medallion vertical rectangle guide
+    // Subtle face alignment crosshairs
+    ctx.strokeStyle = 'rgba(214, 177, 92, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    if (typeof (ctx as any).roundRect === 'function') {
-      (ctx as any).roundRect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT, 10);
-    } else {
-      ctx.rect(cropX, cropY, CROP_WIDTH, CROP_HEIGHT);
-    }
-    ctx.lineWidth = 2.5;
+    ctx.moveTo(centerX - CROP_RADIUS, centerY);
+    ctx.lineTo(centerX + CROP_RADIUS, centerY);
+    ctx.moveTo(centerX, centerY - CROP_RADIUS);
+    ctx.lineTo(centerX, centerY + CROP_RADIUS);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Gold medallion circular rim
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, CROP_RADIUS, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
     ctx.strokeStyle = '#D6B15C';
-    ctx.shadowColor = 'rgba(214, 177, 92, 0.6)';
-    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(214, 177, 92, 0.7)';
+    ctx.shadowBlur = 10;
     ctx.stroke();
 
     ctx.restore();
@@ -119,13 +122,16 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     draw();
   }, [draw]);
 
-  // Mouse / Touch handlers for panning
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Pointer & Touch handlers for smooth finger panning
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     setIsDragging(true);
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDragging) return;
     setPan({
       x: e.clientX - dragStart.x,
@@ -133,34 +139,79 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     });
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
     setIsDragging(false);
+  };
+
+  // Touch handlers for mobile devices (including pinch-to-zoom)
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setPinchStartDistance(dist);
+      setPinchStartZoom(zoom);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      setPan({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      });
+    } else if (e.touches.length === 2 && pinchStartDistance !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = dist / pinchStartDistance;
+      const newZoom = Math.min(3, Math.max(1, pinchStartZoom * factor));
+      setZoom(newZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setPinchStartDistance(null);
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.002;
+    setZoom((prev) => Math.min(3, Math.max(1, prev + delta)));
   };
 
   // Perform crop and save
   const handleSaveCrop = () => {
     if (!imageObj) return;
 
-    // High resolution output canvas (360x450, 4:5 vertical portrait aspect ratio)
-    const exportW = 360;
-    const exportH = 450;
+    // High resolution output canvas (400x400 square perfectly fitting 50% border radius portrait medallion)
+    const exportSize = 400;
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = exportW;
-    exportCanvas.height = exportH;
+    exportCanvas.width = exportSize;
+    exportCanvas.height = exportSize;
     const exportCtx = exportCanvas.getContext('2d');
     if (!exportCtx) return;
 
-    const baseScale = Math.max(CROP_WIDTH / imageObj.width, CROP_HEIGHT / imageObj.height);
+    const baseScale = Math.max(CROP_DIAMETER / imageObj.width, CROP_DIAMETER / imageObj.height);
     const currentScale = baseScale * zoom;
-
-    // Ratio between exportCanvas and preview CROP area
-    const exportRatio = exportW / CROP_WIDTH;
+    const exportRatio = exportSize / CROP_DIAMETER;
 
     const exportDrawW = imageObj.width * currentScale * exportRatio;
     const exportDrawH = imageObj.height * currentScale * exportRatio;
 
-    const exportImgX = exportW / 2 - exportDrawW / 2 + pan.x * exportRatio;
-    const exportImgY = exportH / 2 - exportDrawH / 2 + pan.y * exportRatio;
+    const exportImgX = exportSize / 2 - exportDrawW / 2 + pan.x * exportRatio;
+    const exportImgY = exportSize / 2 - exportDrawH / 2 + pan.y * exportRatio;
 
     exportCtx.drawImage(imageObj, exportImgX, exportImgY, exportDrawW, exportDrawH);
 
@@ -236,7 +287,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
               Crop Profile Photo
             </h3>
             <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: isDark ? '#9BA3AF' : '#64748b' }}>
-              Drag to position & use slider to zoom into circular medallion
+              Drag with finger to center face • Pinch or use slider to zoom
             </p>
           </div>
           <button
@@ -272,14 +323,21 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
             ref={canvasRef}
             width={340}
             height={340}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onWheel={handleWheel}
             style={{
               cursor: isDragging ? 'grabbing' : 'grab',
               borderRadius: 12,
               touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
             }}
           />
         </div>

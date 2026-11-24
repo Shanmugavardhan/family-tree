@@ -587,6 +587,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       birth_place: birthPlace.trim() || null,
       death_place: !isLiving && deathPlace.trim() ? deathPlace.trim() : null,
       biography: biography.trim(),
+      profile_photo: photoPreviewUrl || null,
       father_id: fatherId || null,
       mother_id: motherId || null,
       spouse_id: spouseId || null,
@@ -597,6 +598,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       const res = await personApi.create(input);
       if (res.success && res.data) {
         const createdPerson = res.data;
+        if (photoPreviewUrl && !createdPerson.profile_photo) {
+          createdPerson.profile_photo = photoPreviewUrl;
+        }
 
         // Upgrade 7: Cascading Nuclear Family Batch Linking
         if (selectedBatchChildIds.length > 0) {

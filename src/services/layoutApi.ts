@@ -216,6 +216,7 @@ export function augmentLayoutWithCustomPersons(
         width: 190,
         height: 160,
         photoPath: person.profile_photo || null,
+        photoUrl: person.profile_photo || undefined,
         gender: person.gender,
         isLiving: person.is_living,
         isArchived: person.is_archived,

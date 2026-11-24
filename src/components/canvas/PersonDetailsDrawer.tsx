@@ -202,7 +202,13 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           >
             {activeNode.photoPath && !imageFailed ? (
               <img
-                src={`/api/persons/${activeNode.personId}/photo`}
+                src={
+                  activeNode.photoPath.startsWith('http') ||
+                  activeNode.photoPath.startsWith('data:') ||
+                  activeNode.photoPath.startsWith('/')
+                    ? activeNode.photoPath
+                    : `/api/persons/${activeNode.personId}/photo`
+                }
                 alt={fullName}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={() => setImageFailed(true)}

@@ -613,11 +613,18 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
       birth_place: birthPlace.trim() || null,
       death_place: isLiving ? null : deathPlace.trim() || null,
       biography: biography.trim(),
+      profile_photo: photoRemoved ? null : (photoPreviewUrl || undefined),
     };
 
     try {
       const res = await personApi.update(personId, updatePayload);
       if (res.success && res.data) {
+        if (photoRemoved) {
+          res.data.profile_photo = null;
+        } else if (photoPreviewUrl) {
+          res.data.profile_photo = photoPreviewUrl;
+        }
+
         if (croppedPhotoFile) {
           try {
             await personApi.uploadPhoto(personId, croppedPhotoFile);

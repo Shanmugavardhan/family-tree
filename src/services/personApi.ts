@@ -220,7 +220,7 @@ export const personApi = {
       death_date: data.death_date || null,
       birth_place: data.birth_place || null,
       death_place: data.death_place || null,
-      profile_photo: null,
+      profile_photo: data.profile_photo || null,
       biography: data.biography || '',
       is_living: data.is_living ?? true,
       is_archived: false,
@@ -495,31 +495,146 @@ export const personApi = {
     id: string,
     file: File
   ): Promise<ApiResponse<{ profile_photo: string; person: Person }>> => {
-    try {
-      const formData = new FormData();
-      formData.append('photo', file);
-      const response = await fetch(`/api/persons/${id}/photo`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data;
-    } catch (err: any) {
+    // 1. Sanity check: file existence & type validation
+    if (!file) {
+      return {
+        success: false,
+        data: null,
+        error: { code: 'INVALID_FILE', message: 'No file provided' },
+      };
+    }
+
+    const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const hasValidMime = file.type ? validMimes.includes(file.type.toLowerCase()) : false;
+    const hasValidExt = file.name ? /\.(jpe?g|png|webp|gif)$/i.test(file.name) : false;
+
+    if (!hasValidMime && !hasValidExt) {
       return {
         success: false,
         data: null,
         error: {
-          code: 'NETWORK_ERROR',
-          message: err.message || 'Failed to upload photo',
+          code: 'INVALID_FILE_TYPE',
+          message: 'Only image files (JPEG, PNG, WebP) are allowed.',
         },
       };
     }
+
+    // 2. Sanity check: file size limit (10MB max)
+    const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_PHOTO_BYTES) {
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: 'Photo size cannot exceed 10MB.',
+        },
+      };
+    }
+
+    if (isLocal) {
+      try {
+        const formData = new FormData();
+        formData.append('photo', file);
+        const response = await fetch(`/api/persons/${id}/photo`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            saveLocalCustomPerson(data.data.person);
+            return data;
+          }
+        }
+      } catch {}
+    }
+
+    // 3. Fallback / Client-side persistence: convert to Base64 Data URL
+    let photoDataUrl: string | null = null;
+    if (!photoDataUrl) {
+      try {
+        if (typeof FileReader !== 'undefined') {
+          photoDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        } else if (typeof (file as any).arrayBuffer === 'function') {
+          // Node.js test environment support
+          const buf = Buffer.from(await (file as any).arrayBuffer());
+          const mime = file.type || 'image/png';
+          photoDataUrl = `data:${mime};base64,${buf.toString('base64')}`;
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          data: null,
+          error: {
+            code: 'PHOTO_READ_ERROR',
+            message: err.message || 'Failed to read photo data',
+          },
+        };
+      }
+    }
+
+    if (!photoDataUrl) {
+      return {
+        success: false,
+        data: null,
+        error: { code: 'PHOTO_CONVERSION_FAILED', message: 'Could not generate photo data URL' },
+      };
+    }
+
+    const updateRes = await personApi.update(id, { profile_photo: photoDataUrl });
+    if (updateRes.success && updateRes.data) {
+      return {
+        success: true,
+        data: {
+          profile_photo: photoDataUrl,
+          person: updateRes.data,
+        },
+        error: null,
+      };
+    }
+
+    return {
+      success: false,
+      data: null,
+      error: updateRes.error || { code: 'UPDATE_FAILED', message: 'Failed to update person with photo' },
+    };
   },
 
-  deletePhoto: (id: string): Promise<ApiResponse<{ deleted: boolean; person: Person }>> => {
-    return request<{ deleted: boolean; person: Person }>(`/persons/${id}/photo`, {
-      method: 'DELETE',
-    });
+  deletePhoto: async (id: string): Promise<ApiResponse<{ deleted: boolean; person: Person }>> => {
+    if (isLocal) {
+      try {
+        const res = await request<{ deleted: boolean; person: Person }>(`/persons/${id}/photo`, {
+          method: 'DELETE',
+        });
+        if (res.success && res.data) {
+          saveLocalCustomPerson(res.data.person);
+          return res;
+        }
+      } catch {}
+    }
+
+    const updateRes = await personApi.update(id, { profile_photo: null });
+    if (updateRes.success && updateRes.data) {
+      return {
+        success: true,
+        data: {
+          deleted: true,
+          person: updateRes.data,
+        },
+        error: null,
+      };
+    }
+    return {
+      success: false,
+      data: null,
+      error: { code: 'PERSON_NOT_FOUND', message: 'Person not found' },
+    };
   },
 
   getPhotoUrl: (id: string, includeArchived = false): string => {

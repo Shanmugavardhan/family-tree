@@ -17,7 +17,8 @@
     "test:audit": "node functions/node_modules/tsx/dist/cli.mjs test/test_architecture_audit.ts",
     "test:kinship": "node functions/node_modules/tsx/dist/cli.mjs test/test_kinship_inference.ts",
     "test:add-member": "node functions/node_modules/tsx/dist/cli.mjs test/test_add_member_root_cause.ts",
-    "test": "npm --prefix functions test && npm run test:canvas && npm run test:interaction && npm run test:lineage && npm run test:audit && npm run test:kinship && npm run test:add-member"
+    "test:photo": "node functions/node_modules/tsx/dist/cli.mjs test/test_photo_handling.ts",
+    "test": "npm --prefix functions test && npm run test:canvas && npm run test:interaction && npm run test:lineage && npm run test:audit && npm run test:kinship && npm run test:add-member && npm run test:photo"
   },
   "dependencies": {
     "@xyflow/react": "^13.0.1",
