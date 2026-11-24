@@ -3,6 +3,7 @@ import { CreatePersonInput, UpdatePersonInput, Gender, Person } from '../../type
 import { RelationshipSelector } from './RelationshipSelector';
 import { AlertCircle, Save } from 'lucide-react';
 import { normalizeDateInput } from '../../utils/dateUtils';
+import { parseFullName } from '../../utils/kinshipInference';
 
 interface PersonFormProps {
   initialValues?: Partial<Person>;
@@ -19,6 +20,10 @@ export const PersonForm: React.FC<PersonFormProps> = ({
   loading = false,
   serverError = null,
 }) => {
+  const initialFull = [initialValues?.first_name, initialValues?.middle_name, initialValues?.last_name]
+    .filter(Boolean)
+    .join(' ');
+  const [fullName, setFullName] = useState(initialFull);
   const [firstName, setFirstName] = useState(initialValues?.first_name || '');
   const [middleName, setMiddleName] = useState(initialValues?.middle_name || '');
   const [lastName, setLastName] = useState(initialValues?.last_name || '');
@@ -39,11 +44,28 @@ export const PersonForm: React.FC<PersonFormProps> = ({
 
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
+  const handleFullNameChange = (val: string) => {
+    setFullName(val);
+    const parsed = parseFullName(val);
+    setFirstName(parsed.firstName);
+    setMiddleName(parsed.middleName);
+    setLastName(parsed.lastName);
+    if (clientErrors.first_name) {
+      setClientErrors((prev) => {
+        const next = { ...prev };
+        delete next.first_name;
+        return next;
+      });
+    }
+  };
+
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
+    const parsed = parseFullName(fullName);
+    const effectiveFirst = parsed.firstName || firstName;
 
-    if (!firstName.trim()) {
-      errs.first_name = 'First name is required.';
+    if (!effectiveFirst.trim()) {
+      errs.first_name = 'Full name is required (e.g. Vikram Prasad Sharma).';
     }
 
     if (isLiving && deathDate.trim()) {
@@ -127,39 +149,38 @@ export const PersonForm: React.FC<PersonFormProps> = ({
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          <div className="form-group">
-            <label className="form-label">First Name *</label>
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <label className="form-label">Full Name *</label>
             <input
               type="text"
               className="form-input"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="e.g. Vikram"
+              value={fullName}
+              onChange={(e) => handleFullNameChange(e.target.value)}
+              placeholder="e.g. Vikram Prasad Sharma"
               required
             />
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-slate-500)', display: 'block', marginTop: 4 }}>
+              Hint: Enter full name together. First, middle, and family surname are automatically segregated.
+            </span>
+            {fullName.trim() && (
+              <div
+                style={{
+                  marginTop: 6,
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  backgroundColor: 'var(--color-slate-100)',
+                  fontSize: '0.8125rem',
+                  display: 'flex',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span>First: <strong>"{firstName || '(None)'}"</strong></span>
+                {middleName && <span>Middle: <strong>"{middleName}"</strong></span>}
+                <span>Family Name: <strong>"{lastName || '(None)'}"</strong></span>
+              </div>
+            )}
             {clientErrors.first_name && <p className="form-error">{clientErrors.first_name}</p>}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Middle Name</label>
-            <input
-              type="text"
-              className="form-input"
-              value={middleName}
-              onChange={(e) => setMiddleName(e.target.value)}
-              placeholder="e.g. Prasad"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Last Name / Family Name</label>
-            <input
-              type="text"
-              className="form-input"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="e.g. Sharma"
-            />
           </div>
         </div>
 

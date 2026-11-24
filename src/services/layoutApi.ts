@@ -24,6 +24,7 @@ export function augmentLayoutWithCustomPersons(
   const edges = [...baseLayout.edges];
   const existingNodeIds = new Set(nodes.map((n) => n.id));
   const existingEdgeIds = new Set(edges.map((e) => e.id));
+  const baseNodeIds = new Set(baseLayout.nodes.map((n) => n.id));
 
   for (const person of customPersons) {
     if (existingNodeIds.has(person.id)) continue;
@@ -38,69 +39,85 @@ export function augmentLayoutWithCustomPersons(
     let isPersonParent = false;
     let isPersonSpouse = false;
 
-    for (const rel of personRels) {
-      const otherId = rel.person_id === person.id ? rel.related_person_id : rel.person_id;
+    // Prioritize parent relation (child of), then spouse, then parent of
+    const parentRel = personRels.find(
+      (r) => r.relationship_type === 'parent' && r.person_id === person.id
+    );
+    const spouseRel = personRels.find((r) => r.relationship_type === 'spouse');
+    const childRel = personRels.find(
+      (r) => r.relationship_type === 'parent' && r.related_person_id === person.id
+    );
+
+    const primaryRel = parentRel || spouseRel || childRel || personRels[0];
+
+    if (primaryRel) {
+      const otherId =
+        primaryRel.person_id === person.id
+          ? primaryRel.related_person_id
+          : primaryRel.person_id;
       const foundNode = nodes.find((n) => n.id === otherId);
       if (foundNode) {
         relativeNode = foundNode;
-        if (rel.relationship_type === 'parent') {
-          if (rel.person_id === person.id) {
+        if (primaryRel.relationship_type === 'parent') {
+          if (primaryRel.person_id === person.id) {
             isPersonChild = true;
           } else {
             isPersonParent = true;
           }
-        } else if (rel.relationship_type === 'spouse') {
+        } else if (primaryRel.relationship_type === 'spouse') {
           isPersonSpouse = true;
         }
-        break;
       }
     }
 
     // Also check if person's surname matches this lineage
     const normLineage = (lineage || '').trim().toLowerCase();
     const personSurname = (person.last_name || '').trim().toLowerCase();
-    const matchesLineage = relativeNode || (personSurname && personSurname === normLineage);
+    const matchesLineage =
+      relativeNode || (personSurname && personSurname === normLineage);
 
     if (matchesLineage) {
-      let x = relativeNode ? relativeNode.x : 500;
-      let y = relativeNode ? relativeNode.y : 500;
       let genOrder = relativeNode?.generationOrder ?? 0;
-      let genId = relativeNode?.generationId || 'unknown';
-      let genName = relativeNode?.generationName || 'Generation';
-
       if (relativeNode) {
         if (isPersonChild) {
           genOrder = (relativeNode.generationOrder ?? 0) + 1;
-          const matchingLane = baseLayout.lanes.find((l) => l.order === genOrder);
-          y = matchingLane ? matchingLane.y + 30 : relativeNode.y + 220;
-          if (matchingLane) {
-            genId = matchingLane.id;
-            genName = matchingLane.name;
-          }
-          // Position to the right of siblings in same lane
-          const sameLaneNodes = nodes.filter((n) => Math.abs(n.y - y) < 80);
-          if (sameLaneNodes.length > 0) {
-            const maxX = Math.max(...sameLaneNodes.map((s) => s.x));
-            x = maxX + (relativeNode.width || 190) + 40;
-          } else {
-            x = relativeNode.x;
-          }
-        } else if (isPersonSpouse) {
-          x = relativeNode.x + 320;
-          y = relativeNode.y;
         } else if (isPersonParent) {
           genOrder = (relativeNode.generationOrder ?? 0) - 1;
-          const matchingLane = baseLayout.lanes.find((l) => l.order === genOrder);
-          y = matchingLane ? matchingLane.y + 30 : relativeNode.y - 220;
-          if (matchingLane) {
-            genId = matchingLane.id;
-            genName = matchingLane.name;
-          }
-          x = relativeNode.x;
+        } else if (isPersonSpouse) {
+          genOrder = relativeNode.generationOrder ?? 0;
         }
       }
 
-      const birthYear = person.birth_date ? parseInt(person.birth_date.slice(0, 4), 10) : null;
+      const matchingLane = baseLayout.lanes.find((l) => l.order === genOrder);
+      const genId = matchingLane?.id || relativeNode?.generationId || `gen-${genOrder}`;
+      const genName = matchingLane?.name || relativeNode?.generationName || `Generation ${genOrder}`;
+
+      // 1. Determine exact lane baseline Y
+      const existingInGen = nodes.filter((n) => n.generationOrder === genOrder);
+      let targetY: number;
+      if (existingInGen.length > 0) {
+        targetY = existingInGen[0].y;
+      } else if (matchingLane) {
+        targetY = matchingLane.y + Math.round((matchingLane.height - 160) / 2);
+      } else if (relativeNode) {
+        targetY = isPersonChild ? relativeNode.y + 440 : isPersonParent ? relativeNode.y - 440 : relativeNode.y;
+      } else {
+        targetY = 2780;
+      }
+
+      // 2. Determine initial candidate X
+      let targetX = 700;
+      if (existingInGen.length > 0) {
+        // Place safely to the right of all existing members in this generation strip
+        const maxXInLane = Math.max(...existingInGen.map((n) => n.x + (n.width || 190)));
+        targetX = maxXInLane + 120;
+      } else if (relativeNode) {
+        targetX = relativeNode.x;
+      }
+
+      const birthYear = person.birth_date
+        ? parseInt(person.birth_date.slice(0, 4), 10)
+        : null;
 
       const newNode: PositionedNode = {
         id: person.id,
@@ -113,8 +130,8 @@ export function augmentLayoutWithCustomPersons(
         generationId: genId,
         generationOrder: genOrder,
         generationName: genName,
-        x,
-        y,
+        x: targetX,
+        y: targetY,
         width: 190,
         height: 160,
         photoPath: person.profile_photo || null,
@@ -131,7 +148,8 @@ export function augmentLayoutWithCustomPersons(
 
       // Add edges connecting to existing nodes
       for (const rel of personRels) {
-        const otherId = rel.person_id === person.id ? rel.related_person_id : rel.person_id;
+        const otherId =
+          rel.person_id === person.id ? rel.related_person_id : rel.person_id;
         if (existingNodeIds.has(otherId)) {
           const edgeId = `edge-${rel.relationship_type}-${person.id}-${otherId}`;
           if (!existingEdgeIds.has(edgeId)) {
@@ -158,11 +176,57 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
-  // Adjust canvas width if any node extends beyond
+  // 3. DETERMINISTIC GLOBAL COLLISION RESOLUTION PASS
+  // Guarantees zero overlapping tiles in any generational strip
+  const genGroups = new Map<number, PositionedNode[]>();
+  for (const node of nodes) {
+    const order = node.generationOrder ?? 0;
+    if (!genGroups.has(order)) {
+      genGroups.set(order, []);
+    }
+    genGroups.get(order)!.push(node);
+  }
+
+  for (const [_order, laneNodes] of genGroups) {
+    if (laneNodes.length <= 1) continue;
+
+    // Unify Y coordinate to lane baseline
+    const baseNodes = laneNodes.filter((n) => baseNodeIds.has(n.id));
+    const baselineY = baseNodes.length > 0 ? baseNodes[0].y : laneNodes[0].y;
+    for (const node of laneNodes) {
+      node.y = baselineY;
+    }
+
+    // Sort left to right; if coordinates are close, base nodes precede custom nodes
+    laneNodes.sort((a, b) => {
+      if (Math.abs(a.x - b.x) < 30) {
+        const aIsBase = baseNodeIds.has(a.id);
+        const bIsBase = baseNodeIds.has(b.id);
+        if (aIsBase && !bIsBase) return -1;
+        if (!aIsBase && bIsBase) return 1;
+      }
+      return a.x - b.x;
+    });
+
+    // Sequential non-overlap sweep: minimum 80px gap between cards
+    const MIN_GAP = 80;
+    for (let i = 0; i < laneNodes.length - 1; i++) {
+      const current = laneNodes[i];
+      const next = laneNodes[i + 1];
+      const currentWidth = current.width || 190;
+      const minRequiredX = current.x + currentWidth + MIN_GAP;
+
+      if (next.x < minRequiredX) {
+        next.x = minRequiredX;
+      }
+    }
+  }
+
+  // 4. Adjust canvas width if any node extends beyond
   let maxX = baseLayout.width;
   for (const n of nodes) {
-    if (n.x + n.width + 100 > maxX) {
-      maxX = n.x + n.width + 100;
+    if (n.x + (n.width || 190) + 120 > maxX) {
+      maxX = n.x + (n.width || 190) + 120;
     }
   }
 

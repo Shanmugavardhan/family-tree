@@ -2,6 +2,7 @@ import assert from 'assert';
 import { augmentLayoutWithCustomPersons } from '../src/services/layoutApi';
 import { saveLocalCustomPerson, getLocalCustomPersons } from '../src/services/personApi';
 import { saveLocalCustomRelationship, getLocalCustomRelationships } from '../src/services/relationshipApi';
+import { parseFullName } from '../src/utils/kinshipInference';
 import { Person } from '../src/types/person';
 import { Relationship } from '../src/types/relationship';
 import { FamilyLayout } from '../src/types/layout';
@@ -121,6 +122,35 @@ runTest('Root Cause Fix: augmentLayoutWithCustomPersons renders Subramanyam Para
   assert.ok(subramanyamNode.x > 0, 'Must have valid positive x coordinate');
   assert.ok(subramanyamNode.y > 0, 'Must have valid positive y coordinate');
 
+  // Verify non-overlapping coordinates in the generational strip
+  const sugunaNode = augmentedLayout.nodes.find((n) => n.firstName === 'Suguna');
+  assert.ok(sugunaNode, 'Suguna Konukuru node must exist');
+  assert.notStrictEqual(subramanyamNode.x, sugunaNode.x, 'Subramanyam MUST NOT overlap Suguna Konukuru');
+  assert.ok(
+    Math.abs(subramanyamNode.x - sugunaNode.x) >= 270,
+    `Subramanyam (${subramanyamNode.x}) and Suguna (${sugunaNode.x}) must be separated by at least 270px`
+  );
+
+  // Verify ALL nodes in Generation 3 have strictly zero overlap and flat strip Y alignment
+  const gen3Nodes = augmentedLayout.nodes.filter((n) => n.generationOrder === 3);
+  assert.ok(gen3Nodes.length >= 6, 'Must have at least 6 members in Generation 3');
+  for (const node of gen3Nodes) {
+    assert.strictEqual(node.y, 2780, `${node.firstName} must be aligned to lane baseline y=2780`);
+  }
+
+  // Pairwise bounding box overlap check
+  for (let i = 0; i < gen3Nodes.length; i++) {
+    for (let j = i + 1; j < gen3Nodes.length; j++) {
+      const a = gen3Nodes[i];
+      const b = gen3Nodes[j];
+      const gap = Math.abs(a.x - b.x);
+      assert.ok(
+        gap >= 270,
+        `Collision detected between ${a.firstName} (${a.x}) and ${b.firstName} (${b.x}): gap is only ${gap}px`
+      );
+    }
+  }
+
   // Verify the edge connects Ramayya (parent) to Subramanyam (child)
   const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
   const edge = augmentedLayout.edges.find(
@@ -128,6 +158,32 @@ runTest('Root Cause Fix: augmentLayoutWithCustomPersons renders Subramanyam Para
   );
   assert.ok(edge, 'Edge connecting Ramayya to Subramanyam must exist');
   assert.strictEqual(edge.type, 'parent_child');
+});
+
+runTest('Root Cause Fix: parseFullName auto-segregates single input into first, middle, and family name', () => {
+  // 1 token
+  const t1 = parseFullName('Subramanyam');
+  assert.strictEqual(t1.firstName, 'Subramanyam');
+  assert.strictEqual(t1.middleName, '');
+  assert.strictEqual(t1.lastName, '');
+
+  // 2 tokens
+  const t2 = parseFullName('Subramanyam Paradarami');
+  assert.strictEqual(t2.firstName, 'Subramanyam');
+  assert.strictEqual(t2.middleName, '');
+  assert.strictEqual(t2.lastName, 'Paradarami');
+
+  // 3 tokens
+  const t3 = parseFullName('Subramanyam Chetty Paradarami');
+  assert.strictEqual(t3.firstName, 'Subramanyam');
+  assert.strictEqual(t3.middleName, 'Chetty');
+  assert.strictEqual(t3.lastName, 'Paradarami');
+
+  // 4 tokens
+  const t4 = parseFullName('Sri Rama Krishna Rao Konukuru');
+  assert.strictEqual(t4.firstName, 'Sri');
+  assert.strictEqual(t4.middleName, 'Rama Krishna Rao');
+  assert.strictEqual(t4.lastName, 'Konukuru');
 });
 
 runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate nodes or edges', () => {

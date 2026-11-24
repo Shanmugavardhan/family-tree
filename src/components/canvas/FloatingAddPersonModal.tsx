@@ -15,6 +15,7 @@ import {
   inferInheritedSurname,
   calculateKinshipNomenclature,
   findNuclearFamilyBatchCandidates,
+  parseFullName,
   KinshipNode,
   KinshipEdge,
   SiblingDiscoveryResult,
@@ -45,6 +46,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const { isDark } = useTheme();
 
   // Form Field States
+  const [fullName, setFullName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -56,6 +58,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [birthPlace, setBirthPlace] = useState('');
   const [deathPlace, setDeathPlace] = useState('');
   const [biography, setBiography] = useState('');
+
+  // Info tooltip state for Father relation
+  const [showFatherInfo, setShowFatherInfo] = useState(false);
 
   // Photo Attachment & Cropping States (Vertical Rectangle Box)
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
@@ -87,6 +92,31 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Auto-segregate full name into first, middle, last name
+  const handleFullNameChange = (val: string) => {
+    setFullName(val);
+    const parsed = parseFullName(val);
+    setFirstName(parsed.firstName);
+    setMiddleName(parsed.middleName);
+    setLastName(parsed.lastName);
+    if (clientErrors.first_name) {
+      setClientErrors((prev) => {
+        const next = { ...prev };
+        delete next.first_name;
+        return next;
+      });
+    }
+  };
+
+  const handleInheritSurname = (suggested: string) => {
+    const parsed = parseFullName(fullName);
+    const newFull = [parsed.firstName, parsed.middleName, suggested].filter(Boolean).join(' ');
+    setFullName(newFull);
+    setFirstName(parsed.firstName);
+    setMiddleName(parsed.middleName);
+    setLastName(suggested);
+  };
+
   // Reset form when modal opens
   useEffect(() => {
     if (!isOpen) {
@@ -94,6 +124,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       return;
     }
 
+    setFullName('');
     setFirstName('');
     setMiddleName('');
     setLastName('');
@@ -116,6 +147,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setPhotoPreviewUrl(null);
     setIsCropperOpen(false);
     setInferenceNotice(null);
+    setShowFatherInfo(false);
     setClientErrors({});
     setSaveError(null);
     setShowUnsavedPrompt(false);
@@ -325,6 +357,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const isDirty = useMemo(() => {
     if (!isOpen) return false;
     return (
+      fullName.trim() !== '' ||
       firstName.trim() !== '' ||
       middleName.trim() !== '' ||
       lastName.trim() !== '' ||
@@ -344,6 +377,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     );
   }, [
     isOpen,
+    fullName,
     firstName,
     middleName,
     lastName,
@@ -387,8 +421,10 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   // Mandatory relationship validation & Biological/Chronological Sanity Checks
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!firstName.trim()) {
-      errors.first_name = 'First name is required.';
+    const parsed = parseFullName(fullName);
+    const effectiveFirst = parsed.firstName || firstName;
+    if (!effectiveFirst.trim()) {
+      errors.first_name = 'Full name is required (e.g. Subramanyam Chetty Paradarami).';
     }
     if (isLiving && deathDate) {
       errors.death_date = 'Living persons cannot have a date of death.';
@@ -534,10 +570,15 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setSaving(true);
     setSaveError(null);
 
+    const parsed = parseFullName(fullName);
+    const finalFirst = (parsed.firstName || firstName).trim();
+    const finalMiddle = (parsed.middleName || middleName).trim() || null;
+    const finalLast = (parsed.lastName || lastName || surnameInference.suggestedSurname || '').trim() || null;
+
     const input: CreatePersonInput = {
-      first_name: firstName.trim(),
-      middle_name: middleName.trim() || null,
-      last_name: lastName.trim() || null,
+      first_name: finalFirst,
+      middle_name: finalMiddle,
+      last_name: finalLast,
       alias: alias.trim() || null,
       gender,
       is_living: isLiving,
@@ -924,58 +965,66 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
                 {/* Right Form Fields */}
                 <div style={{ flex: 1, minWidth: 260 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-                    <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                    <div style={{ gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                        First Name *
+                        Full Name *
                       </label>
                       <input
                         type="text"
                         className="form-input"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="e.g. Vikram"
+                        value={fullName}
+                        onChange={(e) => handleFullNameChange(e.target.value)}
+                        placeholder="e.g. Subramanyam Chetty Paradarami"
                         required
+                        autoFocus
                       />
-                      {clientErrors.first_name && (
-                        <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.first_name}</p>
+                      <span style={{ display: 'block', fontSize: '11px', color: isDark ? '#9BA3AF' : '#64748b', marginTop: 4 }}>
+                        Hint: Enter full name together. First, middle, and family surname are automatically segregated.
+                      </span>
+
+                      {/* Real-time name segregation visual tags */}
+                      {fullName.trim() && (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            padding: '6px 10px',
+                            borderRadius: 6,
+                            backgroundColor: isDark ? 'rgba(214, 177, 92, 0.08)' : '#fef9c3',
+                            border: '1px solid rgba(214, 177, 92, 0.25)',
+                            fontSize: '11.5px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <span style={{ color: isDark ? '#9BA3AF' : '#78716c', fontWeight: 600 }}>Segregated:</span>
+                          <span style={{ color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                            First: <strong style={{ color: '#D6B15C' }}>"{firstName || '(None)'}"</strong>
+                          </span>
+                          {middleName && (
+                            <span style={{ color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                              Middle: <strong style={{ color: '#60a5fa' }}>"{middleName}"</strong>
+                            </span>
+                          )}
+                          <span style={{ color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                            Family Name: <strong style={{ color: '#a78bfa' }}>"{lastName || surnameInference.suggestedSurname || '(None)'}"</strong>
+                          </span>
+                        </div>
                       )}
-                    </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                        Middle Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={middleName}
-                        onChange={(e) => setMiddleName(e.target.value)}
-                        placeholder="e.g. Prasad"
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 5 }}>
-                        Last Name / Family Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="e.g. Sharma"
-                      />
-                      {surnameInference.suggestedSurname && lastName !== surnameInference.suggestedSurname && (
+                      {/* Suggested surname helper button if not included in input */}
+                      {surnameInference.suggestedSurname && !lastName && (
                         <button
                           type="button"
-                          onClick={() => setLastName(surnameInference.suggestedSurname!)}
+                          onClick={() => handleInheritSurname(surnameInference.suggestedSurname!)}
                           style={{
-                            marginTop: 4,
+                            marginTop: 6,
                             background: 'none',
                             border: 'none',
                             color: '#D6B15C',
-                            fontSize: '11px',
+                            fontSize: '11.5px',
                             cursor: 'pointer',
                             padding: 0,
                             textAlign: 'left',
@@ -986,6 +1035,10 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                         >
                           💡 Inherit family surname "{surnameInference.suggestedSurname}"
                         </button>
+                      )}
+
+                      {clientErrors.first_name && (
+                        <p style={{ color: '#f87171', fontSize: '12px', margin: '4px 0 0' }}>{clientErrors.first_name}</p>
                       )}
                     </div>
 
@@ -1407,9 +1460,93 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
               {/* Dropdown: "Who" */}
               <div style={{ marginTop: 12 }}>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, marginBottom: 6 }}>
-                  Who ({selectedRelationType === 'father' ? 'Father' : selectedRelationType === 'mother' ? 'Mother' : selectedRelationType === 'spouse' ? 'Spouse' : 'Son / Daughter'}) *
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 600, margin: 0, color: isDark ? '#F1E9D7' : '#1e293b' }}>
+                    Who ({selectedRelationType === 'father' ? 'Father' : selectedRelationType === 'mother' ? 'Mother' : selectedRelationType === 'spouse' ? 'Spouse' : 'Son / Daughter'}) *
+                  </label>
+
+                  {/* "i" Info Icon beside Who (Father) with hover and hold tooltip */}
+                  {selectedRelationType === 'father' && (
+                    <div
+                      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+                      onMouseEnter={() => setShowFatherInfo(true)}
+                      onMouseLeave={() => setShowFatherInfo(false)}
+                    >
+                      <button
+                        type="button"
+                        aria-label="Why linking Father is optimal for the system"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowFatherInfo((prev) => !prev);
+                        }}
+                        onTouchStart={() => setShowFatherInfo(true)}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          backgroundColor: showFatherInfo ? '#D6B15C' : (isDark ? 'rgba(214, 177, 92, 0.2)' : '#fef3c7'),
+                          border: '1.5px solid #D6B15C',
+                          color: showFatherInfo ? '#10141d' : '#D6B15C',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          fontFamily: "'Inter', sans-serif",
+                          fontStyle: 'italic',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          padding: 0,
+                          transition: 'all 0.15s ease',
+                          boxShadow: showFatherInfo ? '0 0 10px rgba(214, 177, 92, 0.5)' : 'none',
+                        }}
+                      >
+                        i
+                      </button>
+
+                      {/* Tooltip shown on hover & hold */}
+                      {showFatherInfo && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 'calc(100% + 8px)',
+                            left: 0,
+                            width: 320,
+                            maxWidth: 'calc(100vw - 60px)',
+                            backgroundColor: isDark ? '#151922' : '#ffffff',
+                            border: '1.5px solid #D6B15C',
+                            boxShadow: isDark
+                              ? '0 12px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(214, 177, 92, 0.3)'
+                              : '0 12px 28px rgba(0, 0, 0, 0.2)',
+                            borderRadius: 10,
+                            padding: '12px 14px',
+                            zIndex: 9999,
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                            color: isDark ? '#F1E9D7' : '#1e293b',
+                            pointerEvents: 'auto',
+                            animation: 'floatingModalFadeIn 0.15s ease-out',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#D6B15C', fontWeight: 700, fontSize: '12.5px' }}>
+                            <span>👑 Why Father Relation is Recommended</span>
+                          </div>
+                          <p style={{ margin: '0 0 6px', color: isDark ? '#e2e8f0' : '#334155', fontSize: '11.5px' }}>
+                            Connecting through the <strong>Father</strong> provides superior genealogical intelligence for this family tree:
+                          </p>
+                          <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '11px', color: isDark ? '#cbd5e1' : '#475569' }}>
+                            <li><strong>Patrilineal Surname Inheritance:</strong> Automatically establishes and inherits the lineage family surname.</li>
+                            <li><strong>Generational Epoch Alignment:</strong> Accurately positions the member into the correct historical generational strip.</li>
+                            <li><strong>Kinship Auto-Inference:</strong> Automatically discovers paternal siblings and links the biological mother.</li>
+                            <li><strong>Direct Bloodline Tree Lines:</strong> Renders unbroken generational branch lines from the ancestral root.</li>
+                          </ul>
+                          <div style={{ marginTop: 8, fontSize: '10px', color: isDark ? '#9BA3AF' : '#64748b', fontStyle: 'italic', borderTop: `1px solid ${isDark ? '#2a3441' : '#e2e8f0'}`, paddingTop: 6 }}>
+                            Hover or hold on "i" to keep open.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <select
                   className="form-select"
                   value={

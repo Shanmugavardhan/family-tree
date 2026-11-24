@@ -1186,3 +1186,33 @@ export function inferKinshipRelations(params: {
 
   return result;
 }
+
+/**
+ * Segregates a raw full name string into first name, middle name, and family/last name.
+ * Rules:
+ * - 1 token: first = token[0], middle = '', last = ''
+ * - 2 tokens: first = token[0], middle = '', last = token[1]
+ * - 3+ tokens: first = token[0], middle = token[1..n-2], last = token[n-1]
+ */
+export function parseFullName(raw: string): {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+} {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) {
+    return { firstName: '', middleName: '', lastName: '' };
+  }
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return { firstName: parts[0], middleName: '', lastName: '' };
+  }
+  if (parts.length === 2) {
+    return { firstName: parts[0], middleName: '', lastName: parts[1] };
+  }
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(' '),
+    lastName: parts[parts.length - 1],
+  };
+}
