@@ -76,20 +76,62 @@ export function augmentLayoutWithCustomPersons(
       relativeNode || (personSurname && personSurname === normLineage);
 
     if (matchesLineage) {
-      let genOrder = relativeNode?.generationOrder ?? 0;
-      if (relativeNode) {
-        if (isPersonChild) {
-          genOrder = (relativeNode.generationOrder ?? 0) + 1;
-        } else if (isPersonParent) {
-          genOrder = (relativeNode.generationOrder ?? 0) - 1;
-        } else if (isPersonSpouse) {
-          genOrder = relativeNode.generationOrder ?? 0;
+      // 1. Check if person has a valid birth year (e.g. 2002 -> Generation Z, order 5)
+      const birthYear = person.birth_date
+        ? parseInt(person.birth_date.slice(0, 4), 10)
+        : null;
+      const validBirthYear =
+        birthYear !== null && !isNaN(birthYear) && birthYear > 1800 && birthYear < 2100
+          ? birthYear
+          : null;
+
+      // Historical generation bands (Order & Epochs)
+      const GENERATION_BANDS = [
+        { id: 'ancestral_gilded', name: 'Gilded Generation', start: 1843, end: 1859, order: -3 },
+        { id: 'missionary', name: 'Missionary Generation', start: 1860, end: 1882, order: -2 },
+        { id: 'lost', name: 'Lost Generation', start: 1883, end: 1900, order: -1 },
+        { id: 'greatest', name: 'Greatest Generation', start: 1901, end: 1927, order: 0 },
+        { id: 'silent', name: 'Silent Generation', start: 1928, end: 1945, order: 1 },
+        { id: 'baby_boomers', name: 'Baby Boomers', start: 1946, end: 1964, order: 2 },
+        { id: 'gen_x', name: 'Generation X', start: 1965, end: 1980, order: 3 },
+        { id: 'millennials', name: 'Millennials (Gen Y)', start: 1981, end: 1996, order: 4 },
+        { id: 'gen_z', name: 'Generation Z', start: 1997, end: 2012, order: 5 },
+        { id: 'gen_alpha', name: 'Generation Alpha', start: 2013, end: 2024, order: 6 },
+        { id: 'gen_beta', name: 'Generation Beta', start: 2025, end: 2039, order: 7 },
+      ];
+
+      let genOrder: number;
+      let genId: string;
+      let genName: string;
+
+      const matchedBand =
+        validBirthYear !== null
+          ? GENERATION_BANDS.find((b) => validBirthYear >= b.start && validBirthYear <= b.end)
+          : undefined;
+
+      if (matchedBand) {
+        // Explicit birth year takes absolute precedence over relative kinship index
+        genOrder = matchedBand.order;
+        genId = matchedBand.id;
+        genName = matchedBand.name;
+      } else {
+        // Fallback: Infer generation order from kinship relation if birth year is unknown
+        genOrder = relativeNode?.generationOrder ?? 0;
+        if (relativeNode) {
+          if (isPersonChild) {
+            genOrder = (relativeNode.generationOrder ?? 0) + 1;
+          } else if (isPersonParent) {
+            genOrder = (relativeNode.generationOrder ?? 0) - 1;
+          } else if (isPersonSpouse) {
+            genOrder = relativeNode.generationOrder ?? 0;
+          }
         }
+        const matchingLane = baseLayout.lanes.find((l) => l.order === genOrder);
+        genId = matchingLane?.id || relativeNode?.generationId || `gen-${genOrder}`;
+        genName = matchingLane?.name || relativeNode?.generationName || `Generation ${genOrder}`;
       }
 
       const matchingLane = baseLayout.lanes.find((l) => l.order === genOrder);
-      const genId = matchingLane?.id || relativeNode?.generationId || `gen-${genOrder}`;
-      const genName = matchingLane?.name || relativeNode?.generationName || `Generation ${genOrder}`;
 
       // 1. Determine exact lane baseline Y
       const existingInGen = nodes.filter((n) => n.generationOrder === genOrder);
@@ -117,10 +159,6 @@ export function augmentLayoutWithCustomPersons(
         targetX = relativeNode.x;
       }
 
-      const birthYear = person.birth_date
-        ? parseInt(person.birth_date.slice(0, 4), 10)
-        : null;
-
       const newNode: PositionedNode = {
         id: person.id,
         personId: person.id,
@@ -128,7 +166,7 @@ export function augmentLayoutWithCustomPersons(
         middleName: person.middle_name || null,
         lastName: person.last_name || null,
         birthDate: person.birth_date || null,
-        birthYear: isNaN(birthYear as any) ? null : birthYear,
+        birthYear: validBirthYear,
         generationId: genId,
         generationOrder: genOrder,
         generationName: genName,

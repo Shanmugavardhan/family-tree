@@ -2,6 +2,7 @@ import { request } from './apiClient';
 import { ApiResponse } from '../types/api';
 import { Person, CreatePersonInput, UpdatePersonInput } from '../types/person';
 import { relationshipApi } from './relationshipApi';
+import { deriveRelationshipBetween } from '../utils/kinshipInference';
 
 export interface HealthCheckData {
   status: string;
@@ -47,14 +48,40 @@ let cachedRelatives: Record<string, any> | null = null;
 
 async function loadStaticPersons(): Promise<Person[]> {
   if (cachedPersons) return cachedPersons;
+  // Node.js test environment support
+  if (typeof window !== 'undefined' && !window.location.origin && typeof process !== 'undefined') {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/persons.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+        cachedPersons = Array.isArray(data) ? data : (data.persons || []);
+        return cachedPersons!;
+      }
+    } catch {}
+  }
   try {
-    const res = await fetch(`/data/persons.json?v=${Date.now()}`, { cache: 'no-cache' });
+    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+    const res = await fetch(`${origin}/data/persons.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       const data = await res.json();
       cachedPersons = Array.isArray(data) ? data : (data.persons || []);
       return cachedPersons!;
     }
   } catch (err) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/persons.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+        cachedPersons = Array.isArray(data) ? data : (data.persons || []);
+        return cachedPersons!;
+      }
+    } catch {}
     console.error('Failed to load static persons:', err);
   }
   return [];
@@ -62,13 +89,37 @@ async function loadStaticPersons(): Promise<Person[]> {
 
 async function loadStaticRelatives(): Promise<Record<string, any>> {
   if (cachedRelatives) return cachedRelatives;
+  // Node.js test environment support
+  if (typeof window !== 'undefined' && !window.location.origin && typeof process !== 'undefined') {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/relatives.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        cachedRelatives = JSON.parse(raw);
+        return cachedRelatives!;
+      }
+    } catch {}
+  }
   try {
-    const res = await fetch(`/data/relatives.json?v=${Date.now()}`, { cache: 'no-cache' });
+    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+    const res = await fetch(`${origin}/data/relatives.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       cachedRelatives = await res.json();
       return cachedRelatives!;
     }
   } catch (err) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/relatives.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        cachedRelatives = JSON.parse(raw);
+        return cachedRelatives!;
+      }
+    } catch {}
     console.error('Failed to load static relatives:', err);
   }
   return {};
@@ -348,34 +399,56 @@ export const personApi = {
       if (res.success && res.data) return res;
     }
 
-    const map = await loadStaticRelatives();
-    const fromMap = map[id];
-    const rel = fromMap?.all_relationships?.[targetId];
-    const toMap = map[targetId];
-    const revRel = toMap?.all_relationships?.[id];
+    // Check if custom persons or relationships exist in local storage
+    const customPersons = getLocalCustomPersons();
+    const hasCustomPerson = customPersons.some((p) => p.id === id || p.id === targetId);
 
-    const list = await loadStaticPersons();
-    const p1 = list.find((p) => p.id === id);
-    const p2 = list.find((p) => p.id === targetId);
+    // Try static relatives map only if neither person is custom
+    if (!hasCustomPerson) {
+      const map = await loadStaticRelatives();
+      const fromMap = map[id];
+      const rel = fromMap?.all_relationships?.[targetId];
+      const toMap = map[targetId];
+      const revRel = toMap?.all_relationships?.[id];
 
+      if (rel && revRel && rel.category !== 'unrelated') {
+        const list = await loadStaticPersons();
+        const p1 = list.find((p) => p.id === id);
+        const p2 = list.find((p) => p.id === targetId);
+
+        return {
+          success: true,
+          data: {
+            from_person: {
+              id,
+              full_name: p1 ? [p1.first_name, p1.last_name].filter(Boolean).join(' ') : 'Unknown',
+              gender: p1?.gender || 'other',
+            },
+            to_person: {
+              id: targetId,
+              full_name: p2 ? [p2.first_name, p2.last_name].filter(Boolean).join(' ') : 'Unknown',
+              gender: p2?.gender || 'other',
+            },
+            relationship: rel.relationship,
+            reverse_relationship: revRel.relationship,
+            category: rel.category,
+            path: rel.path || [],
+          },
+          error: null,
+        };
+      }
+    }
+
+    // Dynamic derivation across combined graph (static database + custom local persons/relationships)
+    const personsRes = await personApi.getAll({ includeArchived: true });
+    const relsRes = await relationshipApi.getAll();
+    const allPersons = personsRes.data || [];
+    const allRels = relsRes.data || [];
+
+    const derived = deriveRelationshipBetween(id, targetId, allPersons, allRels);
     return {
       success: true,
-      data: {
-        from_person: {
-          id,
-          full_name: p1 ? [p1.first_name, p1.last_name].filter(Boolean).join(' ') : 'Unknown',
-          gender: p1?.gender || 'other',
-        },
-        to_person: {
-          id: targetId,
-          full_name: p2 ? [p2.first_name, p2.last_name].filter(Boolean).join(' ') : 'Unknown',
-          gender: p2?.gender || 'other',
-        },
-        relationship: rel?.relationship || 'Unrelated',
-        reverse_relationship: revRel?.relationship || 'Unrelated',
-        category: rel?.category || 'unrelated',
-        path: rel?.path || [],
-      },
+      data: derived,
       error: null,
     };
   },

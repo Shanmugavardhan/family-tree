@@ -39,14 +39,40 @@ export function saveLocalCustomRelationship(rel: Relationship): void {
 
 async function loadStaticRelationships(): Promise<Relationship[]> {
   if (cachedRelationships) return cachedRelationships;
+  // Node.js test environment support
+  if (typeof window !== 'undefined' && !window.location.origin && typeof process !== 'undefined') {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/relationships.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+        cachedRelationships = Array.isArray(data) ? data : (data.relationships || []);
+        return cachedRelationships!;
+      }
+    } catch {}
+  }
   try {
-    const res = await fetch(`/data/relationships.json?v=${Date.now()}`, { cache: 'no-cache' });
+    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+    const res = await fetch(`${origin}/data/relationships.json?v=${Date.now()}`, { cache: 'no-cache' });
     if (res.ok) {
       const data = await res.json();
       cachedRelationships = Array.isArray(data) ? data : (data.relationships || []);
       return cachedRelationships!;
     }
   } catch (err) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.resolve(process.cwd(), 'public/data/relationships.json');
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+        cachedRelationships = Array.isArray(data) ? data : (data.relationships || []);
+        return cachedRelationships!;
+      }
+    } catch {}
     console.error('Failed to load static relationships:', err);
   }
   return [];

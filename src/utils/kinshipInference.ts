@@ -1216,3 +1216,344 @@ export function parseFullName(raw: string): {
     lastName: parts[parts.length - 1],
   };
 }
+
+// --------------------------------------------------------------------------
+// 9. DYNAMIC PERSPECTIVE RELATIONSHIP DERIVATION ENGINE
+// --------------------------------------------------------------------------
+
+export function deriveRelationshipBetween(
+  sourceId: string,
+  targetId: string,
+  allPersons: Array<{
+    id: string;
+    first_name?: string;
+    middle_name?: string | null;
+    last_name?: string | null;
+    gender?: string;
+    [key: string]: any;
+  }>,
+  allRelationships: Array<{
+    person_id: string;
+    related_person_id: string;
+    relationship_type: string;
+    parent_type?: string | null;
+    [key: string]: any;
+  }>
+): import('../types/relative').PerspectiveRelationshipResult {
+  const p1 = allPersons.find((p) => p.id === sourceId);
+  const p2 = allPersons.find((p) => p.id === targetId);
+
+  const name1 = p1 ? [p1.first_name, p1.middle_name, p1.last_name].filter(Boolean).join(' ') : 'Unknown';
+  const name2 = p2 ? [p2.first_name, p2.middle_name, p2.last_name].filter(Boolean).join(' ') : 'Unknown';
+  const g1 = ((p1?.gender || 'other').toLowerCase()) as import('../types/person').Gender;
+  const g2 = ((p2?.gender || 'other').toLowerCase()) as import('../types/person').Gender;
+
+  if (sourceId === targetId) {
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: 'Self',
+      reverse_relationship: 'Self',
+      category: 'self',
+      path: [name1],
+    };
+  }
+
+  // Index direct family connections
+  const parentsOf = new Map<string, string[]>(); // childId -> list of parentIds
+  const childrenOf = new Map<string, string[]>(); // parentId -> list of childIds
+  const spousesOf = new Map<string, string[]>(); // personId -> list of spouseIds
+  const adj = new Map<string, string[]>(); // undirected adjacency for BFS fallback
+
+  for (const p of allPersons) {
+    parentsOf.set(p.id, []);
+    childrenOf.set(p.id, []);
+    spousesOf.set(p.id, []);
+    adj.set(p.id, []);
+  }
+
+  for (const r of allRelationships) {
+    if (r.relationship_type === 'parent') {
+      if (!parentsOf.has(r.person_id)) parentsOf.set(r.person_id, []);
+      parentsOf.get(r.person_id)!.push(r.related_person_id);
+
+      if (!childrenOf.has(r.related_person_id)) childrenOf.set(r.related_person_id, []);
+      childrenOf.get(r.related_person_id)!.push(r.person_id);
+
+      if (!adj.has(r.person_id)) adj.set(r.person_id, []);
+      adj.get(r.person_id)!.push(r.related_person_id);
+
+      if (!adj.has(r.related_person_id)) adj.set(r.related_person_id, []);
+      adj.get(r.related_person_id)!.push(r.person_id);
+    } else if (r.relationship_type === 'spouse') {
+      if (!spousesOf.has(r.person_id)) spousesOf.set(r.person_id, []);
+      spousesOf.get(r.person_id)!.push(r.related_person_id);
+
+      if (!spousesOf.has(r.related_person_id)) spousesOf.set(r.related_person_id, []);
+      spousesOf.get(r.related_person_id)!.push(r.person_id);
+
+      if (!adj.has(r.person_id)) adj.set(r.person_id, []);
+      adj.get(r.person_id)!.push(r.related_person_id);
+
+      if (!adj.has(r.related_person_id)) adj.set(r.related_person_id, []);
+      adj.get(r.related_person_id)!.push(r.person_id);
+    }
+  }
+
+  const sParents = parentsOf.get(sourceId) || [];
+  const tParents = parentsOf.get(targetId) || [];
+
+  // 1. Direct Parent
+  if (sParents.includes(targetId)) {
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: g2 === 'female' ? 'Mother' : 'Father',
+      reverse_relationship: g1 === 'female' ? 'Daughter' : 'Son',
+      category: 'parents',
+      path: [name1, name2],
+    };
+  }
+
+  // 2. Direct Child
+  if ((childrenOf.get(sourceId) || []).includes(targetId)) {
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: g2 === 'female' ? 'Daughter' : 'Son',
+      reverse_relationship: g1 === 'female' ? 'Mother' : 'Father',
+      category: 'children',
+      path: [name1, name2],
+    };
+  }
+
+  // 3. Spouse
+  if ((spousesOf.get(sourceId) || []).includes(targetId)) {
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: g2 === 'female' ? 'Wife' : 'Husband',
+      reverse_relationship: g1 === 'female' ? 'Wife' : 'Husband',
+      category: 'spouses',
+      path: [name1, name2],
+    };
+  }
+
+  // 4. Siblings (Brother / Sister) sharing at least one parent
+  const sharedParents = sParents.filter((p) => tParents.includes(p));
+  if (sharedParents.length > 0) {
+    const parentNode = allPersons.find((p) => p.id === sharedParents[0]);
+    const parentName = parentNode ? [parentNode.first_name, parentNode.last_name].filter(Boolean).join(' ') : 'Parent';
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: g2 === 'female' ? 'Sister' : 'Brother',
+      reverse_relationship: g1 === 'female' ? 'Sister' : 'Brother',
+      category: 'siblings',
+      path: [name1, parentName, name2],
+    };
+  }
+
+  // 5. Grandparent
+  for (const sp of sParents) {
+    if ((parentsOf.get(sp) || []).includes(targetId)) {
+      const parentNode = allPersons.find((p) => p.id === sp);
+      const parentName = parentNode ? [parentNode.first_name, parentNode.last_name].filter(Boolean).join(' ') : 'Parent';
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Grandmother' : 'Grandfather',
+        reverse_relationship: g1 === 'female' ? 'Granddaughter' : 'Grandson',
+        category: 'grandparents',
+        path: [name1, parentName, name2],
+      };
+    }
+  }
+
+  // 6. Grandchild
+  for (const sc of childrenOf.get(sourceId) || []) {
+    if ((childrenOf.get(sc) || []).includes(targetId)) {
+      const childNode = allPersons.find((p) => p.id === sc);
+      const childName = childNode ? [childNode.first_name, childNode.last_name].filter(Boolean).join(' ') : 'Child';
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Granddaughter' : 'Grandson',
+        reverse_relationship: g1 === 'female' ? 'Grandmother' : 'Grandfather',
+        category: 'grandchildren',
+        path: [name1, childName, name2],
+      };
+    }
+  }
+
+  // 7. Uncle / Aunt (Target is sibling of a parent of Source)
+  for (const sp of sParents) {
+    const spParents = parentsOf.get(sp) || [];
+    if (spParents.some((gp) => tParents.includes(gp)) && sp !== targetId) {
+      const parentNode = allPersons.find((p) => p.id === sp);
+      const parentName = parentNode ? [parentNode.first_name, parentNode.last_name].filter(Boolean).join(' ') : 'Parent';
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Aunt' : 'Uncle',
+        reverse_relationship: g1 === 'female' ? 'Niece' : 'Nephew',
+        category: 'uncles_aunts',
+        path: [name1, parentName, name2],
+      };
+    }
+  }
+
+  // 8. Nephew / Niece (Target is child of a sibling of Source)
+  for (const tp of tParents) {
+    const tpParents = parentsOf.get(tp) || [];
+    if (tpParents.some((gp) => sParents.includes(gp)) && tp !== sourceId) {
+      const sibNode = allPersons.find((p) => p.id === tp);
+      const sibName = sibNode ? [sibNode.first_name, sibNode.last_name].filter(Boolean).join(' ') : 'Sibling';
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Niece' : 'Nephew',
+        reverse_relationship: g1 === 'female' ? 'Aunt' : 'Uncle',
+        category: 'nephews_nieces',
+        path: [name1, sibName, name2],
+      };
+    }
+  }
+
+  // 9. First Cousin (Parents are siblings)
+  for (const sp of sParents) {
+    const spParents = parentsOf.get(sp) || [];
+    for (const tp of tParents) {
+      const tpParents = parentsOf.get(tp) || [];
+      if (spParents.some((gp) => tpParents.includes(gp)) && sp !== tp) {
+        const spNode = allPersons.find((p) => p.id === sp);
+        const tpNode = allPersons.find((p) => p.id === tp);
+        const spName = (spNode && spNode.first_name) ? spNode.first_name : 'Parent';
+        const tpName = (tpNode && tpNode.first_name) ? tpNode.first_name : 'Parent';
+        return {
+          from_person: { id: sourceId, full_name: name1, gender: g1 },
+          to_person: { id: targetId, full_name: name2, gender: g2 },
+          relationship: 'First Cousin',
+          reverse_relationship: 'First Cousin',
+          category: 'cousins',
+          path: [name1, spName, tpName, name2],
+        };
+      }
+    }
+  }
+
+  // 10. In-Laws (Spouse of sibling, Sibling of spouse, Parent of spouse, Spouse of child)
+  // Sibling's Spouse
+  for (const p of allPersons) {
+    if (p.id === sourceId) continue;
+    const pParents = parentsOf.get(p.id) || [];
+    if (sParents.some((sp) => pParents.includes(sp))) {
+      if ((spousesOf.get(p.id) || []).includes(targetId)) {
+        return {
+          from_person: { id: sourceId, full_name: name1, gender: g1 },
+          to_person: { id: targetId, full_name: name2, gender: g2 },
+          relationship: g2 === 'female' ? 'Sister-in-law' : 'Brother-in-law',
+          reverse_relationship: g1 === 'female' ? 'Sister-in-law' : 'Brother-in-law',
+          category: 'in_laws',
+          path: [name1, p.first_name || 'Sibling', name2],
+        };
+      }
+    }
+  }
+
+  // Spouse's Sibling
+  for (const sp of spousesOf.get(sourceId) || []) {
+    const spParents = parentsOf.get(sp) || [];
+    if (spParents.some((gp) => tParents.includes(gp)) && sp !== targetId) {
+      const spNode = allPersons.find((p) => p.id === sp);
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Sister-in-law' : 'Brother-in-law',
+        reverse_relationship: g1 === 'female' ? 'Brother-in-law' : 'Sister-in-law',
+        category: 'in_laws',
+        path: [name1, spNode?.first_name || 'Spouse', name2],
+      };
+    }
+  }
+
+  // Spouse's Parent
+  for (const sp of spousesOf.get(sourceId) || []) {
+    if ((parentsOf.get(sp) || []).includes(targetId)) {
+      const spNode = allPersons.find((p) => p.id === sp);
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Mother-in-law' : 'Father-in-law',
+        reverse_relationship: g1 === 'female' ? 'Daughter-in-law' : 'Son-in-law',
+        category: 'in_laws',
+        path: [name1, spNode?.first_name || 'Spouse', name2],
+      };
+    }
+  }
+
+  // Child's Spouse
+  for (const c of childrenOf.get(sourceId) || []) {
+    if ((spousesOf.get(c) || []).includes(targetId)) {
+      const cNode = allPersons.find((p) => p.id === c);
+      return {
+        from_person: { id: sourceId, full_name: name1, gender: g1 },
+        to_person: { id: targetId, full_name: name2, gender: g2 },
+        relationship: g2 === 'female' ? 'Daughter-in-law' : 'Son-in-law',
+        reverse_relationship: g1 === 'female' ? 'Mother-in-law' : 'Father-in-law',
+        category: 'in_laws',
+        path: [name1, cNode?.first_name || 'Child', name2],
+      };
+    }
+  }
+
+  // 11. BFS Graph Traversal Fallback
+  const queue: string[] = [sourceId];
+  const visited = new Set<string>([sourceId]);
+  const parentMap = new Map<string, string>();
+
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr === targetId) break;
+
+    for (const neighbor of adj.get(curr) || []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parentMap.set(neighbor, curr);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  if (parentMap.has(targetId)) {
+    const pathIds: string[] = [targetId];
+    let curr = targetId;
+    while (curr !== sourceId) {
+      const p = parentMap.get(curr)!;
+      pathIds.unshift(p);
+      curr = p;
+    }
+    const pathNames = pathIds.map((id) => {
+      const p = allPersons.find((x) => x.id === id);
+      return p ? [p.first_name, p.last_name].filter(Boolean).join(' ') : 'Relative';
+    });
+
+    return {
+      from_person: { id: sourceId, full_name: name1, gender: g1 },
+      to_person: { id: targetId, full_name: name2, gender: g2 },
+      relationship: 'Relative',
+      reverse_relationship: 'Relative',
+      category: 'unrelated',
+      path: pathNames,
+    };
+  }
+
+  return {
+    from_person: { id: sourceId, full_name: name1, gender: g1 },
+    to_person: { id: targetId, full_name: name2, gender: g2 },
+    relationship: 'Unrelated',
+    reverse_relationship: 'Unrelated',
+    category: 'unrelated',
+    path: [],
+  };
+}

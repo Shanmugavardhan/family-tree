@@ -39,10 +39,10 @@ console.log('================================================================\n'
 let passed = 0;
 let total = 0;
 
-function runTest(name: string, fn: () => void) {
+async function runTest(name: string, fn: () => void | Promise<void>) {
   total++;
   try {
-    fn();
+    await fn();
     console.log(`✓ PASS: ${name}`);
     passed++;
   } catch (err: any) {
@@ -55,7 +55,8 @@ function runTest(name: string, fn: () => void) {
 const paradaramiLayoutPath = path.resolve(__dirname, '../public/data/layout-paradarami.json');
 const baseParadaramiLayout: FamilyLayout = JSON.parse(fs.readFileSync(paradaramiLayoutPath, 'utf-8'));
 
-runTest('Root Cause Fix: saveLocalCustomPerson stores member in persistent local storage', () => {
+async function runAll() {
+  await runTest('Root Cause Fix: saveLocalCustomPerson stores member in persistent local storage', () => {
   localStorage.clear();
   const subramanyam: Person = {
     id: 'subramanyam-test-uuid',
@@ -85,7 +86,7 @@ runTest('Root Cause Fix: saveLocalCustomPerson stores member in persistent local
   assert.strictEqual(stored[0].last_name, 'Paradarami');
 });
 
-runTest('Root Cause Fix: saveLocalCustomRelationship stores parent relationship in persistent storage', () => {
+  await runTest('Root Cause Fix: saveLocalCustomRelationship stores parent relationship in persistent storage', () => {
   const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb'; // Ramayya Paradarami in base tree
   const rel: Relationship = {
     id: 'rel-ramayya-subramanyam',
@@ -106,7 +107,7 @@ runTest('Root Cause Fix: saveLocalCustomRelationship stores parent relationship 
   assert.strictEqual(stored[0].related_person_id, ramayyaId);
 });
 
-runTest('Root Cause Fix: augmentLayoutWithCustomPersons renders Subramanyam Paradarami on canvas layout', () => {
+  await runTest('Root Cause Fix: augmentLayoutWithCustomPersons renders Subramanyam Paradarami on canvas layout', () => {
   const initialNodeCount = baseParadaramiLayout.nodes.length;
   const initialEdgeCount = baseParadaramiLayout.edges.length;
 
@@ -161,7 +162,7 @@ runTest('Root Cause Fix: augmentLayoutWithCustomPersons renders Subramanyam Para
   assert.strictEqual(edge.type, 'parent_child');
 });
 
-runTest('Root Cause Fix: parseFullName auto-segregates single input into first, middle, and family name', () => {
+  await runTest('Root Cause Fix: parseFullName auto-segregates single input into first, middle, and family name', () => {
   // 1 token
   const t1 = parseFullName('Subramanyam');
   assert.strictEqual(t1.firstName, 'Subramanyam');
@@ -187,7 +188,7 @@ runTest('Root Cause Fix: parseFullName auto-segregates single input into first, 
   assert.strictEqual(t4.lastName, 'Konukuru');
 });
 
-runTest('Spouse Side-by-Side Rearrangement: Narayanaswamy A sits directly beside Srivalli and Subramanyam rearranges rightwards', () => {
+  await runTest('Spouse Side-by-Side Rearrangement: Narayanaswamy A sits directly beside Srivalli and Subramanyam rearranges rightwards', () => {
   // Add Narayanaswamy A as spouse of Srivalli Narayanaswamy
   const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
   const narayanaswamy: Person = {
@@ -278,7 +279,7 @@ runTest('Spouse Side-by-Side Rearrangement: Narayanaswamy A sits directly beside
   assert.strictEqual(rfSpouseEdge.targetHandle, 'spouse-left', 'RF edge targetHandle must be spouse-left (pointing left)');
 });
 
-runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate nodes or edges', () => {
+  await runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate nodes or edges', () => {
   const run1 = augmentLayoutWithCustomPersons(baseParadaramiLayout, 'paradarami');
   const run2 = augmentLayoutWithCustomPersons(run1, 'paradarami');
 
@@ -286,7 +287,7 @@ runTest('Root Cause Fix: Multiple calls are idempotent and do not duplicate node
   assert.strictEqual(run2.edges.length, run1.edges.length, 'Edge count must not duplicate');
 });
 
-runTest('Generational Boundary Invariant: Person tiles are strictly contained inside their generational strip and never cross boundaries', () => {
+  await runTest('Generational Boundary Invariant: Person tiles are strictly contained inside their generational strip and never cross boundaries', () => {
   // Test across both standard and compact layouts for both lineages
   const konuStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru.json'), 'utf-8'));
   const konuCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru-compact.json'), 'utf-8'));
@@ -338,7 +339,156 @@ runTest('Generational Boundary Invariant: Person tiles are strictly contained in
   }
 });
 
-console.log(`\nResults: ${passed} / ${total} tests passed.`);
-if (passed !== total) {
-  process.exit(1);
+  await runTest('Bug Fix: Rohitha Galeti born in 2002 is placed in Generation Z (Order 5), NOT Millennials', () => {
+  // Clear and add Munirathnam/Rada as parents, and Rohitha with birth year 2002
+  const rohitha: Person = {
+    id: 'rohitha-galeti-uuid',
+    first_name: 'Rohitha',
+    middle_name: null,
+    last_name: 'Galeti',
+    alias: null,
+    gender: 'female',
+    birth_date: '2002',
+    death_date: null,
+    birth_place: 'Madanapalli',
+    death_place: null,
+    profile_photo: null,
+    biography: 'Daughter of Munirathnam and Rada',
+    is_living: true,
+    is_archived: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    archived_at: null,
+  };
+
+  saveLocalCustomPerson(rohitha);
+
+  // Parent relationship to Munirathnam Galeti (who is in Generation X, order 3)
+  const muniRel: Relationship = {
+    id: 'rel-muni-rohitha',
+    person_id: rohitha.id, // child
+    related_person_id: '901d8c3f-0bd1-4947-9678-fbfd685d77c1', // Munirathnam (Gen X, order 3)
+    relationship_type: 'parent',
+    parent_type: 'biological',
+    start_date: null,
+    end_date: null,
+    notes: null,
+    created_at: new Date().toISOString(),
+  };
+  saveLocalCustomRelationship(muniRel);
+
+  const paraCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8'));
+  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami', { compactLanes: true });
+
+  const rohithaNode = augmented.nodes.find((n) => n.id === rohitha.id);
+  assert.ok(rohithaNode, 'Rohitha Galeti node must be present in augmented layout');
+
+  // Verify that birth year 2002 maps to Generation Z (order 5), NOT Millennials (order 4)
+  assert.strictEqual(
+    rohithaNode.generationOrder,
+    5,
+    `Rohitha Galeti born in 2002 MUST be Generation Z (order 5), but was placed in order ${rohithaNode.generationOrder}!`
+  );
+  assert.strictEqual(
+    rohithaNode.generationId,
+    'gen_z',
+    `Rohitha Galeti generationId must be 'gen_z', got '${rohithaNode.generationId}'`
+  );
+  assert.strictEqual(
+    rohithaNode.generationName,
+    'Generation Z',
+    `Rohitha Galeti generationName must be 'Generation Z', got '${rohithaNode.generationName}'`
+  );
+
+  // Verify that Rohitha is positioned on the same vertical baseline as Gen Z peers (y = 1020)
+  const navaneethNode = augmented.nodes.find((n) => n.firstName === 'Navaneeth');
+  assert.ok(navaneethNode, 'Navaneeth Galeti node must exist in Gen Z');
+  assert.strictEqual(
+    rohithaNode.y,
+    navaneethNode.y,
+    `Rohitha Galeti (y=${rohithaNode.y}) must share exact same baseline Y with brother Navaneeth Galeti (y=${navaneethNode.y}) in Generation Z`
+  );
+});
+
+  await runTest('Bug Fix: Srivalli Narayanaswamy and Surendrababu Paradarami are derived as Brother and Sister', async () => {
+  // Srivalli is in base Paradarami tree with father Ramayya Chetty
+  const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
+  const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
+
+  // Add Surendrababu Paradarami as custom person with father Ramayya Chetty
+  const surendrababu: Person = {
+    id: 'surendrababu-paradarami-uuid',
+    first_name: 'Surendrababu',
+    middle_name: null,
+    last_name: 'Paradarami',
+    alias: null,
+    gender: 'male',
+    birth_date: '1972',
+    death_date: null,
+    birth_place: 'Paradarami',
+    death_place: null,
+    profile_photo: null,
+    biography: 'Son of Ramayya Chetty Paradarami',
+    is_living: true,
+    is_archived: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    archived_at: null,
+  };
+  saveLocalCustomPerson(surendrababu);
+
+  const ramayyaSurendraRel: Relationship = {
+    id: 'rel-ramayya-surendrababu',
+    person_id: surendrababu.id, // child
+    related_person_id: ramayyaId, // father
+    relationship_type: 'parent',
+    parent_type: 'biological',
+    start_date: null,
+    end_date: null,
+    notes: null,
+    created_at: new Date().toISOString(),
+  };
+  saveLocalCustomRelationship(ramayyaSurendraRel);
+
+  // Query Relationship Pathfinder via personApi.getRelationshipTo
+  const { personApi } = await import('../src/services/personApi');
+  const res = await personApi.getRelationshipTo(srivalliId, surendrababu.id);
+
+  assert.strictEqual(res.success, true);
+  assert.ok(res.data, 'Relationship data must be present');
+
+  // Perspective: From Srivalli -> Surendrababu is her Brother!
+  assert.strictEqual(
+    res.data.relationship,
+    'Brother',
+    `Expected Srivalli's relationship to Surendrababu to be 'Brother', got '${res.data.relationship}'`
+  );
+
+  // Reverse: From Surendrababu -> Srivalli is his Sister!
+  assert.strictEqual(
+    res.data.reverse_relationship,
+    'Sister',
+    `Expected reverse relationship to be 'Sister', got '${res.data.reverse_relationship}'`
+  );
+
+  assert.strictEqual(
+    res.data.category,
+    'siblings',
+    `Expected category to be 'siblings', got '${res.data.category}'`
+  );
+
+  // Path must traverse through shared father Ramayya
+  assert.ok(res.data.path.length >= 3, 'Path must connect Srivalli, Ramayya, and Surendrababu');
+  assert.ok(res.data.path.some((p) => p.includes('Ramayya')), 'Path must include shared parent Ramayya');
+});
+
+  console.log(`\nResults: ${passed} / ${total} tests passed.`);
+  if (passed !== total) {
+    process.exit(1);
+  }
 }
+
+runAll().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
