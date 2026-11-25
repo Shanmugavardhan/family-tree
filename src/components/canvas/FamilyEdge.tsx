@@ -159,24 +159,43 @@ export function computeObstacleAwareParentPath(params: {
   coupleKey: string;
   sourceX: number;
   sourceY: number;
+  sourceClearY?: number;
   targetX: number;
   targetY: number;
   personBoxes: ObstacleBox[];
 }): { path: string; labelX: number; labelY: number } | null {
-  const { coupleKey, sourceX, sourceY, targetX, targetY, personBoxes } = params;
+  const { coupleKey, sourceX, sourceY, sourceClearY, targetX, targetY, personBoxes } = params;
   if (targetY <= sourceY + 20) return null;
 
-  // Identify person/couple units sitting vertically between sourceY and targetY
+  const effectiveClearY = Math.max(sourceY, sourceClearY ?? sourceY);
+
+  // Identify person/couple units sitting vertically between effectiveClearY and targetY
   const intermediateBoxes = personBoxes.filter(
-    (b) => b.top > sourceY + 15 && b.bottom < targetY - 15
+    (b) => b.top > effectiveClearY + 10 && b.bottom < targetY - 15
   );
 
   // All children of the same couple share the exact same coupleSlot -> 1 unified sibling bus bar!
   const coupleSlot = (hashKey(coupleKey) % 5) - 2; // -2 .. +2
+  const upperCorridorY = effectiveClearY + 38 + coupleSlot * 7;
 
-  if (intermediateBoxes.length === 0) {
-    // Adjacent generation: single shared sibling bus in the empty corridor between the two lanes
-    const busY = Math.round((sourceY + targetY) / 2) + coupleSlot * 7;
+  const isXClear = (x: number) =>
+    !intermediateBoxes.some((b) => x >= b.left && x <= b.right);
+
+  // Minimal turns Case 1: Directly aligned vertically & clear of intermediate obstacles -> 0 turns!
+  if (Math.abs(targetX - sourceX) <= 4 && isXClear(targetX)) {
+    return {
+      path: `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`,
+      labelX: sourceX,
+      labelY: (sourceY + targetY) / 2,
+    };
+  }
+
+  // Minimal turns Case 2: Adjacent generation OR targetX is completely clear of intermediate tiles -> 2 turns only!
+  if (intermediateBoxes.length === 0 || isXClear(targetX)) {
+    const busY =
+      intermediateBoxes.length === 0
+        ? Math.round((effectiveClearY + targetY) / 2) + coupleSlot * 7
+        : upperCorridorY;
     const pts: Point[] = [
       { x: sourceX, y: sourceY },
       { x: sourceX, y: busY },
@@ -190,14 +209,10 @@ export function computeObstacleAwareParentPath(params: {
     };
   }
 
-  // Multi-generation span: route cleanly around all intermediate couple/person boxes
-  const upperCorridorY = sourceY + 42 + coupleSlot * 7;
+  // Case 3: Multi-generation span where targetX is blocked by an intermediate person/spouse unit -> route around obstacle
   const lowerCorridorY = targetY - 42 + coupleSlot * 7;
 
-  const isXClear = (x: number) =>
-    !intermediateBoxes.some((b) => x >= b.left && x <= b.right);
-
-  const candidates: number[] = [targetX, sourceX];
+  const candidates: number[] = [sourceX];
   const sortedBoxes = [...intermediateBoxes].sort((a, b) => a.left - b.left);
 
   if (sortedBoxes.length > 0) {
@@ -223,7 +238,6 @@ export function computeObstacleAwareParentPath(params: {
   if (clearCandidates.length > 0) {
     clearCandidates.sort((a, b) => Math.abs(a - idealX) - Math.abs(b - idealX));
     const bestBase = clearCandidates[0];
-    // All children of the same couple share the exact same dropX channel -> zero line crossings!
     const spread = bestBase + coupleSlot * 5;
     dropX = isXClear(spread) ? spread : bestBase;
   }
@@ -317,6 +331,7 @@ export const FamilyEdge: React.FC<any> = ({
       coupleKey,
       sourceX: effectiveSourceX,
       sourceY: effectiveSourceY,
+      sourceClearY: srcNode ? srcNode.y + srcNode.height + 12 : sourceY,
       targetX,
       targetY,
       personBoxes,

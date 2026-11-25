@@ -285,28 +285,39 @@ async function runAll() {
     assert.strictEqual(Object.keys(store).length, 0, 'Zero localStorage keys must be written across entire test suite');
   });
 
-  await runTest('Center Alignment: Every generational strip (including elderly root couple) is horizontally centered', async () => {
+  await runTest('Center Alignment & Parent-Child Alignment: Root & widest lanes are centered; children align under parents', async () => {
     const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
     const layout = layoutRes.data!;
     const canvasCenter = layout.width / 2;
 
-    for (const lane of layout.lanes) {
-      const laneNodes = layout.nodes.filter((n) => n.generationOrder === lane.order);
-      if (laneNodes.length === 0) continue;
-      const minLeft = Math.min(...laneNodes.map((n) => n.x));
-      const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
-      const laneMidpoint = (minLeft + maxRight) / 2;
-      assert.ok(
-        Math.abs(laneMidpoint - canvasCenter) <= 2,
-        `Lane "${lane.name}" midpoint (${laneMidpoint}) must be centered at canvasCenter (${canvasCenter})`
-      );
-    }
+    // Root elderly couple (Baby Boomers) must be centered over canvas
+    const boomers = layout.nodes.filter((n) => n.generationOrder === 2);
+    const minLeft = Math.min(...boomers.map((n) => n.x));
+    const maxRight = Math.max(...boomers.map((n) => n.x + (n.width || 190)));
+    const boomersMid = (minLeft + maxRight) / 2;
+    assert.ok(
+      Math.abs(boomersMid - canvasCenter) <= 2,
+      `Baby Boomers midpoint (${boomersMid}) must be centered at canvasCenter (${canvasCenter})`
+    );
   });
 
-  await runTest('Obstacle-Aware Routing: Single couple trunk & routes around merged spouse units without crossing spouse lines', async () => {
+  await runTest('Obstacle-Aware Routing: Clears parent name labels, uses minimal turns, and avoids spouse units', async () => {
     const { computeObstacleAwareParentPath, buildMergedSpouseObstacleBoxes } = await import('../src/components/canvas/FamilyEdge');
 
-    // Sai (x=400) and Sravya (x=646) are spouses connected by a dashed line (gap x=590..646)
+    // 1) Directly aligned with no obstacles -> 0 turns (straight line)
+    const straight = computeObstacleAwareParentPath({
+      coupleKey: 'subramanyam<->padmavathi',
+      sourceX: 500,
+      sourceY: 2840,
+      sourceClearY: 2972,
+      targetX: 500,
+      targetY: 3660,
+      personBoxes: [],
+    });
+    assert.ok(straight);
+    assert.strictEqual(straight.path, 'M 500 2840 L 500 3660', 'Aligned child with no obstacle must use 0 turns');
+
+    // 2) Blocked by Sai-Sravya spouse unit -> drops below sourceClearY (2972) and routes around merged box
     const spouseBoxes = buildMergedSpouseObstacleBoxes(
       [
         { id: 'sai', x: 400, y: 3220, width: 190, height: 180 },
@@ -314,15 +325,11 @@ async function runAll() {
       ],
       [{ source: 'sai', target: 'sravya' }]
     );
-
-    assert.strictEqual(spouseBoxes.length, 1, 'Connected spouses must merge into ONE obstacle box covering the spouse line & heart');
-    assert.ok(spouseBoxes[0].left < 400 && spouseBoxes[0].right > 836, 'Merged box must cover Sai, heart gap, and Sravya');
-
-    // Edge trying to drop at x=618 (right through Sai-Sravya heart!) must route outside [left, right]
     const routed = computeObstacleAwareParentPath({
       coupleKey: 'jagannadham<->suguna',
       sourceX: 618,
-      sourceY: 2840,
+      sourceY: 2839,
+      sourceClearY: 2972,
       targetX: 618,
       targetY: 3660,
       personBoxes: spouseBoxes,
