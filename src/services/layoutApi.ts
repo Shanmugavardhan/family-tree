@@ -348,6 +348,7 @@ export function arrangeSideBySideInLanes(
       });
 
       const parentCenterXs: number[] = [];
+      const spouseAnchorXs: number[] = [];
       if (useParentCenters) {
         for (const m of unitMembers) {
           const pIds = childToParents.get(m.id) || [];
@@ -356,11 +357,28 @@ export function arrangeSideBySideInLanes(
             if (pn) parentCenterXs.push(getCoupleCenterX(pn));
           }
         }
+        // If a person has no parents in the tree (e.g., married-in spouse in a different
+        // generation band than their partner), anchor them directly beneath their spouse
+        // so the spouse edge doesn't tour across the entire canvas.
+        if (parentCenterXs.length === 0) {
+          for (const m of unitMembers) {
+            const spSet = spouseAdj.get(m.id);
+            if (spSet) {
+              for (const spId of spSet) {
+                const spNode = nodeById.get(spId);
+                if (spNode && spNode.generationOrder !== lane.order) {
+                  spouseAnchorXs.push(spNode.x + (spNode.width || 190) / 2);
+                }
+              }
+            }
+          }
+        }
       }
 
+      const anchorXs = parentCenterXs.length > 0 ? parentCenterXs : spouseAnchorXs;
       const desiredX =
-        parentCenterXs.length > 0
-          ? parentCenterXs.reduce((sum, x) => sum + x, 0) / parentCenterXs.length
+        anchorXs.length > 0
+          ? anchorXs.reduce((sum, x) => sum + x, 0) / anchorXs.length
           : unitMembers[0].x + (unitMembers[0].width || 190) / 2;
 
       const bloodlineMembers =
@@ -374,7 +392,7 @@ export function arrangeSideBySideInLanes(
         nodes: unitMembers,
         desiredX,
         birthKey: unitBirthKey,
-        hasParents: parentCenterXs.length > 0,
+        hasParents: anchorXs.length > 0,
       });
     }
 

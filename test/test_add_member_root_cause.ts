@@ -503,6 +503,47 @@ async function runAll() {
     assert.ok(Math.abs(routeA.labelY - routeB.labelY) >= 12, `busY separation (${Math.abs(routeA.labelY - routeB.labelY)}px) must prevent line collision`);
   });
 
+  await runTest('Cross-Generation Spouse Anchoring: Bhargavi Nikil (Gen Z) aligns beneath Nikil (Millennials) instead of touring from far left', async () => {
+    const { arrangeSideBySideInLanes } = await import('../src/services/layoutApi');
+    const mkNode = (id: string, firstName: string, generationOrder: number, birthYear: number) => ({
+      id,
+      firstName,
+      lastName: 'Test',
+      generationOrder,
+      birthYear,
+      gender: 'male' as const,
+      x: 0,
+      y: generationOrder * 360,
+      width: 190,
+      height: 156,
+      lineage: 'paradarami',
+      isDeceased: false,
+    });
+    const lanes = [
+      { order: 0, name: 'Millennials', y: 0, height: 360 },
+      { order: 1, name: 'Gen Z', y: 360, height: 360 },
+    ] as any;
+    const nodes: any[] = [
+      mkNode('sai', 'Sai', 0, 1990),
+      mkNode('sravya', 'Sravya', 0, 1992),
+      mkNode('lakshmi', 'Lakshmi', 0, 1994),
+      mkNode('nikil', 'Nikil', 0, 1995),
+      mkNode('dinesh', 'Dinesh', 1, 2000),
+      mkNode('bhargavi', 'Bhargavi', 1, 1998),
+    ];
+    const edges: any[] = [
+      { id: 's1', source: 'sai', target: 'sravya', type: 'spouse' },
+      { id: 's2', source: 'nikil', target: 'bhargavi', type: 'spouse' },
+      { id: 'p1', source: 'sravya', target: 'dinesh', type: 'parent_child' },
+    ];
+    arrangeSideBySideInLanes(nodes, edges, lanes, 1400);
+    const nikil = nodes.find((n) => n.id === 'nikil')!;
+    const bhargavi = nodes.find((n) => n.id === 'bhargavi')!;
+    const dinesh = nodes.find((n) => n.id === 'dinesh')!;
+    assert.ok(bhargavi.x > dinesh.x, `Bhargavi (${bhargavi.x}) should be right of Dinesh (${dinesh.x}), anchored under Nikil (${nikil.x})`);
+    assert.ok(Math.abs(bhargavi.x - nikil.x) <= 50, `Bhargavi (${bhargavi.x}) should align near Nikil (${nikil.x})`);
+  });
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);
