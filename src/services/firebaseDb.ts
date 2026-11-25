@@ -34,3 +34,4 @@ export function getDb(): Firestore {
   }
   return dbInstance;
 }
+

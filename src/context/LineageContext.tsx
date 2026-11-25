@@ -3,12 +3,16 @@ import { KNOWN_LINEAGES, LineageInfo } from '../types/lineage';
 
 const UNLOCKED_LINEAGES_STORAGE_KEY = 'family_tree_unlocked_lineages';
 const ACTIVE_LINEAGE_STORAGE_KEY = 'family_tree_active_lineage';
+const VIEWER_IDENTITY_STORAGE_KEY = 'family_tree_viewer_id';
 
 interface LineageContextType {
   activeLineage: LineageInfo;
   activeLineageId: string;
   unlockedLineages: string[];
   isFirstTimeLocked: boolean;
+  currentViewerId: string | null;
+  needsViewerIdentity: boolean;
+  setCurrentViewerId: (personId: string | null) => void;
   expandedLineagePersonId: string | null;
   isParadaramiUnlocked: boolean;
   unlockWithCode: (inputCode: string) => { success: boolean; lineageId?: string; error?: string };
@@ -49,11 +53,32 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return 'konukuru';
   });
 
+  // 3. Current viewer identity ("Who are you in this family?")
+  const [currentViewerId, setCurrentViewerIdState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(VIEWER_IDENTITY_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setCurrentViewerId = (personId: string | null) => {
+    setCurrentViewerIdState(personId);
+    try {
+      if (personId) {
+        localStorage.setItem(VIEWER_IDENTITY_STORAGE_KEY, personId);
+      } else {
+        localStorage.removeItem(VIEWER_IDENTITY_STORAGE_KEY);
+      }
+    } catch {}
+  };
+
   // Requirement 1: View lineage directly on the map (no separate window)
   const [expandedLineagePersonId, setExpandedLineagePersonId] = useState<string | null>(null);
 
   // First-timer is locked if they haven't unlocked ANY lineage or if active lineage is not in unlockedLineages
   const isFirstTimeLocked = !unlockedLineages.includes(activeLineageId);
+  const needsViewerIdentity = !isFirstTimeLocked && !currentViewerId;
   const isParadaramiUnlocked = unlockedLineages.includes('paradarami');
 
   // Sync to localStorage
@@ -124,6 +149,9 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activeLineageId,
         unlockedLineages,
         isFirstTimeLocked,
+        currentViewerId,
+        needsViewerIdentity,
+        setCurrentViewerId,
         expandedLineagePersonId,
         isParadaramiUnlocked,
         unlockWithCode,

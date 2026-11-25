@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { personApi } from '../../services/personApi';
+import { verificationApi, buildFactId, getVerificationBadgeInfo } from '../../services/verificationApi';
+import { VerificationRecord } from '../../types/verification';
 import { Person } from '../../types/person';
 import { DerivedRelativesResponse, RelativeItem } from '../../types/relative';
 import { useTheme } from '../../context/ThemeContext';
@@ -48,6 +50,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
 
   const [person, setPerson] = React.useState<Person | null>(null);
   const [relatives, setRelatives] = React.useState<DerivedRelativesResponse | null>(null);
+  const [verificationMap, setVerificationMap] = React.useState<Record<string, VerificationRecord>>({});
   const [loading, setLoading] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
 
@@ -70,14 +73,18 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
     Promise.all([
       personApi.getById(personId),
       personApi.getRelatives(personId),
+      verificationApi.getAllMap(),
     ])
-      .then(([personRes, relRes]) => {
+      .then(([personRes, relRes, verRes]) => {
         if (isMounted) {
           if (personRes.success && personRes.data) {
             setPerson(personRes.data);
           }
           if (relRes.success && relRes.data) {
             setRelatives(relRes.data);
+          }
+          if (verRes.success && verRes.data) {
+            setVerificationMap(verRes.data);
           }
           setLoading(false);
         }
@@ -273,18 +280,54 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
 
         {/* Vital Info */}
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
-            <Calendar size={15} color="#64748b" />
-            <span>
-              Birth: {activeNode.birthDate || (activeNode.birthYear ? String(activeNode.birthYear) : 'Unknown')}
-            </span>
-          </div>
-          {person?.birth_place && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
-              <MapPin size={15} color="#64748b" />
-              <span>Place: {person.birth_place}</span>
-            </div>
-          )}
+          {(() => {
+            const dobBadge = getVerificationBadgeInfo(
+              verificationMap[buildFactId('person', personId, 'birth_date')]
+            );
+            const placeBadge = getVerificationBadgeInfo(
+              verificationMap[buildFactId('person', personId, 'birth_place')]
+            );
+            const renderBadge = (badge: ReturnType<typeof getVerificationBadgeInfo>) => (
+              <span
+                style={{
+                  marginLeft: 'auto',
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 999,
+                  backgroundColor: badge.isVerified
+                    ? 'rgba(16, 185, 129, 0.14)'
+                    : 'rgba(245, 158, 11, 0.14)',
+                  color: badge.isVerified ? '#059669' : '#d97706',
+                  border: badge.isVerified
+                    ? '1px solid rgba(16, 185, 129, 0.35)'
+                    : '1px solid rgba(245, 158, 11, 0.35)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {badge.isVerified ? '2/2 ✓ Verified' : badge.label}
+              </span>
+            );
+
+            return (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
+                  <Calendar size={15} color="#64748b" />
+                  <span>
+                    DOB: {activeNode.birthDate || (activeNode.birthYear ? String(activeNode.birthYear) : 'Unknown')}
+                  </span>
+                  {(activeNode.birthDate || activeNode.birthYear) && renderBadge(dobBadge)}
+                </div>
+                {person?.birth_place && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
+                    <MapPin size={15} color="#64748b" />
+                    <span>Place: {person.birth_place}</span>
+                    {renderBadge(placeBadge)}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Tree Exploration Quick Actions */}

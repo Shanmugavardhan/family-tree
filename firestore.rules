@@ -8,5 +8,8 @@ service cloud.firestore {
     match /relationships/{relationshipId} {
       allow read, write: if true;
     }
+    match /verifications/{factId} {
+      allow read, write: if true;
+    }
   }
 }

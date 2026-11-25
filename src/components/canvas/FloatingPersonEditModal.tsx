@@ -6,6 +6,8 @@ import { personApi } from '../../services/personApi';
 import { relationshipApi } from '../../services/relationshipApi';
 import { Relationship } from '../../types/relationship';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
+import { verificationApi } from '../../services/verificationApi';
 import { normalizeDateInput } from '../../utils/dateUtils';
 import { ImageCropperModal } from '../photos/ImageCropperModal';
 import {
@@ -47,6 +49,7 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
   layoutEdges = [],
 }) => {
   const { isDark } = useTheme();
+  const { currentViewerId } = useLineage();
 
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(false);
@@ -667,6 +670,26 @@ export const FloatingPersonEditModal: React.FC<FloatingPersonEditModalProps> = (
             console.error('Failed to remove photo:', photoErr);
           }
         }
+
+        // Record author provenance if DOB or birth place was edited (Rule c)
+        try {
+          if (updatePayload.birth_date && updatePayload.birth_date !== person?.birth_date) {
+            await verificationApi.recordAuthorEntry({
+              entityType: 'person',
+              entityId: personId,
+              field: 'birth_date',
+              authorId: currentViewerId,
+            });
+          }
+          if (updatePayload.birth_place && updatePayload.birth_place !== person?.birth_place) {
+            await verificationApi.recordAuthorEntry({
+              entityType: 'person',
+              entityId: personId,
+              field: 'birth_place',
+              authorId: currentViewerId,
+            });
+          }
+        } catch {}
 
         onSaveSuccess(res.data);
         onClose();

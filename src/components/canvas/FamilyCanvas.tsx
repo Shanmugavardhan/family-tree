@@ -20,6 +20,15 @@ import '@xyflow/react/dist/style.css';
 
 import { layoutApi } from '../../services/layoutApi';
 import { personApi } from '../../services/personApi';
+import { relationshipApi } from '../../services/relationshipApi';
+import { verificationApi } from '../../services/verificationApi';
+import {
+  generateTfaQuestionsForViewer,
+  shouldTriggerTfaPrompt,
+} from '../../utils/tfaQuestionEngine';
+import { TfaQuestion, TfaQuestionOption } from '../../types/verification';
+import { WhoAreYouModal } from '../verification/WhoAreYouModal';
+import { TfaVerificationModal } from '../verification/TfaVerificationModal';
 import { FamilyLayout, PositionedEdge } from '../../types/layout';
 import { PerspectiveRelationshipResult } from '../../types/relative';
 import {
@@ -123,7 +132,10 @@ function findGraphPath(
 
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
-  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, unlockedLineages } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, currentViewerId, needsViewerIdentity, expandedLineagePersonId, unlockedLineages } = useLineage();
+  const [tfaQuestions, setTfaQuestions] = React.useState<TfaQuestion[]>([]);
+  const [isTfaOpen, setIsTfaOpen] = React.useState(false);
+  const tfaTriggeredRef = React.useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { setCenter, fitView, setViewport } = useReactFlow();
 
@@ -256,6 +268,49 @@ const FamilyCanvasInternal: React.FC = () => {
   React.useEffect(() => {
     fetchLayout();
   }, [fetchLayout]);
+
+  // Rule (b, c, d, e, f): Randomly trigger algorithmic TFA data verification questions
+  React.useEffect(() => {
+    if (isFirstTimeLocked || needsViewerIdentity || !currentViewerId || tfaTriggeredRef.current) {
+      return;
+    }
+    tfaTriggeredRef.current = true;
+
+    const sessionKey = 'family_tree_tfa_prompted';
+    try {
+      if (sessionStorage.getItem(sessionKey)) return;
+      sessionStorage.setItem(sessionKey, '1');
+    } catch {}
+
+    // Randomize whether to prompt on this visit (not every single time)
+    if (!shouldTriggerTfaPrompt(0.55)) return;
+
+    (async () => {
+      try {
+        const [personsRes, relsRes, verRes] = await Promise.all([
+          personApi.getAll({ includeArchived: false }),
+          relationshipApi.getAll(),
+          verificationApi.getAllMap(),
+        ]);
+        if (!personsRes.success || !personsRes.data) return;
+
+        const questions = generateTfaQuestionsForViewer(
+          personsRes.data,
+          relsRes.data || [],
+          currentViewerId,
+          verRes.data || {},
+          { maxQuestions: 2 }
+        );
+
+        if (questions.length > 0) {
+          setTimeout(() => {
+            setTfaQuestions(questions);
+            setIsTfaOpen(true);
+          }, 1200);
+        }
+      } catch {}
+    })();
+  }, [isFirstTimeLocked, needsViewerIdentity, currentViewerId]);
 
   // Deep-linking URL parameter handler on initial layout load
   React.useEffect(() => {
@@ -1026,6 +1081,28 @@ const FamilyCanvasInternal: React.FC = () => {
 
       {/* Requirement 5: First-Time Access Code Modal (Blurred background until family code entered) */}
       <FirstTimeAccessModal />
+
+      {/* Two-Step Verification Step 1: Identify who opened the website */}
+      <WhoAreYouModal />
+
+      {/* Two-Step Verification Step 2: Random algorithmic TFA questions */}
+      <TfaVerificationModal
+        isOpen={isTfaOpen}
+        questions={tfaQuestions}
+        onAnswer={async (q: TfaQuestion, opt: TfaQuestionOption) => {
+          if (!currentViewerId) return;
+          await verificationApi.submitAnswer({
+            factId: q.fact_id,
+            entityType: q.entity_type,
+            entityId: q.entity_id,
+            field: q.field,
+            recordedBy: q.recorded_by,
+            viewerId: currentViewerId,
+            action: opt.action,
+          });
+        }}
+        onClose={() => setIsTfaOpen(false)}
+      />
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { Person, Gender, CreatePersonInput } from '../../types/person';
 import { PositionedNode, PositionedEdge } from '../../types/layout';
 import { personApi } from '../../services/personApi';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
+import { verificationApi } from '../../services/verificationApi';
 import { normalizeDateInput } from '../../utils/dateUtils';
 import { ImageCropperModal } from '../photos/ImageCropperModal';
 import {
@@ -44,6 +46,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   layoutEdges = [],
 }) => {
   const { isDark } = useTheme();
+  const { currentViewerId } = useLineage();
 
   // Form Field States
   const [fullName, setFullName] = useState('');
@@ -626,6 +629,26 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
             console.error('Failed to upload photo for created member:', photoErr);
           }
         }
+
+        // Record author provenance for Two-Step Data Verification (Rule c)
+        try {
+          if (createdPerson.birth_date) {
+            await verificationApi.recordAuthorEntry({
+              entityType: 'person',
+              entityId: createdPerson.id,
+              field: 'birth_date',
+              authorId: currentViewerId,
+            });
+          }
+          if (createdPerson.birth_place) {
+            await verificationApi.recordAuthorEntry({
+              entityType: 'person',
+              entityId: createdPerson.id,
+              field: 'birth_place',
+              authorId: currentViewerId,
+            });
+          }
+        } catch {}
 
         onSaveSuccess(createdPerson);
         onClose();
