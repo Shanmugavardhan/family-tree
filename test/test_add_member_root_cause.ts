@@ -342,11 +342,33 @@ async function runAll() {
     assert.strictEqual(hitsSpouseUnit, false, `Vertical drop X (${routed.labelX}) must NOT cross Sai-Sravya spouse line or tiles`);
   });
 
-  await runTest('Age-Based Horizontal Ordering: Earliest born (oldest) appears leftmost in each generational strip', async () => {
+  await runTest('Age-Based Horizontal Ordering: Direct lineage age only (ignores in-law spouse age)', async () => {
+    const { buildFamilyLayoutFromRecords } = await import('../src/services/layoutApi');
+    const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
+
+    // Simulate: Suguna (1968) + Jagannadham (1967), Rada (1972) + Munirathnam (1962, older than Suguna!)
+    // Direct lineage: Suguna (1968) < Rada (1972) -> Suguna's couple MUST appear LEFT of Rada's couple!
+    const allPersons = (await personApi.getAll()).data!;
+    const allRels = (await relationshipApi.getAll()).data!;
+    const patchedPersons = allPersons.map((p) => {
+      if (p.first_name === 'Suguna') return { ...p, birth_date: '1968' };
+      if (p.first_name === 'Jagannadham') return { ...p, birth_date: '1967' };
+      if (p.first_name === 'Rada') return { ...p, birth_date: '1972' };
+      if (p.first_name === 'Munirathnam') return { ...p, birth_date: '1962' };
+      return p;
+    });
+
+    const customLayout = buildFamilyLayoutFromRecords(patchedPersons, allRels, 'paradarami');
+    const sugunaNode = customLayout.nodes.find((n) => n.firstName === 'Suguna' && n.generationOrder === 3);
+    const radaNode = customLayout.nodes.find((n) => n.firstName === 'Rada' && n.generationOrder === 3);
+    assert.ok(sugunaNode && radaNode);
+    assert.ok(
+      sugunaNode.x < radaNode.x,
+      `Suguna (1968, x=${sugunaNode.x}) must appear LEFT of Rada (1972, x=${radaNode.x}) even though Rada's husband Munirathnam (1962) is older`
+    );
+
     const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
     const layout = layoutRes.data!;
-
-    // In Generation Z: Meghana (1998) < Shanmuga (2001) < Rohitha (2002) < Navaneeth (2003)
     const genZNodes = layout.nodes
       .filter((n) => n.generationOrder === 5 && typeof n.birthYear === 'number')
       .sort((a, b) => a.x - b.x);
@@ -356,6 +378,7 @@ async function runAll() {
         `Left tile ${genZNodes[i].firstName} (${genZNodes[i].birthYear}) must be older/equal to right tile ${genZNodes[i + 1].firstName} (${genZNodes[i + 1].birthYear})`
       );
     }
+    void ramayyaId;
   });
 
   await runTest('Single Line Per Couple: Married parents emit only ONE parent-child line per child', async () => {

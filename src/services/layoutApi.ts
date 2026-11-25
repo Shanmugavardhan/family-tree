@@ -156,14 +156,15 @@ export function partitionLineageMembers(
     }
   }
 
-  return { mainTreePersonIds, externalParentsMap };
+  return { mainTreePersonIds, coreBloodlineIds, externalParentsMap };
 }
 
 function arrangeSideBySideInLanes(
   nodes: PositionedNode[],
   edges: PositionedEdge[],
   lanes: CohortLane[],
-  baseWidth: number
+  baseWidth: number,
+  coreBloodlineIds?: Set<string>
 ): number {
   const SP_GAP = 56;
   const UNIT_GAP = 72;
@@ -283,7 +284,12 @@ function arrangeSideBySideInLanes(
           ? parentCenterXs.reduce((sum, x) => sum + x, 0) / parentCenterXs.length
           : unitMembers[0].x + (unitMembers[0].width || 190) / 2;
 
-      const unitBirthKey = Math.min(...unitMembers.map(getBirthSortKey));
+      const bloodlineMembers =
+        coreBloodlineIds && coreBloodlineIds.size > 0
+          ? unitMembers.filter((m) => coreBloodlineIds.has(m.id))
+          : unitMembers;
+      const ageBasis = bloodlineMembers.length > 0 ? bloodlineMembers : unitMembers;
+      const unitBirthKey = Math.min(...ageBasis.map(getBirthSortKey));
 
       units.push({
         nodes: unitMembers,
@@ -370,7 +376,7 @@ export function buildFamilyLayoutFromRecords(
     ? allPersons
     : allPersons.filter((p) => !p.is_archived);
 
-  const { mainTreePersonIds, externalParentsMap } = partitionLineageMembers(
+  const { mainTreePersonIds, coreBloodlineIds, externalParentsMap } = partitionLineageMembers(
     includedPersons,
     allRels,
     lineage
@@ -611,7 +617,7 @@ export function buildFamilyLayoutFromRecords(
     }
   }
 
-  const totalWidth = arrangeSideBySideInLanes(nodes, edges, lanes, 1600);
+  const totalWidth = arrangeSideBySideInLanes(nodes, edges, lanes, 1600, coreBloodlineIds);
   const totalHeight = lanes.length * laneHeight;
 
   return {
