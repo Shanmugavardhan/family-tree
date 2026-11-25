@@ -342,6 +342,22 @@ async function runAll() {
     assert.strictEqual(hitsSpouseUnit, false, `Vertical drop X (${routed.labelX}) must NOT cross Sai-Sravya spouse line or tiles`);
   });
 
+  await runTest('Age-Based Horizontal Ordering: Earliest born (oldest) appears leftmost in each generational strip', async () => {
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const layout = layoutRes.data!;
+
+    // In Generation Z: Meghana (1998) < Shanmuga (2001) < Rohitha (2002) < Navaneeth (2003)
+    const genZNodes = layout.nodes
+      .filter((n) => n.generationOrder === 5 && typeof n.birthYear === 'number')
+      .sort((a, b) => a.x - b.x);
+    for (let i = 0; i < genZNodes.length - 1; i++) {
+      assert.ok(
+        (genZNodes[i].birthYear || 0) <= (genZNodes[i + 1].birthYear || 0),
+        `Left tile ${genZNodes[i].firstName} (${genZNodes[i].birthYear}) must be older/equal to right tile ${genZNodes[i + 1].firstName} (${genZNodes[i + 1].birthYear})`
+      );
+    }
+  });
+
   await runTest('Single Line Per Couple: Married parents emit only ONE parent-child line per child', async () => {
     const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
     const layout = layoutRes.data!;
