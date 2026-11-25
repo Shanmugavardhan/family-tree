@@ -54,7 +54,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
   const [alias, setAlias] = useState('');
-  const [gender, setGender] = useState<Gender>('male');
+  const [gender, setGender] = useState<Gender | ''>('');
   const [isLiving, setIsLiving] = useState<boolean>(true);
   const [birthDate, setBirthDate] = useState('');
   const [deathDate, setDeathDate] = useState('');
@@ -132,7 +132,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setMiddleName('');
     setLastName('');
     setAlias('');
-    setGender('male');
+    setGender('');
     setIsLiving(true);
     setBirthDate('');
     setDeathDate('');
@@ -365,7 +365,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
       middleName.trim() !== '' ||
       lastName.trim() !== '' ||
       alias.trim() !== '' ||
-      gender !== 'male' ||
+      gender !== '' ||
       !isLiving ||
       birthDate !== '' ||
       deathDate !== '' ||
@@ -429,6 +429,9 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     if (!effectiveFirst.trim()) {
       errors.first_name = 'Full name is required (e.g. Subramanyam Chetty Paradarami).';
     }
+    if (!gender) {
+      errors.gender = 'Please select a gender before saving.';
+    }
     if (isLiving && deathDate) {
       errors.death_date = 'Living persons cannot have a date of death.';
     }
@@ -456,7 +459,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentMotherId: motherId,
         currentSpouseId: spouseId,
         currentChildId: childId,
-        subjectGender: gender,
+        subjectGender: gender || 'unknown',
         subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
@@ -483,7 +486,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentMotherId: newMotherId,
         currentSpouseId: spouseId,
         currentChildId: childId,
-        subjectGender: gender,
+        subjectGender: gender || 'unknown',
         subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
@@ -510,7 +513,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentMotherId: motherId,
         currentSpouseId: spouseId,
         currentChildId: newChildId,
-        subjectGender: gender,
+        subjectGender: gender || 'unknown',
         subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
@@ -532,7 +535,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
         currentMotherId: motherId,
         currentSpouseId: newSpouseId,
         currentChildId: childId,
-        subjectGender: gender,
+        subjectGender: gender || 'unknown',
         subjectBirthDate: birthDate,
         nodes: effectiveKinshipNodes,
         edges: effectiveKinshipEdges,
@@ -568,7 +571,7 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!validate()) return false;
+    if (!validate() || !gender) return false;
 
     setSaving(true);
     setSaveError(null);
@@ -1145,7 +1148,16 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                               name="gender-add"
                               value={g}
                               checked={gender === g}
-                              onChange={() => setGender(g)}
+                              onChange={() => {
+                                setGender(g);
+                                if (clientErrors.gender) {
+                                  setClientErrors((prev) => {
+                                    const next = { ...prev };
+                                    delete next.gender;
+                                    return next;
+                                  });
+                                }
+                              }}
                               style={{ width: 15, height: 15, accentColor: '#D6B15C', cursor: 'pointer' }}
                             />
                             <span
@@ -1161,6 +1173,11 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                           </label>
                         ))}
                       </div>
+                      {clientErrors.gender && (
+                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: 4, fontWeight: 500 }}>
+                          {clientErrors.gender}
+                        </div>
+                      )}
                     </div>
 
                     {/* Dedicated Deceased Checkbox */}

@@ -3,6 +3,7 @@ import {
   getSmoothStepPath,
   BaseEdge,
   EdgeLabelRenderer,
+  Position,
   useNodes,
   useEdges,
 } from '@xyflow/react';
@@ -301,9 +302,15 @@ export const FamilyEdge: React.FC<any> = ({
 
     const spouseEdges = edges
       .filter((e) => (e.data as FamilyEdgeData)?.edgeType === 'spouse')
-      .map((e) => ({ source: e.source, target: e.target }));
+      .map((e) => ({
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+      }));
 
-    // If source has a spouse in the same lane, anchor the single couple trunk at the heart midpoint!
+    // If source has a spouse, anchor the single couple trunk at the heart midpoint
+    // (both same-lane couples and cross-generation couples like Nikil <-> Bhargavi).
     const srcNode = personNodes.find((n) => n.id === source);
     let effectiveSourceX = sourceX;
     let effectiveSourceY = sourceY;
@@ -317,13 +324,35 @@ export const FamilyEdge: React.FC<any> = ({
         const spouseId =
           spouseEdge.source === source ? spouseEdge.target : spouseEdge.source;
         const spNode = personNodes.find((n) => n.id === spouseId);
-        if (spNode && Math.abs(spNode.y - srcNode.y) < 40) {
-          const srcCenter = srcNode.x + srcNode.width / 2;
-          const spCenter = spNode.x + spNode.width / 2;
-          effectiveSourceX = (srcCenter + spCenter) / 2;
-          // Start cleanly from the bottom of the heart badge in the gap between spouses
-          effectiveSourceY = srcNode.y + 59;
+        if (spNode) {
           coupleKey = [source, spouseId].sort().join('<->');
+          if (Math.abs(spNode.y - srcNode.y) < 40) {
+            const srcCenter = srcNode.x + srcNode.width / 2;
+            const spCenter = spNode.x + spNode.width / 2;
+            effectiveSourceX = (srcCenter + spCenter) / 2;
+            // Start cleanly from the bottom of the heart badge in the gap between spouses
+            effectiveSourceY = srcNode.y + 59;
+          } else {
+            const sNode = spouseEdge.source === source ? srcNode : spNode;
+            const tNode = spouseEdge.target === source ? srcNode : spNode;
+            const sIsLeft = spouseEdge.sourceHandle === 'spouse-left';
+            const tIsRight = spouseEdge.targetHandle === 'spouse-right';
+            const sX = sIsLeft ? sNode.x : sNode.x + sNode.width;
+            const sPos = sIsLeft ? Position.Left : Position.Right;
+            const tX = tIsRight ? tNode.x + tNode.width : tNode.x;
+            const tPos = tIsRight ? Position.Right : Position.Left;
+            const [, heartX, heartY] = getSmoothStepPath({
+              sourceX: sX,
+              sourceY: sNode.y + 59,
+              sourcePosition: sPos,
+              targetX: tX,
+              targetY: tNode.y + 59,
+              targetPosition: tPos,
+              borderRadius: 16,
+            });
+            effectiveSourceX = heartX;
+            effectiveSourceY = heartY + 10;
+          }
         }
       }
     }
@@ -349,9 +378,12 @@ export const FamilyEdge: React.FC<any> = ({
           const spId =
             peSpouseEdge.source === pe.source ? peSpouseEdge.target : peSpouseEdge.source;
           const peSp = personNodes.find((n) => n.id === spId);
-          if (peSp && Math.abs(peSp.y - peSrc.y) < 40) {
+          if (peSp) {
             cKey = [pe.source, spId].sort().join('<->');
-            cX = (peSrc.x + peSrc.width / 2 + peSp.x + peSp.width / 2) / 2;
+            cX =
+              Math.abs(peSp.y - peSrc.y) < 40
+                ? (peSrc.x + peSrc.width / 2 + peSp.x + peSp.width / 2) / 2
+                : peSrc.x + peSrc.width / 2;
           }
         }
         if (!coupleMap.has(cKey)) {

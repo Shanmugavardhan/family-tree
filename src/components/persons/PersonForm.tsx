@@ -28,7 +28,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
   const [middleName, setMiddleName] = useState(initialValues?.middle_name || '');
   const [lastName, setLastName] = useState(initialValues?.last_name || '');
   const [alias, setAlias] = useState(initialValues?.alias || '');
-  const [gender, setGender] = useState<Gender>(initialValues?.gender || 'male');
+  const [gender, setGender] = useState<Gender | ''>(initialValues?.gender || '');
   const [isLiving, setIsLiving] = useState<boolean>(initialValues?.is_living ?? true);
   const [birthDate, setBirthDate] = useState(initialValues?.birth_date || '');
   const [deathDate, setDeathDate] = useState(initialValues?.death_date || '');
@@ -68,6 +68,10 @@ export const PersonForm: React.FC<PersonFormProps> = ({
       errs.first_name = 'Full name is required (e.g. Vikram Prasad Sharma).';
     }
 
+    if (!gender) {
+      errs.gender = 'Please select a gender.';
+    }
+
     if (isLiving && deathDate.trim()) {
       errs.death_date = 'Living person cannot have a death date.';
     }
@@ -82,7 +86,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || !gender) return;
 
     if (isEdit) {
       const updatePayload: UpdatePersonInput = {
@@ -201,13 +205,24 @@ export const PersonForm: React.FC<PersonFormProps> = ({
             <select
               className="form-select"
               value={gender}
-              onChange={(e) => setGender(e.target.value as Gender)}
+              onChange={(e) => {
+                setGender(e.target.value as Gender | '');
+                if (clientErrors.gender) {
+                  setClientErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.gender;
+                    return next;
+                  });
+                }
+              }}
             >
+              <option value="">-- Select Gender --</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
               <option value="unknown">Unknown</option>
             </select>
+            {clientErrors.gender && <div className="form-error">{clientErrors.gender}</div>}
           </div>
 
           <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
