@@ -27,8 +27,12 @@ import {
   shouldTriggerTfaPrompt,
 } from '../../utils/tfaQuestionEngine';
 import { TfaQuestion, TfaQuestionOption } from '../../types/verification';
-import { WhoAreYouModal } from '../verification/WhoAreYouModal';
-import { TfaVerificationModal } from '../verification/TfaVerificationModal';
+const WhoAreYouModal = React.lazy(() =>
+  import('../verification/WhoAreYouModal').then((m) => ({ default: m.WhoAreYouModal }))
+);
+const TfaVerificationModal = React.lazy(() =>
+  import('../verification/TfaVerificationModal').then((m) => ({ default: m.TfaVerificationModal }))
+);
 import { FamilyLayout, PositionedEdge } from '../../types/layout';
 import { PerspectiveRelationshipResult } from '../../types/relative';
 import {
@@ -42,10 +46,18 @@ import { CohortLaneBanner } from './CohortLaneBanner';
 import { FamilyEdge } from './FamilyEdge';
 import { CanvasControls } from './CanvasControls';
 import { StickyGenerationLabels } from './StickyGenerationLabels';
-import { PersonDetailsDrawer } from './PersonDetailsDrawer';
-import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
-import { FloatingPersonEditModal } from './FloatingPersonEditModal';
-import { FloatingAddPersonModal } from './FloatingAddPersonModal';
+const PersonDetailsDrawer = React.lazy(() =>
+  import('./PersonDetailsDrawer').then((m) => ({ default: m.PersonDetailsDrawer }))
+);
+const RelationshipPathfinderModal = React.lazy(() =>
+  import('./RelationshipPathfinderModal').then((m) => ({ default: m.RelationshipPathfinderModal }))
+);
+const FloatingPersonEditModal = React.lazy(() =>
+  import('./FloatingPersonEditModal').then((m) => ({ default: m.FloatingPersonEditModal }))
+);
+const FloatingAddPersonModal = React.lazy(() =>
+  import('./FloatingAddPersonModal').then((m) => ({ default: m.FloatingAddPersonModal }))
+);
 import { HEADER_AWARE_FIT_PADDING } from './canvasConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
@@ -986,54 +998,56 @@ const FamilyCanvasInternal: React.FC = () => {
       </ReactFlow>
 
       {/* Selected Person Details Drawer with Kinship actions */}
-      <PersonDetailsDrawer
-        personId={selectedPersonId}
-        onClose={() => selectPerson(null, false)}
-        allNodes={layout?.nodes || []}
-        onSelectPerson={(id) => {
-          selectPerson(id, true);
-          if (layout) {
-            const targetNode = layout.nodes.find((n) => n.id === id);
-            if (targetNode) {
-              setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
-                duration: 800,
-                zoom: 1.35,
-              });
-            }
-          }
-        }}
-        onTraceAncestors={handleTraceAncestors}
-        onTraceDescendants={handleTraceDescendants}
-        onOpenPathfinder={isGuestRole ? undefined : (sourceId) => handleOpenPathfinder(sourceId)}
-        onEditPerson={isGuestRole ? undefined : (id) => setEditingPersonId(id)}
-      />
-
-      {/* Relationship Pathfinder Modal (disabled in Guest Role) */}
-      {!isGuestRole && (
-        <RelationshipPathfinderModal
-          isOpen={isPathfinderOpen}
-          onClose={() => setIsPathfinderOpen(false)}
+      <React.Suspense fallback={null}>
+        <PersonDetailsDrawer
+          personId={selectedPersonId}
+          onClose={() => selectPerson(null, false)}
           allNodes={layout?.nodes || []}
-          initialSourceId={pathfinderSourceId}
-          onApplyPath={handleApplyPath}
-          onClearPath={handleClearPath}
-          activeResult={activePathResult}
-        />
-      )}
-
-      {/* Floating Person Edit Window on the Canvas (disabled in Guest Role) */}
-      {!isGuestRole && (
-        <FloatingPersonEditModal
-          isOpen={!!editingPersonId}
-          personId={editingPersonId}
-          onClose={() => setEditingPersonId(null)}
-          onSaveSuccess={(_updatedPerson) => {
-            fetchLayout();
+          onSelectPerson={(id) => {
+            selectPerson(id, true);
+            if (layout) {
+              const targetNode = layout.nodes.find((n) => n.id === id);
+              if (targetNode) {
+                setCenter(targetNode.x + targetNode.width / 2, targetNode.y + targetNode.height / 2, {
+                  duration: 800,
+                  zoom: 1.35,
+                });
+              }
+            }
           }}
-          layoutNodes={layout?.nodes}
-          layoutEdges={layout?.edges}
+          onTraceAncestors={handleTraceAncestors}
+          onTraceDescendants={handleTraceDescendants}
+          onOpenPathfinder={isGuestRole ? undefined : (sourceId) => handleOpenPathfinder(sourceId)}
+          onEditPerson={isGuestRole ? undefined : (id) => setEditingPersonId(id)}
         />
-      )}
+
+        {/* Relationship Pathfinder Modal (disabled in Guest Role) */}
+        {!isGuestRole && (
+          <RelationshipPathfinderModal
+            isOpen={isPathfinderOpen}
+            onClose={() => setIsPathfinderOpen(false)}
+            allNodes={layout?.nodes || []}
+            initialSourceId={pathfinderSourceId}
+            onApplyPath={handleApplyPath}
+            onClearPath={handleClearPath}
+            activeResult={activePathResult}
+          />
+        )}
+
+        {/* Floating Person Edit Window on the Canvas (disabled in Guest Role) */}
+        {!isGuestRole && (
+          <FloatingPersonEditModal
+            isOpen={!!editingPersonId}
+            personId={editingPersonId}
+            onClose={() => setEditingPersonId(null)}
+            onSaveSuccess={(_updatedPerson) => {
+              fetchLayout();
+            }}
+            layoutNodes={layout?.nodes}
+            layoutEdges={layout?.edges}
+          />
+        )}
+      </React.Suspense>
 
       {/* Requirement 5: Floating button on screen with pencil icon for adding a member (hidden in Guest Role) */}
       {!isGuestRole && (
@@ -1074,30 +1088,33 @@ const FamilyCanvasInternal: React.FC = () => {
       )}
 
       {/* Requirement 5: Floating Add Member Window on the Canvas */}
-      {!isGuestRole && (
-        <FloatingAddPersonModal
-          isOpen={isAddMemberOpen}
-          onClose={() => setIsAddMemberOpen(false)}
-          onSaveSuccess={(_createdPerson) => {
-            fetchLayout();
-          }}
-          layoutNodes={layout?.nodes}
-          layoutEdges={layout?.edges}
-        />
-      )}
+      <React.Suspense fallback={null}>
+        {!isGuestRole && (
+          <FloatingAddPersonModal
+            isOpen={isAddMemberOpen}
+            onClose={() => setIsAddMemberOpen(false)}
+            onSaveSuccess={(_createdPerson) => {
+              fetchLayout();
+            }}
+            layoutNodes={layout?.nodes}
+            layoutEdges={layout?.edges}
+          />
+        )}
+      </React.Suspense>
       </div>
 
       {/* Requirement 5: First-Time Access Code Modal (Blurred background until family code entered) */}
       <FirstTimeAccessModal />
 
       {/* Two-Step Verification Step 1: Identify who opened the website */}
-      <WhoAreYouModal />
+      <React.Suspense fallback={null}>
+        <WhoAreYouModal />
 
-      {/* Two-Step Verification Step 2: Random algorithmic TFA questions */}
-      <TfaVerificationModal
-        isOpen={isTfaOpen}
-        questions={tfaQuestions}
-        onAnswer={async (q: TfaQuestion, opt: TfaQuestionOption, suggestedValue?: string) => {
+        {/* Two-Step Verification Step 2: Random algorithmic TFA questions */}
+        <TfaVerificationModal
+          isOpen={isTfaOpen}
+          questions={tfaQuestions}
+          onAnswer={async (q: TfaQuestion, opt: TfaQuestionOption, suggestedValue?: string) => {
           if (!currentViewerId) return;
           const cleanFactId = q.fact_id.replace(/__compound$/, '');
           await verificationApi.submitAnswer({
@@ -1116,6 +1133,7 @@ const FamilyCanvasInternal: React.FC = () => {
         }}
         onClose={() => setIsTfaOpen(false)}
       />
+      </React.Suspense>
     </div>
   );
 };

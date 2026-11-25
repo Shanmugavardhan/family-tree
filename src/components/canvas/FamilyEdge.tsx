@@ -3,7 +3,6 @@ import {
   getSmoothStepPath,
   BaseEdge,
   EdgeLabelRenderer,
-  Position,
   useNodes,
   useEdges,
 } from '@xyflow/react';
@@ -13,6 +12,54 @@ import { Heart, Navigation } from 'lucide-react';
 interface Point {
   x: number;
   y: number;
+}
+
+// Lightweight external store for hovering a nuclear family edge bundle without re-rendering the whole canvas
+let hoveredCoupleKey: string | null = null;
+const hoverListeners = new Set<() => void>();
+function setHoveredCoupleKey(next: string | null) {
+  if (hoveredCoupleKey === next) return;
+  hoveredCoupleKey = next;
+  hoverListeners.forEach((l) => l());
+}
+function subscribeHover(listener: () => void) {
+  hoverListeners.add(listener);
+  return () => {
+    hoverListeners.delete(listener);
+  };
+}
+function getHoveredCoupleSnapshot() {
+  return hoveredCoupleKey;
+}
+
+export function computeCrossGenSpousePath(
+  srcNode: { x: number; y: number; width: number; height: number },
+  tgtNode: { x: number; y: number; width: number; height: number }
+): { path: string; labelX: number; labelY: number } {
+  const upper = srcNode.y < tgtNode.y ? srcNode : tgtNode;
+  const lower = srcNode.y < tgtNode.y ? tgtNode : srcNode;
+  const x1 = upper.x + upper.width / 2;
+  const y1 = upper.y + upper.height;
+  const x2 = lower.x + lower.width / 2;
+  const y2 = lower.y;
+  const midY = Math.round((y1 + y2) / 2);
+  const pts: Point[] =
+    Math.abs(x1 - x2) <= 4
+      ? [
+          { x: x1, y: y1 },
+          { x: x1, y: y2 },
+        ]
+      : [
+          { x: x1, y: y1 },
+          { x: x1, y: midY },
+          { x: x2, y: midY },
+          { x: x2, y: y2 },
+        ];
+  return {
+    path: buildRoundedOrthogonalPath(pts, 14),
+    labelX: (x1 + x2) / 2,
+    labelY: midY,
+  };
 }
 
 export interface ObstacleBox {
@@ -265,6 +312,7 @@ export function computeObstacleAwareParentPath(params: {
 export const FamilyEdge: React.FC<any> = ({
   id,
   source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -277,19 +325,80 @@ export const FamilyEdge: React.FC<any> = ({
 }) => {
   const nodes = useNodes();
   const edges = useEdges();
+  const activeHoveredCouple = React.useSyncExternalStore(
+    subscribeHover,
+    getHoveredCoupleSnapshot
+  );
+  const [isSelfHovered, setIsSelfHovered] = React.useState(false);
+
   const edgeData = data as FamilyEdgeData;
   const isSpouse = edgeData?.edgeType === 'spouse';
   const isHighlighted = edgeData?.isHighlighted;
   const isPathEdge = edgeData?.isPathEdge;
   const parentType = edgeData?.parentType;
 
+  // Compute the nuclear-family bundle key & tooltip label for interactive hover highlighting
+  const { bundleCoupleKey, bundleSummary } = React.useMemo(() => {
+    const spouseEdges = edges.filter(
+      (e) => (e.data as FamilyEdgeData)?.edgeType === 'spouse'
+    );
+    const parentEdges = edges.filter(
+      (e) => (e.data as FamilyEdgeData)?.edgeType === 'parent_child'
+    );
+    const getNodeName = (nid: string) => {
+      const n = nodes.find((pn) => pn.id === nid);
+      const d = n?.data as { firstName?: string; lastName?: string } | undefined;
+      return [d?.firstName, d?.lastName].filter(Boolean).join(' ') || 'Member';
+    };
+
+    if (isSpouse) {
+      const key = [source, target].sort().join('<->');
+      const childIds = new Set(
+        parentEdges
+          .filter((pe) => pe.source === source || pe.source === target)
+          .map((pe) => pe.target)
+      );
+      const count = childIds.size;
+      const summary = `${getNodeName(source)} ♥ ${getNodeName(target)}${
+        count > 0 ? ` · ${count} ${count === 1 ? 'child' : 'children'}` : ''
+      }`;
+      return { bundleCoupleKey: key, bundleSummary: summary };
+    }
+
+    const spEdge = spouseEdges.find((e) => e.source === source || e.target === source);
+    if (spEdge) {
+      const spId = spEdge.source === source ? spEdge.target : spEdge.source;
+      const key = [source, spId].sort().join('<->');
+      const childIds = new Set(
+        parentEdges
+          .filter((pe) => pe.source === source || pe.source === spId)
+          .map((pe) => pe.target)
+      );
+      const count = childIds.size;
+      const summary = `${getNodeName(source)} ♥ ${getNodeName(spId)} · ${count} ${
+        count === 1 ? 'child' : 'children'
+      }`;
+      return { bundleCoupleKey: key, bundleSummary: summary };
+    }
+
+    const childIds = new Set(
+      parentEdges.filter((pe) => pe.source === source).map((pe) => pe.target)
+    );
+    const count = childIds.size;
+    return {
+      bundleCoupleKey: source,
+      bundleSummary: `${getNodeName(source)} · ${count} ${count === 1 ? 'child' : 'children'}`,
+    };
+  }, [edges, nodes, isSpouse, source, target]);
+
+  const isBundleHovered = activeHoveredCouple !== null && activeHoveredCouple === bundleCoupleKey;
+  const isOtherDimmed = activeHoveredCouple !== null && !isBundleHovered && !isPathEdge;
+
   let edgePath: string;
   let labelX: number;
   let labelY: number;
 
   const customRoute = React.useMemo(() => {
-    if (isSpouse) return null;
-
     const personNodes = nodes
       .filter((n) => n.type === 'personCard')
       .map((n) => ({
@@ -299,6 +408,15 @@ export const FamilyEdge: React.FC<any> = ({
         width: n.measured?.width || 190,
         height: n.measured?.height || 180,
       }));
+
+    if (isSpouse) {
+      const srcNode = personNodes.find((n) => n.id === source);
+      const tgtNode = personNodes.find((n) => n.id === target);
+      if (srcNode && tgtNode && Math.abs(srcNode.y - tgtNode.y) >= 40) {
+        return computeCrossGenSpousePath(srcNode, tgtNode);
+      }
+      return null;
+    }
 
     const spouseEdges = edges
       .filter((e) => (e.data as FamilyEdgeData)?.edgeType === 'spouse')
@@ -333,25 +451,9 @@ export const FamilyEdge: React.FC<any> = ({
             // Start cleanly from the bottom of the heart badge in the gap between spouses
             effectiveSourceY = srcNode.y + 59;
           } else {
-            const sNode = spouseEdge.source === source ? srcNode : spNode;
-            const tNode = spouseEdge.target === source ? srcNode : spNode;
-            const sIsLeft = spouseEdge.sourceHandle === 'spouse-left';
-            const tIsRight = spouseEdge.targetHandle === 'spouse-right';
-            const sX = sIsLeft ? sNode.x : sNode.x + sNode.width;
-            const sPos = sIsLeft ? Position.Left : Position.Right;
-            const tX = tIsRight ? tNode.x + tNode.width : tNode.x;
-            const tPos = tIsRight ? Position.Right : Position.Left;
-            const [, heartX, heartY] = getSmoothStepPath({
-              sourceX: sX,
-              sourceY: sNode.y + 59,
-              sourcePosition: sPos,
-              targetX: tX,
-              targetY: tNode.y + 59,
-              targetPosition: tPos,
-              borderRadius: 16,
-            });
-            effectiveSourceX = heartX;
-            effectiveSourceY = heartY + 10;
+            const crossRoute = computeCrossGenSpousePath(srcNode, spNode);
+            effectiveSourceX = crossRoute.labelX;
+            effectiveSourceY = crossRoute.labelY + 12;
           }
         }
       }
@@ -432,13 +534,15 @@ export const FamilyEdge: React.FC<any> = ({
 
   const strokeColor = isPathEdge
     ? '#f59e0b'
+    : isBundleHovered
+    ? '#F5D77F'
     : isHighlighted
     ? '#D6B15C'
     : isSpouse
     ? '#D18B91'
     : '#A94747';
 
-  const strokeWidth = isPathEdge ? 3.5 : isHighlighted ? 3 : 2.2;
+  const strokeWidth = isPathEdge ? 3.5 : isBundleHovered ? 3.2 : isHighlighted ? 3 : 2.2;
   const strokeDasharray = isSpouse && !isPathEdge ? '5,5' : undefined;
 
   return (
@@ -452,24 +556,80 @@ export const FamilyEdge: React.FC<any> = ({
           stroke: strokeColor,
           strokeWidth,
           strokeDasharray,
+          opacity: isOtherDimmed ? 0.28 : (style?.opacity ?? 1),
           pointerEvents: 'none',
           cursor: 'grab',
-          transition: 'stroke 0.2s ease-in-out, opacity 0.2s ease-in-out',
+          transition: 'stroke 0.18s ease-in-out, opacity 0.18s ease-in-out, stroke-width 0.18s ease-in-out',
         }}
       />
 
-      {/* Render edge labels for pathfinder, spouse, or non-biological parent relations */}
-      {(isPathEdge || isSpouse || (parentType && parentType !== 'biological')) && (
+      {/* Wide invisible hit path for smooth nuclear-family bundle hover highlighting */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={16}
+        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+        onMouseEnter={() => {
+          setIsSelfHovered(true);
+          setHoveredCoupleKey(bundleCoupleKey);
+        }}
+        onMouseLeave={() => {
+          setIsSelfHovered(false);
+          setHoveredCoupleKey(null);
+        }}
+      />
+
+      {/* Render edge labels for pathfinder, spouse, hover tooltip, or non-biological parent relations */}
+      {(isPathEdge || isSpouse || isSelfHovered || (parentType && parentType !== 'biological')) && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'none',
-              cursor: 'grab',
-              zIndex: isPathEdge ? 35 : 10,
+              pointerEvents: isSpouse ? 'auto' : 'none',
+              cursor: isSpouse ? 'pointer' : 'grab',
+              zIndex: isSelfHovered ? 45 : isPathEdge ? 35 : 10,
             }}
+            onMouseEnter={
+              isSpouse
+                ? () => {
+                    setIsSelfHovered(true);
+                    setHoveredCoupleKey(bundleCoupleKey);
+                  }
+                : undefined
+            }
+            onMouseLeave={
+              isSpouse
+                ? () => {
+                    setIsSelfHovered(false);
+                    setHoveredCoupleKey(null);
+                  }
+                : undefined
+            }
           >
+            {isSelfHovered && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 'calc(100% + 8px)',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  whiteSpace: 'nowrap',
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(16, 20, 29, 0.94)',
+                  border: '1px solid rgba(214, 177, 92, 0.65)',
+                  color: '#F5D77F',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
+                  pointerEvents: 'none',
+                }}
+              >
+                {bundleSummary}
+              </div>
+            )}
             {isPathEdge ? (
               <div
                 title="Relationship Path Step"

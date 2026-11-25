@@ -569,6 +569,35 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
     setPhotoPreviewUrl(null);
   };
 
+  // Duplicate Person Detection Before Saving
+  const potentialDuplicates = useMemo(() => {
+    const parsed = parseFullName(fullName);
+    const candidateFirst = (parsed.firstName || firstName).trim().toLowerCase();
+    if (candidateFirst.length < 2) return [];
+    const candidateLast = (parsed.lastName || lastName).trim().toLowerCase();
+    const candidateYear = birthDate.match(/^(\d{4})/)?.[1] || '';
+
+    return existingPersons.filter((p) => {
+      const pFirst = (p.first_name || '').trim().toLowerCase();
+      const pLast = (p.last_name || '').trim().toLowerCase();
+      const firstMatches =
+        pFirst === candidateFirst ||
+        (candidateFirst.length >= 4 && (pFirst.startsWith(candidateFirst) || candidateFirst.startsWith(pFirst)));
+      if (!firstMatches) return false;
+
+      const pYear = (p.birth_date || '').match(/^(\d{4})/)?.[1] || '';
+      const sameYear = Boolean(candidateYear && pYear && candidateYear === pYear);
+      const sameLast = Boolean(candidateLast && pLast && candidateLast === pLast);
+      const sharesRelation = Boolean(
+        (fatherId && effectiveKinshipEdges.some((e) => e.type === 'parent_child' && e.source === fatherId && e.target === p.id)) ||
+        (motherId && effectiveKinshipEdges.some((e) => e.type === 'parent_child' && e.source === motherId && e.target === p.id)) ||
+        (spouseId && effectiveKinshipEdges.some((e) => e.type === 'spouse' && ((e.source === spouseId && e.target === p.id) || (e.target === spouseId && e.source === p.id))))
+      );
+
+      return sameYear || sharesRelation || (sameLast && candidateFirst === pFirst);
+    });
+  }, [fullName, firstName, lastName, birthDate, fatherId, motherId, spouseId, existingPersons, effectiveKinshipEdges]);
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!validate() || !gender) return false;
@@ -1978,6 +2007,36 @@ export const FloatingAddPersonModal: React.FC<FloatingAddPersonModalProps> = ({
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
+
+            {potentialDuplicates.length > 0 && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 9,
+                  backgroundColor: isDark ? 'rgba(245, 158, 11, 0.14)' : '#fffbeb',
+                  border: '1px solid rgba(245, 158, 11, 0.45)',
+                  color: isDark ? '#fcd34d' : '#92400e',
+                  fontSize: '12.5px',
+                  lineHeight: 1.45,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                  Possible Duplicate Member Detected
+                </div>
+                <div>
+                  A member with a matching name and branch/birth year already exists:{' '}
+                  {potentialDuplicates.map((d, idx) => (
+                    <span key={d.id} style={{ fontWeight: 650 }}>
+                      {idx > 0 ? ', ' : ''}
+                      {[d.first_name, d.middle_name, d.last_name].filter(Boolean).join(' ')}
+                      {d.birth_date ? ` (${d.birth_date.slice(0, 4)})` : ''}
+                    </span>
+                  ))}
+                  . Please verify before saving.
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

@@ -544,6 +544,17 @@ async function runAll() {
     assert.ok(Math.abs(bhargavi.x - nikil.x) <= 50, `Bhargavi (${bhargavi.x}) should align near Nikil (${nikil.x})`);
   });
 
+  await runTest('Cross-Generation Vertical Spouse Connector: computes clean vertical path between Nikil (Millennials) and Bhargavi (Gen Z)', async () => {
+    const { computeCrossGenSpousePath } = await import('../src/components/canvas/FamilyEdge');
+    const route = computeCrossGenSpousePath(
+      { x: 1600, y: 360, width: 190, height: 180 },
+      { x: 1600, y: 720, width: 190, height: 180 }
+    );
+    assert.strictEqual(route.labelX, 1695, 'Heart badge X should sit at center of vertical connector');
+    assert.strictEqual(route.labelY, 630, 'Heart badge Y should sit halfway between bottom of upper tile and top of lower tile');
+    assert.ok(route.path.startsWith('M 1695 540'), `Path should start at bottom center of upper tile: ${route.path}`);
+  });
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);
