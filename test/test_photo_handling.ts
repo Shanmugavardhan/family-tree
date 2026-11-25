@@ -42,10 +42,10 @@ class MockFile {
 }
 (global as any).File = MockFile;
 
-import { personApi, saveLocalCustomPerson, getLocalCustomPersons, LOCAL_CUSTOM_PERSONS_KEY } from '../src/services/personApi';
-import { augmentLayoutWithCustomPersons } from '../src/services/layoutApi';
+import { personApi } from '../src/services/personApi';
+import { layoutApi } from '../src/services/layoutApi';
 import { FamilyLayout } from '../src/types/layout';
-import { Person, CreatePersonInput } from '../src/types/person';
+import { CreatePersonInput } from '../src/types/person';
 
 let passed = 0;
 let total = 0;
@@ -121,15 +121,18 @@ async function runAll() {
     assert.ok(ramayyaInAll);
     assert.strictEqual(ramayyaInAll.profile_photo, uploadRes.data.profile_photo);
 
-    // Verify canvas layout node displays photoPath
-    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
-    const ramayyaNode = layout.nodes.find((n) => n.id === ramayyaId);
+    // Verify canvas layout node displays photoPath directly from DB
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    assert.strictEqual(layoutRes.success, true);
+    const ramayyaNode = layoutRes.data!.nodes.find((n) => n.id === ramayyaId);
     assert.ok(ramayyaNode, 'Ramayya node must exist on canvas');
     assert.strictEqual(ramayyaNode.photoPath, uploadRes.data.profile_photo, 'Canvas node photoPath must match Data URL');
+    assert.strictEqual(mockStorage.size, 0, 'Zero localStorage caching must be used');
   });
 
   await runTest('Add Member with Photo: Create person with photoPreviewUrl saves photo and sets canvas photoPath', async () => {
     const mockDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
     const input: CreatePersonInput = {
       first_name: 'Ananya',
       last_name: 'Paradarami',
@@ -137,6 +140,7 @@ async function runAll() {
       birth_date: '1998',
       biography: 'Young artist',
       profile_photo: mockDataUrl,
+      father_id: ramayyaId,
     };
 
     const createRes = await personApi.create(input);
@@ -144,14 +148,14 @@ async function runAll() {
     assert.ok(createRes.data);
     assert.strictEqual(createRes.data.profile_photo, mockDataUrl, 'profile_photo must be preserved on create');
 
-    // Check canvas layout
-    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
-    const ananyaNode = layout.nodes.find((n) => n.id === createRes.data?.id);
+    // Check canvas layout directly from DB
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const ananyaNode = layoutRes.data!.nodes.find((n) => n.id === createRes.data?.id);
     assert.ok(ananyaNode, 'Ananya node must be present on canvas');
     assert.strictEqual(ananyaNode.photoPath, mockDataUrl, 'Canvas node photoPath must contain the image Data URL');
   });
 
-  await runTest('Photo Deletion: Deleting photo resets profile_photo to null across storage and canvas', async () => {
+  await runTest('Photo Deletion: Deleting photo resets profile_photo to null across DB and canvas', async () => {
     const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
 
     const deleteRes = await personApi.deletePhoto(ramayyaId);
@@ -164,8 +168,8 @@ async function runAll() {
     assert.strictEqual(getByIdRes.data?.profile_photo, null);
 
     // Verify canvas node photoPath is reset to null (falling back to noble avatar)
-    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
-    const ramayyaNode = layout.nodes.find((n) => n.id === ramayyaId);
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const ramayyaNode = layoutRes.data!.nodes.find((n) => n.id === ramayyaId);
     assert.ok(ramayyaNode);
     assert.strictEqual(ramayyaNode.photoPath, null, 'Canvas node photoPath must be null after photo deletion');
   });
@@ -230,7 +234,7 @@ async function runAll() {
     assert.strictEqual(scaleFactor, 0.24, 'Uniform scaling factor without distortion');
   });
 
-  await runTest('Edge Case: Immediate Persistence on "Save Photo" directly updates storage & canvas layout', async () => {
+  await runTest('Edge Case: Immediate Persistence on "Save Photo" directly updates DB & canvas layout (cross-device sync)', async () => {
     const srivalliId = 'bde77be0-8530-4ce6-93a5-f3751cbc3f6a';
     const fakeCroppedJpegBytes = Buffer.from('JPEG_COMPACT_IMAGE_DATA_SIMULATION_25KB');
     const croppedFile = new MockFile([fakeCroppedJpegBytes], 'srivalli_cropped.jpg', { type: 'image/jpeg' }) as any;
@@ -239,16 +243,16 @@ async function runAll() {
     const uploadRes = await personApi.uploadPhoto(srivalliId, croppedFile);
     assert.strictEqual(uploadRes.success, true);
     assert.ok(uploadRes.data?.profile_photo.startsWith('data:image/jpeg;base64,'));
+    assert.strictEqual(mockStorage.size, 0, 'Photo must NOT be stored in localStorage cache');
 
-    // Check localStorage persistence
-    const stored = getLocalCustomPersons();
-    const storedPerson = stored.find((p) => p.id === srivalliId);
-    assert.ok(storedPerson, 'Person must be stored immediately in local custom persons');
-    assert.strictEqual(storedPerson.profile_photo, uploadRes.data?.profile_photo);
+    // Verify DB persistence via getById
+    const dbPerson = await personApi.getById(srivalliId);
+    assert.ok(dbPerson.data, 'Person must be fetched from DB');
+    assert.strictEqual(dbPerson.data.profile_photo, uploadRes.data?.profile_photo);
 
     // Verify canvas layout node immediately has updated photoPath
-    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
-    const srivalliNode = layout.nodes.find((n) => n.id === srivalliId);
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const srivalliNode = layoutRes.data!.nodes.find((n) => n.id === srivalliId);
     assert.ok(srivalliNode, 'Srivalli node must exist on canvas');
     assert.strictEqual(srivalliNode.photoPath, uploadRes.data?.profile_photo, 'photoPath must match cropped photo immediately');
   });
@@ -261,13 +265,13 @@ async function runAll() {
     const secondUploadRes = await personApi.uploadPhoto(srivalliId, secondFile);
     assert.strictEqual(secondUploadRes.success, true);
 
-    const stored = getLocalCustomPersons();
-    const matches = stored.filter((p) => p.id === srivalliId);
-    assert.strictEqual(matches.length, 1, 'Only one record must exist in storage per person');
+    const allRes = await personApi.getAll();
+    const matches = allRes.data!.filter((p) => p.id === srivalliId);
+    assert.strictEqual(matches.length, 1, 'Only one record must exist in DB per person');
     assert.strictEqual(matches[0].profile_photo, secondUploadRes.data?.profile_photo);
 
-    const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
-    const srivalliNode = layout.nodes.find((n) => n.id === srivalliId);
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const srivalliNode = layoutRes.data!.nodes.find((n) => n.id === srivalliId);
     assert.strictEqual(srivalliNode?.photoPath, secondUploadRes.data?.profile_photo);
   });
 
@@ -280,58 +284,38 @@ async function runAll() {
         : null;
     };
 
-    // 1. Data URL
     assert.strictEqual(
       resolvePhotoUrl('data:image/jpeg;base64,abc123xyz', 'p-1'),
       'data:image/jpeg;base64,abc123xyz'
     );
-    // 2. HTTPS URL
     assert.strictEqual(
       resolvePhotoUrl('https://storage.googleapis.com/tree/photo.jpg', 'p-2'),
       'https://storage.googleapis.com/tree/photo.jpg'
     );
-    // 3. Absolute root path
     assert.strictEqual(
       resolvePhotoUrl('/uploads/profile.jpg', 'p-3'),
       '/uploads/profile.jpg'
     );
-    // 4. Relative identifier fallback to API endpoint
     assert.strictEqual(
       resolvePhotoUrl('custom_avatar_filename', 'p-4'),
       '/api/persons/p-4/photo'
     );
-    // 5. Null / undefined returns null (fallback to noble avatar)
     assert.strictEqual(resolvePhotoUrl(null, 'p-5'), null);
     assert.strictEqual(resolvePhotoUrl(undefined, 'p-6'), null);
   });
 
-  await runTest('Edge Case: Storage Quota Safety with Compact JPEGs across 50 family members', async () => {
-    // 50 members with ~25KB JPEG photos = ~1.25MB total
-    const sampleJpegDataUrl = 'data:image/jpeg;base64,' + 'A'.repeat(30 * 1024); // 30KB
-    for (let i = 0; i < 50; i++) {
-      saveLocalCustomPerson({
-        id: `person-quota-test-${i}`,
-        first_name: `Member${i}`,
-        last_name: 'Paradarami',
-        gender: 'male',
-        birth_date: '1980',
-        death_date: null,
-        birth_place: null,
-        death_place: null,
-        biography: '',
-        profile_photo: sampleJpegDataUrl,
-        is_living: true,
-        is_archived: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        archived_at: null,
-      });
-    }
-
-    const stored = getLocalCustomPersons();
-    const testPersons = stored.filter((p) => p.id.startsWith('person-quota-test-'));
-    assert.strictEqual(testPersons.length, 50, 'All 50 persons with photos must be preserved safely');
-    assert.ok(testPersons[49].profile_photo?.startsWith('data:image/jpeg;base64,'));
+  await runTest('Edge Case: Compact JPEG document size stays well under Firestore 1MB document limit', async () => {
+    const sampleJpegDataUrl = 'data:image/jpeg;base64,' + 'A'.repeat(30 * 1024); // ~30KB
+    assert.ok(sampleJpegDataUrl.length < 100 * 1024, 'Compact JPEG photo must stay well under 100KB');
+    const created = await personApi.create({
+      first_name: 'QuotaTest',
+      last_name: 'Paradarami',
+      gender: 'male',
+      birth_date: '1980',
+      profile_photo: sampleJpegDataUrl,
+    });
+    assert.strictEqual(created.success, true);
+    assert.strictEqual(created.data?.profile_photo, sampleJpegDataUrl);
   });
 
   console.log(`\nResults: ${passed} / ${total} tests passed.`);

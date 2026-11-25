@@ -37,7 +37,7 @@ import { PersonDetailsDrawer } from './PersonDetailsDrawer';
 import { RelationshipPathfinderModal } from './RelationshipPathfinderModal';
 import { FloatingPersonEditModal } from './FloatingPersonEditModal';
 import { FloatingAddPersonModal } from './FloatingAddPersonModal';
-import { HEADER_AWARE_FIT_PADDING, CANVAS_VIEWPORT_STORAGE_KEY } from './canvasConstants';
+import { HEADER_AWARE_FIT_PADDING } from './canvasConstants';
 import { useTheme } from '../../context/ThemeContext';
 import { useLineage } from '../../context/LineageContext';
 import { FirstTimeAccessModal } from '../lineage/FirstTimeAccessModal';
@@ -51,35 +51,9 @@ interface StoredViewport {
   zoom: number;
 }
 
-const loadStoredViewport = (): StoredViewport | null => {
-  try {
-    const raw = localStorage.getItem(CANVAS_VIEWPORT_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (
-      typeof parsed?.x === 'number' &&
-      typeof parsed?.y === 'number' &&
-      typeof parsed?.zoom === 'number' &&
-      !isNaN(parsed.x) &&
-      !isNaN(parsed.y) &&
-      !isNaN(parsed.zoom) &&
-      parsed.zoom > 0
-    ) {
-      return { x: parsed.x, y: parsed.y, zoom: parsed.zoom };
-    }
-  } catch {
-    // ignore corrupted localStorage
-  }
-  return null;
-};
+const loadStoredViewport = (): StoredViewport | null => null;
 
-const persistViewport = (viewport: StoredViewport) => {
-  try {
-    localStorage.setItem(CANVAS_VIEWPORT_STORAGE_KEY, JSON.stringify(viewport));
-  } catch {
-    // ignore storage errors
-  }
-};
+const persistViewport = (_viewport: StoredViewport) => {};
 
 const nodeTypes: NodeTypes = {
   personCard: PersonNode,
