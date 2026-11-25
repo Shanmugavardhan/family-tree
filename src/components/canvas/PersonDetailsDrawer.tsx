@@ -20,6 +20,7 @@ import { VerificationRecord } from '../../types/verification';
 import { Person } from '../../types/person';
 import { DerivedRelativesResponse, RelativeItem } from '../../types/relative';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
 import avatarMale from '../../assets/avatar_male.png';
 import avatarFemale from '../../assets/avatar_female.png';
 
@@ -45,6 +46,7 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   onEditPerson,
 }) => {
   const { isDark } = useTheme();
+  const { isGuestRole } = useLineage();
   const navigate = useNavigate();
   const { setCenter } = useReactFlow();
 
@@ -379,27 +381,29 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
             </button>
           </div>
 
-          <button
-            onClick={() => onOpenPathfinder?.(personId)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              padding: '8px 12px',
-              borderRadius: 8,
-              backgroundColor: '#fffbeb',
-              border: '1px solid #fde68a',
-              color: '#b45309',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              marginTop: 2,
-            }}
-          >
-            <Navigation size={14} />
-            <span>Find Relationship To...</span>
-          </button>
+          {!isGuestRole && (
+            <button
+              onClick={() => onOpenPathfinder?.(personId)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 12px',
+                borderRadius: 8,
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fde68a',
+                color: '#b45309',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginTop: 2,
+              }}
+            >
+              <Navigation size={14} />
+              <span>Find Relationship To...</span>
+            </button>
+          )}
         </div>
 
         {/* Biography */}
@@ -541,32 +545,34 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           <span>Full Profile</span>
         </button>
 
-        <button
-          onClick={() => {
-            if (onEditPerson && personId) {
-              onEditPerson(personId);
-            } else {
-              navigate(`/people/${personId}/edit`);
-            }
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            padding: '9px 14px',
-            backgroundColor: '#ffffff',
-            color: '#334155',
-            borderRadius: 8,
-            border: '1px solid #cbd5e1',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          <Edit size={15} />
-          <span>Edit</span>
-        </button>
+        {!isGuestRole && (
+          <button
+            onClick={() => {
+              if (onEditPerson && personId) {
+                onEditPerson(personId);
+              } else {
+                navigate(`/people/${personId}/edit`);
+              }
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '9px 14px',
+              backgroundColor: '#ffffff',
+              color: '#334155',
+              borderRadius: 8,
+              border: '1px solid #cbd5e1',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Edit size={15} />
+            <span>Edit</span>
+          </button>
+        )}
       </div>
     </div>
   );

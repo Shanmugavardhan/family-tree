@@ -27,16 +27,16 @@ export const GENERATION_BANDS = [
 
 const HOUSE_PROGENITORS: Record<string, string[]> = {
   konukuru: [
-    '337632d0-895e-4e84-bf6c-7f95c1669593', // Murthy Chetty Konukuru
-    'f1927d04-f6bd-44bf-b95e-20233088d594', // Narayanamma Konukuru
+    '867842c1-b8a2-45ad-8d9c-89150e68eb16', // Murthy Chetty Konukuru
+    '4a80001b-76bf-4e13-963b-89b2aafbb413', // Sarojamma Konukuru
   ],
   paradarami: [
     '1ae73a4b-b739-40d3-8b50-071bbf1b07eb', // Ramayya Chetty Paradarami
-    '4a353165-1695-4b11-8437-7c0292f448ff', // Achamma Paradarami
+    'e66d2d0d-7349-4b5e-8f79-b6d9dba69e0b', // Achamma Paradarami
   ],
 };
 
-function partitionLineageMembers(
+export function partitionLineageMembers(
   persons: Person[],
   relationships: Relationship[],
   targetLineage = 'konukuru'

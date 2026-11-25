@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { KNOWN_LINEAGES, LineageInfo } from '../types/lineage';
+import { personApi } from '../services/personApi';
+import { relationshipApi } from '../services/relationshipApi';
+import {
+  ViewerRole,
+  getLineageMemberIdSet,
+  getEffectiveViewerRole,
+  resolveUnlockedLineagesOnSwitch,
+} from '../utils/viewerRole';
 
 const UNLOCKED_LINEAGES_STORAGE_KEY = 'family_tree_unlocked_lineages';
 const ACTIVE_LINEAGE_STORAGE_KEY = 'family_tree_active_lineage';
@@ -12,6 +20,9 @@ interface LineageContextType {
   isFirstTimeLocked: boolean;
   currentViewerId: string | null;
   needsViewerIdentity: boolean;
+  effectiveRole: ViewerRole;
+  isGuestRole: boolean;
+  lineageMemberMap: Record<string, Set<string>>;
   setCurrentViewerId: (personId: string | null) => void;
   expandedLineagePersonId: string | null;
   isParadaramiUnlocked: boolean;
@@ -73,12 +84,53 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch {}
   };
 
+  // 4. Lineage member sets (to scope "Who are you?", resolve Guest role across families, and handle code expiry)
+  const [lineageMemberMap, setLineageMemberMap] = useState<Record<string, Set<string>>>({});
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      personApi.getAll({ includeArchived: false }),
+      relationshipApi.getAll(),
+    ])
+      .then(([pRes, rRes]) => {
+        if (!active || !pRes.success || !pRes.data) return;
+        const persons = pRes.data;
+        const rels = rRes.data || [];
+        const map: Record<string, Set<string>> = {};
+        for (const lid of Object.keys(KNOWN_LINEAGES)) {
+          map[lid] = getLineageMemberIdSet(persons, rels, lid);
+        }
+        setLineageMemberMap(map);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [unlockedLineages.length]);
+
+  // Rule 2: Remember person & code on device until hard refresh (Ctrl + Shift + R)
+  useEffect(() => {
+    const handleHardRefreshShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+        try {
+          localStorage.removeItem(VIEWER_IDENTITY_STORAGE_KEY);
+          localStorage.removeItem(UNLOCKED_LINEAGES_STORAGE_KEY);
+        } catch {}
+      }
+    };
+    window.addEventListener('keydown', handleHardRefreshShortcut);
+    return () => window.removeEventListener('keydown', handleHardRefreshShortcut);
+  }, []);
+
   // Requirement 1: View lineage directly on the map (no separate window)
   const [expandedLineagePersonId, setExpandedLineagePersonId] = useState<string | null>(null);
 
   // First-timer is locked if they haven't unlocked ANY lineage or if active lineage is not in unlockedLineages
   const isFirstTimeLocked = !unlockedLineages.includes(activeLineageId);
   const needsViewerIdentity = !isFirstTimeLocked && !currentViewerId;
+  const effectiveRole = getEffectiveViewerRole(currentViewerId, activeLineageId, lineageMemberMap);
+  const isGuestRole = effectiveRole === 'guest';
   const isParadaramiUnlocked = unlockedLineages.includes('paradarami');
 
   // Sync to localStorage
@@ -113,8 +165,15 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     }
 
-    // Add to unlocked list if not present
-    setUnlockedLineages((prev) => (prev.includes(matchedId!) ? prev : [...prev, matchedId!]));
+    setUnlockedLineages((prev) =>
+      resolveUnlockedLineagesOnSwitch({
+        viewerId: currentViewerId,
+        fromLineageId: activeLineageId,
+        toLineageId: matchedId!,
+        currentUnlocked: prev,
+        lineageMemberMap,
+      })
+    );
     setActiveLineageId(matchedId);
     setExpandedLineagePersonId(null);
 
@@ -123,6 +182,19 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const switchLineage = (lineageId: string): boolean => {
     if (!KNOWN_LINEAGES[lineageId]) return false;
+    if (lineageId !== activeLineageId) {
+      setUnlockedLineages((prev) => {
+        const wasUnlocked = prev.includes(lineageId);
+        if (!wasUnlocked) return prev;
+        return resolveUnlockedLineagesOnSwitch({
+          viewerId: currentViewerId,
+          fromLineageId: activeLineageId,
+          toLineageId: lineageId,
+          currentUnlocked: prev,
+          lineageMemberMap,
+        });
+      });
+    }
     setActiveLineageId(lineageId);
     setExpandedLineagePersonId(null);
     return true;
@@ -151,6 +223,9 @@ export const LineageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isFirstTimeLocked,
         currentViewerId,
         needsViewerIdentity,
+        effectiveRole,
+        isGuestRole,
+        lineageMemberMap,
         setCurrentViewerId,
         expandedLineagePersonId,
         isParadaramiUnlocked,

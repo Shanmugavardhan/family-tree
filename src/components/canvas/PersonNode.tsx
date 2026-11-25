@@ -66,7 +66,7 @@ const DefaultUserAvatar: React.FC = () => (
 
 export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
   const { isDark } = useTheme();
-  const { activeLineageId, isFirstTimeLocked, expandedLineagePersonId, toggleLineageOnMap } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, isGuestRole, expandedLineagePersonId, toggleLineageOnMap } = useLineage();
   const { zoom } = useViewport();
   const updateNodeInternals = useUpdateNodeInternals();
   const navigate = useNavigate();
@@ -426,8 +426,8 @@ export const PersonNode: React.FC<any> = ({ id, data, selected }) => {
             </button>
           )}
 
-          {/* Requirement 2: Pencil button, visible ONLY on hover (hidden if first-time locked) */}
-          {!isFirstTimeLocked && (
+          {/* Requirement 2: Pencil button, visible ONLY on hover (hidden if first-time locked or Guest Role) */}
+          {!isFirstTimeLocked && !isGuestRole && (
             <button
               type="button"
               title={`Edit details of ${fullName}`}

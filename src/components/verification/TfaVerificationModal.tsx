@@ -234,3 +234,4 @@ export const TfaVerificationModal: React.FC<TfaVerificationModalProps> = ({
     </div>
   );
 };
+

@@ -11,6 +11,12 @@ import {
   generateTfaQuestionsForViewer,
   shouldTriggerTfaPrompt,
 } from '../src/utils/tfaQuestionEngine';
+import {
+  getLineageMemberIdSet,
+  getEffectiveViewerRole,
+  resolveUnlockedLineagesOnSwitch,
+  GUEST_VIEWER_ID,
+} from '../src/utils/viewerRole';
 
 console.log('================================================================');
 console.log('   TEST SUITE: TWO-STEP DATA VERIFICATION (TFA) & QUESTION AI   ');
@@ -190,6 +196,54 @@ async function runAll() {
   await runTest('Rule (d): Random probabilistic trigger does not prompt on every visit', () => {
     assert.strictEqual(shouldTriggerTfaPrompt(0.5, () => 0.2), true, 'Triggers when rng < probability');
     assert.strictEqual(shouldTriggerTfaPrompt(0.5, () => 0.8), false, 'Skips when rng >= probability');
+  });
+
+  await runTest('Lineage Scoping & Guest Role: Navaneeth Galeti vs Meghana Konukuru code retention rules', () => {
+    const lineageMemberMap = {
+      konukuru: getLineageMemberIdSet(allPersons, allRels, 'konukuru'),
+      paradarami: getLineageMemberIdSet(allPersons, allRels, 'paradarami'),
+    };
+
+    const navaneeth = allPersons.find((p) => p.first_name === 'Navaneeth')!;
+    const meghana = allPersons.find((p) => p.first_name === 'Meghana')!;
+    assert.ok(navaneeth && meghana);
+
+    // Navaneeth is ONLY in Paradarami, NOT Konukuru
+    assert.strictEqual(lineageMemberMap.paradarami.has(navaneeth.id), true);
+    assert.strictEqual(lineageMemberMap.konukuru.has(navaneeth.id), false);
+
+    // Meghana is in BOTH Konukuru and Paradarami
+    assert.strictEqual(lineageMemberMap.konukuru.has(meghana.id), true);
+    assert.strictEqual(lineageMemberMap.paradarami.has(meghana.id), true);
+
+    // Guest tile always gets guest role
+    assert.strictEqual(getEffectiveViewerRole(GUEST_VIEWER_ID, 'paradarami', lineageMemberMap), 'guest');
+
+    // Navaneeth is 'member' in Paradarami, but takes 'guest' role in Konukuru
+    assert.strictEqual(getEffectiveViewerRole(navaneeth.id, 'paradarami', lineageMemberMap), 'member');
+    assert.strictEqual(getEffectiveViewerRole(navaneeth.id, 'konukuru', lineageMemberMap), 'guest');
+
+    // Navaneeth's access to non-member Konukuru is RETAINED when switching back to Paradarami
+    const navaneethAfterSwitch = resolveUnlockedLineagesOnSwitch({
+      viewerId: navaneeth.id,
+      fromLineageId: 'konukuru',
+      toLineageId: 'paradarami',
+      currentUnlocked: ['paradarami', 'konukuru'],
+      lineageMemberMap,
+    });
+    assert.ok(navaneethAfterSwitch.includes('konukuru'), 'Non-member family access must be retained for Navaneeth');
+    assert.ok(navaneethAfterSwitch.includes('paradarami'));
+
+    // Meghana is in BOTH families: switching from Konukuru to Paradarami does NOT retain Konukuru
+    const meghanaAfterSwitch = resolveUnlockedLineagesOnSwitch({
+      viewerId: meghana.id,
+      fromLineageId: 'konukuru',
+      toLineageId: 'paradarami',
+      currentUnlocked: ['konukuru'],
+      lineageMemberMap,
+    });
+    assert.strictEqual(meghanaAfterSwitch.includes('konukuru'), false, 'Meghana must NOT retain simultaneous access to both families');
+    assert.ok(meghanaAfterSwitch.includes('paradarami'));
   });
 
   console.log(`\nResults: ${passed} / ${total} tests passed.`);

@@ -132,7 +132,7 @@ function findGraphPath(
 
 const FamilyCanvasInternal: React.FC = () => {
   const { isDark } = useTheme();
-  const { activeLineageId, isFirstTimeLocked, currentViewerId, needsViewerIdentity, expandedLineagePersonId, unlockedLineages } = useLineage();
+  const { activeLineageId, isFirstTimeLocked, currentViewerId, needsViewerIdentity, isGuestRole, expandedLineagePersonId, unlockedLineages } = useLineage();
   const [tfaQuestions, setTfaQuestions] = React.useState<TfaQuestion[]>([]);
   const [isTfaOpen, setIsTfaOpen] = React.useState(false);
   const tfaTriggeredRef = React.useRef(false);
@@ -269,9 +269,9 @@ const FamilyCanvasInternal: React.FC = () => {
     fetchLayout();
   }, [fetchLayout]);
 
-  // Rule (b, c, d, e, f): Randomly trigger algorithmic TFA data verification questions
+  // Rule (b, c, d, e, f) & Guest Rule 4a: Randomly trigger algorithmic TFA data verification questions (never for Guest)
   React.useEffect(() => {
-    if (isFirstTimeLocked || needsViewerIdentity || !currentViewerId || tfaTriggeredRef.current) {
+    if (isFirstTimeLocked || needsViewerIdentity || !currentViewerId || isGuestRole || tfaTriggeredRef.current) {
       return;
     }
     tfaTriggeredRef.current = true;
@@ -1004,79 +1004,87 @@ const FamilyCanvasInternal: React.FC = () => {
         }}
         onTraceAncestors={handleTraceAncestors}
         onTraceDescendants={handleTraceDescendants}
-        onOpenPathfinder={(sourceId) => handleOpenPathfinder(sourceId)}
-        onEditPerson={(id) => setEditingPersonId(id)}
+        onOpenPathfinder={isGuestRole ? undefined : (sourceId) => handleOpenPathfinder(sourceId)}
+        onEditPerson={isGuestRole ? undefined : (id) => setEditingPersonId(id)}
       />
 
-      {/* Relationship Pathfinder Modal */}
-      <RelationshipPathfinderModal
-        isOpen={isPathfinderOpen}
-        onClose={() => setIsPathfinderOpen(false)}
-        allNodes={layout?.nodes || []}
-        initialSourceId={pathfinderSourceId}
-        onApplyPath={handleApplyPath}
-        onClearPath={handleClearPath}
-        activeResult={activePathResult}
-      />
+      {/* Relationship Pathfinder Modal (disabled in Guest Role) */}
+      {!isGuestRole && (
+        <RelationshipPathfinderModal
+          isOpen={isPathfinderOpen}
+          onClose={() => setIsPathfinderOpen(false)}
+          allNodes={layout?.nodes || []}
+          initialSourceId={pathfinderSourceId}
+          onApplyPath={handleApplyPath}
+          onClearPath={handleClearPath}
+          activeResult={activePathResult}
+        />
+      )}
 
-      {/* Floating Person Edit Window on the Canvas */}
-      <FloatingPersonEditModal
-        isOpen={!!editingPersonId}
-        personId={editingPersonId}
-        onClose={() => setEditingPersonId(null)}
-        onSaveSuccess={(_updatedPerson) => {
-          fetchLayout();
-        }}
-        layoutNodes={layout?.nodes}
-        layoutEdges={layout?.edges}
-      />
+      {/* Floating Person Edit Window on the Canvas (disabled in Guest Role) */}
+      {!isGuestRole && (
+        <FloatingPersonEditModal
+          isOpen={!!editingPersonId}
+          personId={editingPersonId}
+          onClose={() => setEditingPersonId(null)}
+          onSaveSuccess={(_updatedPerson) => {
+            fetchLayout();
+          }}
+          layoutNodes={layout?.nodes}
+          layoutEdges={layout?.edges}
+        />
+      )}
 
-      {/* Requirement 5: Floating button on screen with pencil icon for adding a member (Inverted gold palette on desktop, right-bottom on mobile) */}
-      <button
-        onClick={() => setIsAddMemberOpen(true)}
-        className="canvas-floating-add-btn"
-        title="Add Family Member"
-        aria-label="Add Family Member"
-        style={{
-          position: 'fixed',
-          bottom: 28,
-          left: 28,
-          width: 56,
-          height: 56,
-          borderRadius: 14,
-          background: 'linear-gradient(135deg, #F5D77F 0%, #D6B15C 50%, #B8972E 100%)',
-          border: '1.5px solid #F5D77F',
-          color: '#10141D',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)',
-          cursor: 'pointer',
-          zIndex: 46,
-          transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.08)';
-          e.currentTarget.style.boxShadow = '0 8px 30px rgba(214, 177, 92, 0.65), 0 4px 12px rgba(0, 0, 0, 0.6)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)';
-        }}
-      >
-        <Pencil size={26} strokeWidth={2.3} />
-      </button>
+      {/* Requirement 5: Floating button on screen with pencil icon for adding a member (hidden in Guest Role) */}
+      {!isGuestRole && (
+        <button
+          onClick={() => setIsAddMemberOpen(true)}
+          className="canvas-floating-add-btn"
+          title="Add Family Member"
+          aria-label="Add Family Member"
+          style={{
+            position: 'fixed',
+            bottom: 28,
+            left: 28,
+            width: 56,
+            height: 56,
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, #F5D77F 0%, #D6B15C 50%, #B8972E 100%)',
+            border: '1.5px solid #F5D77F',
+            color: '#10141D',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)',
+            cursor: 'pointer',
+            zIndex: 46,
+            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.08)';
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(214, 177, 92, 0.65), 0 4px 12px rgba(0, 0, 0, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 6px 22px rgba(214, 177, 92, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)';
+          }}
+        >
+          <Pencil size={26} strokeWidth={2.3} />
+        </button>
+      )}
 
       {/* Requirement 5: Floating Add Member Window on the Canvas */}
-      <FloatingAddPersonModal
-        isOpen={isAddMemberOpen}
-        onClose={() => setIsAddMemberOpen(false)}
-        onSaveSuccess={(_createdPerson) => {
-          fetchLayout();
-        }}
-        layoutNodes={layout?.nodes}
-        layoutEdges={layout?.edges}
-      />
+      {!isGuestRole && (
+        <FloatingAddPersonModal
+          isOpen={isAddMemberOpen}
+          onClose={() => setIsAddMemberOpen(false)}
+          onSaveSuccess={(_createdPerson) => {
+            fetchLayout();
+          }}
+          layoutNodes={layout?.nodes}
+          layoutEdges={layout?.edges}
+        />
+      )}
       </div>
 
       {/* Requirement 5: First-Time Access Code Modal (Blurred background until family code entered) */}

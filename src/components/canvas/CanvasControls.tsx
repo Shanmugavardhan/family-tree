@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { useTheme } from '../../context/ThemeContext';
+import { useLineage } from '../../context/LineageContext';
 import { HEADER_AWARE_FIT_PADDING } from './canvasConstants';
 
 interface CanvasControlsProps {
@@ -41,6 +42,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   onZoomActivity,
 }) => {
   const { isDark } = useTheme();
+  const { isGuestRole } = useLineage();
   const { zoomIn, zoomOut, fitView, setCenter } = useReactFlow();
 
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -217,32 +219,34 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
       {/* 2. Injected Desktop Header Action Buttons */}
       {isMounted && actionsSlotEl && createPortal(
         <div className="desktop-header-canvas-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {/* Relationship Pathfinder Button */}
-          <button
-            onClick={onOpenPathfinder}
-            title="Trace Kinship & Relationship Path"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 8,
-              border: isDark ? '1px solid rgba(212, 175, 55, 0.45)' : '1px solid rgba(180, 83, 9, 0.4)',
-              fontFamily: "'Marcellus', Georgia, serif",
-              fontSize: '0.785rem',
-              fontWeight: 800,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              backgroundColor: isDark ? 'rgba(212, 175, 55, 0.16)' : '#fffbeb',
-              color: isDark ? '#e5c158' : '#b45309',
-              boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.05)',
-              transition: 'all 0.15s ease-in-out',
-            }}
-          >
-            <Compass size={15} color={isDark ? '#e5c158' : '#b45309'} />
-            <span>Pathfinder</span>
-          </button>
+          {/* Relationship Pathfinder Button (hidden in Guest Role) */}
+          {!isGuestRole && (
+            <button
+              onClick={onOpenPathfinder}
+              title="Trace Kinship & Relationship Path"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 8,
+                border: isDark ? '1px solid rgba(212, 175, 55, 0.45)' : '1px solid rgba(180, 83, 9, 0.4)',
+                fontFamily: "'Marcellus', Georgia, serif",
+                fontSize: '0.785rem',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                backgroundColor: isDark ? 'rgba(212, 175, 55, 0.16)' : '#fffbeb',
+                color: isDark ? '#e5c158' : '#b45309',
+                boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.05)',
+                transition: 'all 0.15s ease-in-out',
+              }}
+            >
+              <Compass size={15} color={isDark ? '#e5c158' : '#b45309'} />
+              <span>Pathfinder</span>
+            </button>
+          )}
 
           {/* Toggle Focus Mode */}
           <button
@@ -455,49 +459,51 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           pointerEvents: 'auto',
         }}
       >
-        {/* 1. Pathfinder */}
-        <button
-          onClick={onOpenPathfinder}
-          className="mobile-canvas-floating-btn"
-          title="Pathfinder (Trace Kinship Path)"
-          aria-label="Pathfinder"
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 10,
-            border: activePathSummary
-              ? '1.5px solid #f59e0b'
-              : isDark
-              ? '1px solid rgba(214, 177, 92, 0.35)'
-              : '1px solid rgba(180, 83, 9, 0.35)',
-            backgroundColor: activePathSummary
-              ? isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7'
-              : isDark ? 'rgba(214, 177, 92, 0.16)' : '#fffbeb',
-            color: isDark ? '#e5c158' : '#b45309',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative',
-            boxShadow: activePathSummary ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
-          }}
-        >
-          <Compass size={18} />
-          {activePathSummary && (
-            <span
-              style={{
-                position: 'absolute',
-                top: 3,
-                right: 3,
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                backgroundColor: '#f59e0b',
-                boxShadow: '0 0 6px #f59e0b',
-              }}
-            />
-          )}
-        </button>
+        {/* 1. Pathfinder (hidden in Guest Role) */}
+        {!isGuestRole && (
+          <button
+            onClick={onOpenPathfinder}
+            className="mobile-canvas-floating-btn"
+            title="Pathfinder (Trace Kinship Path)"
+            aria-label="Pathfinder"
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              border: activePathSummary
+                ? '1.5px solid #f59e0b'
+                : isDark
+                ? '1px solid rgba(214, 177, 92, 0.35)'
+                : '1px solid rgba(180, 83, 9, 0.35)',
+              backgroundColor: activePathSummary
+                ? isDark ? 'rgba(245, 158, 11, 0.25)' : '#fef3c7'
+                : isDark ? 'rgba(214, 177, 92, 0.16)' : '#fffbeb',
+              color: isDark ? '#e5c158' : '#b45309',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              boxShadow: activePathSummary ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
+            }}
+          >
+            <Compass size={18} />
+            {activePathSummary && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  right: 3,
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  backgroundColor: '#f59e0b',
+                  boxShadow: '0 0 6px #f59e0b',
+                }}
+              />
+            )}
+          </button>
+        )}
 
         {/* 2. Focus Mode */}
         <button

@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, UserCheck } from 'lucide-react';
+import { Search, UserCheck, Eye } from 'lucide-react';
 import { useLineage } from '../../context/LineageContext';
 import { personApi } from '../../services/personApi';
+import { relationshipApi } from '../../services/relationshipApi';
+import { getLineageMemberIdSet, GUEST_VIEWER_ID } from '../../utils/viewerRole';
 import { Person } from '../../types/person';
 import avatarMale from '../../assets/avatar_male.png';
 import avatarFemale from '../../assets/avatar_female.png';
 
 export const WhoAreYouModal: React.FC = () => {
-  const { needsViewerIdentity, setCurrentViewerId } = useLineage();
+  const { needsViewerIdentity, activeLineageId, activeLineage, setCurrentViewerId } = useLineage();
   const [members, setMembers] = useState<Person[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -16,12 +18,25 @@ export const WhoAreYouModal: React.FC = () => {
     if (!needsViewerIdentity) return;
     let active = true;
     setLoading(true);
-    personApi.getAll({ includeArchived: false }).then((res) => {
+    Promise.all([
+      personApi.getAll({ includeArchived: false }),
+      relationshipApi.getAll(),
+    ]).then(([res, relRes]) => {
       if (!active) return;
       if (res.success && res.data) {
-        // Rule (a): Show all living member tiles (exclude deceased)
+        const lineageMemberIds = getLineageMemberIdSet(
+          res.data,
+          relRes.data || [],
+          activeLineageId
+        );
+        // Rule 1: Show only living members belonging to the unlocked family code
         const living = res.data
-          .filter((p) => p.is_living !== false && !p.death_date)
+          .filter(
+            (p) =>
+              p.is_living !== false &&
+              !p.death_date &&
+              (lineageMemberIds.size === 0 || lineageMemberIds.has(p.id))
+          )
           .sort((a, b) => a.first_name.localeCompare(b.first_name));
         setMembers(living);
       }
@@ -30,7 +45,7 @@ export const WhoAreYouModal: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [needsViewerIdentity]);
+  }, [needsViewerIdentity, activeLineageId]);
 
   const filteredMembers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -117,7 +132,7 @@ export const WhoAreYouModal: React.FC = () => {
               lineHeight: 1.45,
             }}
           >
-            Select your profile below so we can personalize your family view and help verify recorded family details.
+            Select your profile in <strong style={{ color: '#D6B15C' }}>{activeLineage.name}</strong> or continue as Guest.
           </p>
 
           {/* Search filter */}
@@ -182,6 +197,65 @@ export const WhoAreYouModal: React.FC = () => {
                 gap: 14,
               }}
             >
+              {/* Rule 1: Guest tile as the very first tile */}
+              <button
+                type="button"
+                onClick={() => setCurrentViewerId(GUEST_VIEWER_ID)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '14px 10px',
+                  borderRadius: 14,
+                  border: '1.5px dashed rgba(148, 163, 184, 0.5)',
+                  backgroundColor: '#161e2a',
+                  color: '#cbd5e1',
+                  cursor: 'pointer',
+                  transition: 'transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#D6B15C';
+                  e.currentTarget.style.backgroundColor = '#1e2838';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.5)';
+                  e.currentTarget.style.backgroundColor = '#161e2a';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <div
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: '50%',
+                    border: '2px solid #94a3b8',
+                    backgroundColor: '#252E3A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#cbd5e1',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Eye size={28} />
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    lineHeight: 1.25,
+                  }}
+                >
+                  Guest
+                </span>
+                <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: -6 }}>
+                  View Only
+                </span>
+              </button>
+
               {filteredMembers.map((member) => {
                 const fullName = [member.first_name, member.middle_name, member.last_name]
                   .filter(Boolean)
@@ -257,3 +331,4 @@ export const WhoAreYouModal: React.FC = () => {
     </div>
   );
 };
+

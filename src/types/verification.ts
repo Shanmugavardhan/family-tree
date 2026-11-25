@@ -40,3 +40,4 @@ export interface TfaQuestion {
   options: TfaQuestionOption[];
   relevance_score: number;
 }
+
