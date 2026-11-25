@@ -1097,17 +1097,22 @@ const FamilyCanvasInternal: React.FC = () => {
       <TfaVerificationModal
         isOpen={isTfaOpen}
         questions={tfaQuestions}
-        onAnswer={async (q: TfaQuestion, opt: TfaQuestionOption) => {
+        onAnswer={async (q: TfaQuestion, opt: TfaQuestionOption, suggestedValue?: string) => {
           if (!currentViewerId) return;
+          const cleanFactId = q.fact_id.replace(/__compound$/, '');
           await verificationApi.submitAnswer({
-            factId: q.fact_id,
+            factId: cleanFactId,
             entityType: q.entity_type,
             entityId: q.entity_id,
             field: q.field,
             recordedBy: q.recorded_by,
             viewerId: currentViewerId,
             action: opt.action,
+            suggestedValue,
           });
+          if (opt.action === 'fill') {
+            fetchLayout();
+          }
         }}
         onClose={() => setIsTfaOpen(false)}
       />

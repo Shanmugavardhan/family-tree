@@ -299,8 +299,13 @@ function arrangeSideBySideInLanes(
       });
     }
 
-    // Strict age-based horizontal ordering: earliest born (oldest) comes leftmost
+    // Direct-family (sibling-group) age ordering:
+    // Keep sibling groups ordered by their parent couple's horizontal position (desiredX),
+    // and sort by direct-lineage age ONLY within the same direct family (same parents).
     units.sort((a, b) => {
+      if (a.hasParents && b.hasParents && Math.abs(a.desiredX - b.desiredX) > 10) {
+        return a.desiredX - b.desiredX;
+      }
       if (a.birthKey !== b.birthKey) return a.birthKey - b.birthKey;
       if (a.desiredX !== b.desiredX) return a.desiredX - b.desiredX;
       return (a.nodes[0]?.firstName || '').localeCompare(b.nodes[0]?.firstName || '');

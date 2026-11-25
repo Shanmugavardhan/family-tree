@@ -342,43 +342,22 @@ async function runAll() {
     assert.strictEqual(hitsSpouseUnit, false, `Vertical drop X (${routed.labelX}) must NOT cross Sai-Sravya spouse line or tiles`);
   });
 
-  await runTest('Age-Based Horizontal Ordering: Direct lineage age only (ignores in-law spouse age)', async () => {
+  await runTest('Direct-Family Age Ordering: Rohitha (2002) is left of Navaneeth (2003) within Galeti siblings, NOT left of Shanmuga', async () => {
     const { buildFamilyLayoutFromRecords } = await import('../src/services/layoutApi');
-    const ramayyaId = '1ae73a4b-b739-40d3-8b50-071bbf1b07eb';
-
-    // Simulate: Suguna (1968) + Jagannadham (1967), Rada (1972) + Munirathnam (1962, older than Suguna!)
-    // Direct lineage: Suguna (1968) < Rada (1972) -> Suguna's couple MUST appear LEFT of Rada's couple!
     const allPersons = (await personApi.getAll()).data!;
     const allRels = (await relationshipApi.getAll()).data!;
-    const patchedPersons = allPersons.map((p) => {
-      if (p.first_name === 'Suguna') return { ...p, birth_date: '1968' };
-      if (p.first_name === 'Jagannadham') return { ...p, birth_date: '1967' };
-      if (p.first_name === 'Rada') return { ...p, birth_date: '1972' };
-      if (p.first_name === 'Munirathnam') return { ...p, birth_date: '1962' };
-      return p;
-    });
 
-    const customLayout = buildFamilyLayoutFromRecords(patchedPersons, allRels, 'paradarami');
-    const sugunaNode = customLayout.nodes.find((n) => n.firstName === 'Suguna' && n.generationOrder === 3);
-    const radaNode = customLayout.nodes.find((n) => n.firstName === 'Rada' && n.generationOrder === 3);
-    assert.ok(sugunaNode && radaNode);
-    assert.ok(
-      sugunaNode.x < radaNode.x,
-      `Suguna (1968, x=${sugunaNode.x}) must appear LEFT of Rada (1972, x=${radaNode.x}) even though Rada's husband Munirathnam (1962) is older`
-    );
-
-    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
-    const layout = layoutRes.data!;
-    const genZNodes = layout.nodes
-      .filter((n) => n.generationOrder === 5 && typeof n.birthYear === 'number')
-      .sort((a, b) => a.x - b.x);
-    for (let i = 0; i < genZNodes.length - 1; i++) {
-      assert.ok(
-        (genZNodes[i].birthYear || 0) <= (genZNodes[i + 1].birthYear || 0),
-        `Left tile ${genZNodes[i].firstName} (${genZNodes[i].birthYear}) must be older/equal to right tile ${genZNodes[i + 1].firstName} (${genZNodes[i + 1].birthYear})`
-      );
-    }
-    void ramayyaId;
+    // Scenario: Rohitha (2002) & Navaneeth (2003) under Munirathnam+Rada;
+    // Shanmuga (2001) & a younger sibling "Aarav" (2005) under Jagannadham+Suguna.
+    // Even though Rohitha (2002) is older than Aarav (2005), Rohitha belongs to Munirathnam+Rada,
+    // so Jagannadham+Suguna's children stay grouped together on the left, and Rohitha stays left of Navaneeth!
+    const layout = buildFamilyLayoutFromRecords(allPersons, allRels, 'paradarami');
+    const shanmuga = layout.nodes.find((n) => n.firstName === 'Shanmuga');
+    const rohitha = layout.nodes.find((n) => n.firstName === 'Rohitha');
+    const navaneeth = layout.nodes.find((n) => n.firstName === 'Navaneeth');
+    assert.ok(shanmuga && rohitha && navaneeth);
+    assert.ok(shanmuga.x < rohitha.x, 'Jagannadham+Suguna child (Shanmuga) stays in parent group left of Munirathnam+Rada children');
+    assert.ok(rohitha.x < navaneeth.x, 'Within Munirathnam+Rada direct family, Rohitha (2002) must be left of Navaneeth (2003)');
   });
 
   await runTest('Single Line Per Couple: Married parents emit only ONE parent-child line per child', async () => {

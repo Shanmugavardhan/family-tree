@@ -6,14 +6,17 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { getDb, isBrowserRuntime } from './firebaseDb';
+import { personApi } from './personApi';
 import { ApiResponse } from '../types/api';
+import { Person } from '../types/person';
+import { Relationship } from '../types/relationship';
 import {
+  LineageTrustScore,
   VerifiableField,
   VerificationBadgeInfo,
   VerificationRecord,
 } from '../types/verification';
 
-// In-memory store used strictly in offline Node.js test environments
 let testVerificationStore: Map<string, VerificationRecord> | null = null;
 
 function getTestStore(): Map<string, VerificationRecord> {
@@ -47,7 +50,6 @@ export function getVerificationBadgeInfo(
     };
   }
   const uniqueVerifiers = new Set(record.verifiers || []);
-  // Initial author/seed counts as 1/2; 2+ distinct verifiers = 2/2 Verified
   const effectiveCount = Math.max(1, Math.min(2, uniqueVerifiers.size));
   const isVerified = uniqueVerifiers.size >= 2;
   return {
@@ -55,6 +57,52 @@ export function getVerificationBadgeInfo(
     isVerified,
     label: isVerified ? '2/2 Verified' : '1/2',
     disputed: (record.disputed_by || []).length > 0 && !isVerified,
+  };
+}
+
+/**
+ * Upgrade 6: Computes overall Lineage Trust Score (% of recorded facts that are 2/2 Verified).
+ */
+export function computeLineageTrustScore(
+  allPersons: Person[],
+  allRelationships: Relationship[],
+  verificationMap: Record<string, VerificationRecord>
+): LineageTrustScore {
+  const activePersons = allPersons.filter((p) => !p.is_archived);
+  const factIds: string[] = [];
+
+  for (const p of activePersons) {
+    if (p.birth_date) factIds.push(buildFactId('person', p.id, 'birth_date'));
+    if (p.birth_place) factIds.push(buildFactId('person', p.id, 'birth_place'));
+    if (p.alias) factIds.push(buildFactId('person', p.id, 'alias'));
+    if (!p.is_living || p.death_date) factIds.push(buildFactId('person', p.id, 'is_living'));
+  }
+
+  const seenRel = new Set<string>();
+  for (const r of allRelationships) {
+    if (r.relationship_type === 'spouse') {
+      const k = `sp:${[r.person_id, r.related_person_id].sort().join('<->')}`;
+      if (seenRel.has(k)) continue;
+      seenRel.add(k);
+    }
+    factIds.push(buildFactId('relationship', r.id, 'relationship'));
+  }
+
+  if (factIds.length === 0) {
+    return { verifiedCount: 0, totalFacts: 0, percentage: 100 };
+  }
+
+  let verifiedCount = 0;
+  for (const fid of factIds) {
+    if (getVerificationBadgeInfo(verificationMap[fid]).isVerified) {
+      verifiedCount++;
+    }
+  }
+
+  return {
+    verifiedCount,
+    totalFacts: factIds.length,
+    percentage: Math.round((verifiedCount / factIds.length) * 100),
   };
 }
 
@@ -94,6 +142,7 @@ export const verificationApi = {
       recorded_by: params.authorId || null,
       verifiers: params.authorId ? [params.authorId] : ['initial_seed'],
       disputed_by: [],
+      suggested_corrections: [],
       updated_at: now,
     };
 
@@ -114,10 +163,11 @@ export const verificationApi = {
     field: VerifiableField;
     recordedBy: string | null;
     viewerId: string;
-    action: 'confirm' | 'reject' | 'skip';
+    action: 'confirm' | 'reject' | 'skip' | 'fill';
+    suggestedValue?: string;
   }): Promise<ApiResponse<VerificationRecord>> => {
     // Rule (c): The author who recorded the data cannot verify their own entry
-    if (params.recordedBy && params.recordedBy === params.viewerId) {
+    if (params.action === 'confirm' && params.recordedBy && params.recordedBy === params.viewerId) {
       return {
         success: false,
         data: null,
@@ -129,8 +179,22 @@ export const verificationApi = {
     }
 
     const now = new Date().toISOString();
-    let existing: VerificationRecord | null = null;
 
+    // Upgrade 3: Fill-in-the-blank submission for missing DOB or Birth Place
+    if (params.action === 'fill' && params.suggestedValue?.trim() && params.entityType === 'person') {
+      const val = params.suggestedValue.trim();
+      if (params.field === 'birth_date' || params.field === 'birth_place' || params.field === 'alias') {
+        await personApi.update(params.entityId, { [params.field]: val } as any);
+      }
+      return verificationApi.recordAuthorEntry({
+        entityType: 'person',
+        entityId: params.entityId,
+        field: params.field,
+        authorId: params.viewerId,
+      });
+    }
+
+    let existing: VerificationRecord | null = null;
     if (isBrowserRuntime()) {
       const db = getDb();
       const snap = await getDoc(doc(db, 'verifications', params.factId));
@@ -149,23 +213,33 @@ export const verificationApi = {
       recorded_by: params.recordedBy || null,
       verifiers: params.recordedBy ? [params.recordedBy] : ['initial_seed'],
       disputed_by: [],
+      suggested_corrections: [],
       updated_at: now,
     };
 
     const verifiers = new Set(base.verifiers || []);
     const disputed = new Set(base.disputed_by || []);
+    const suggestions = [...(base.suggested_corrections || [])];
 
     if (params.action === 'confirm') {
       verifiers.add(params.viewerId);
       disputed.delete(params.viewerId);
     } else if (params.action === 'reject') {
       disputed.add(params.viewerId);
+      if (params.suggestedValue && params.suggestedValue.trim()) {
+        suggestions.push({
+          by: params.viewerId,
+          value: params.suggestedValue.trim(),
+          at: now,
+        });
+      }
     }
 
     const updated: VerificationRecord = {
       ...base,
       verifiers: Array.from(verifiers),
       disputed_by: Array.from(disputed),
+      suggested_corrections: suggestions,
       updated_at: now,
     };
 
@@ -179,4 +253,3 @@ export const verificationApi = {
     return { success: true, data: updated, error: null };
   },
 };
-

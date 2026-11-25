@@ -1,4 +1,10 @@
-export type VerifiableField = 'birth_date' | 'birth_place' | 'relationship' | 'is_living';
+export type VerifiableField =
+  | 'birth_date'
+  | 'birth_place'
+  | 'relationship'
+  | 'is_living'
+  | 'death_date'
+  | 'alias';
 
 export interface VerificationRecord {
   fact_id: string;
@@ -8,6 +14,11 @@ export interface VerificationRecord {
   recorded_by: string | null;
   verifiers: string[];
   disputed_by: string[];
+  suggested_corrections?: Array<{
+    by: string;
+    value: string;
+    at: string;
+  }>;
   updated_at: string;
 }
 
@@ -18,10 +29,17 @@ export interface VerificationBadgeInfo {
   disputed: boolean;
 }
 
+export interface LineageTrustScore {
+  verifiedCount: number;
+  totalFacts: number;
+  percentage: number;
+}
+
 export interface TfaQuestionOption {
-  id: 'confirm' | 'reject' | 'skip';
+  id: string;
   label: string;
-  action: 'confirm' | 'reject' | 'skip';
+  action: 'confirm' | 'reject' | 'skip' | 'fill';
+  isCorrectOption?: boolean;
 }
 
 export interface TfaQuestion {
@@ -39,5 +57,11 @@ export interface TfaQuestion {
   detail_hint?: string;
   options: TfaQuestionOption[];
   relevance_score: number;
+  allowCorrection?: boolean;
+  correctionPlaceholder?: string;
+  allowFillInput?: boolean;
+  fillPlaceholder?: string;
+  isDisputed?: boolean;
+  isAnomaly?: boolean;
+  branchKey?: string;
 }
-

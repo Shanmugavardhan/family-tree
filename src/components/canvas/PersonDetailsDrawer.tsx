@@ -15,8 +15,14 @@ import {
 } from 'lucide-react';
 import { PositionedNode } from '../../types/layout';
 import { personApi } from '../../services/personApi';
-import { verificationApi, buildFactId, getVerificationBadgeInfo } from '../../services/verificationApi';
-import { VerificationRecord } from '../../types/verification';
+import { relationshipApi } from '../../services/relationshipApi';
+import {
+  verificationApi,
+  buildFactId,
+  getVerificationBadgeInfo,
+  computeLineageTrustScore,
+} from '../../services/verificationApi';
+import { LineageTrustScore, VerifiableField, VerificationRecord } from '../../types/verification';
 import { Person } from '../../types/person';
 import { DerivedRelativesResponse, RelativeItem } from '../../types/relative';
 import { useTheme } from '../../context/ThemeContext';
@@ -46,13 +52,15 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
   onEditPerson,
 }) => {
   const { isDark } = useTheme();
-  const { isGuestRole } = useLineage();
+  const { isGuestRole, currentViewerId } = useLineage();
   const navigate = useNavigate();
   const { setCenter } = useReactFlow();
 
   const [person, setPerson] = React.useState<Person | null>(null);
   const [relatives, setRelatives] = React.useState<DerivedRelativesResponse | null>(null);
   const [verificationMap, setVerificationMap] = React.useState<Record<string, VerificationRecord>>({});
+  const [trustScore, setTrustScore] = React.useState<LineageTrustScore | null>(null);
+  const [verifyingField, setVerifyingField] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
 
@@ -76,8 +84,10 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
       personApi.getById(personId),
       personApi.getRelatives(personId),
       verificationApi.getAllMap(),
+      personApi.getAll({ includeArchived: false }),
+      relationshipApi.getAll(),
     ])
-      .then(([personRes, relRes, verRes]) => {
+      .then(([personRes, relRes, verRes, allPRes, allRRes]) => {
         if (isMounted) {
           if (personRes.success && personRes.data) {
             setPerson(personRes.data);
@@ -85,8 +95,12 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           if (relRes.success && relRes.data) {
             setRelatives(relRes.data);
           }
-          if (verRes.success && verRes.data) {
-            setVerificationMap(verRes.data);
+          const vMap = verRes.success && verRes.data ? verRes.data : {};
+          setVerificationMap(vMap);
+          if (allPRes.success && allPRes.data) {
+            setTrustScore(
+              computeLineageTrustScore(allPRes.data, allRRes.data || [], vMap)
+            );
           }
           setLoading(false);
         }
@@ -280,36 +294,105 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
           </div>
         </div>
 
-        {/* Vital Info */}
+        {/* Vital Info & On-Demand Verification (Upgrade 6 & 7) */}
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {(() => {
-            const dobBadge = getVerificationBadgeInfo(
-              verificationMap[buildFactId('person', personId, 'birth_date')]
-            );
-            const placeBadge = getVerificationBadgeInfo(
-              verificationMap[buildFactId('person', personId, 'birth_place')]
-            );
-            const renderBadge = (badge: ReturnType<typeof getVerificationBadgeInfo>) => (
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: 999,
-                  backgroundColor: badge.isVerified
-                    ? 'rgba(16, 185, 129, 0.14)'
-                    : 'rgba(245, 158, 11, 0.14)',
-                  color: badge.isVerified ? '#059669' : '#d97706',
-                  border: badge.isVerified
-                    ? '1px solid rgba(16, 185, 129, 0.35)'
-                    : '1px solid rgba(245, 158, 11, 0.35)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {badge.isVerified ? '2/2 ✓ Verified' : badge.label}
+          {trustScore && trustScore.totalFacts > 0 && (
+            <div
+              style={{
+                marginBottom: 4,
+                padding: '7px 10px',
+                borderRadius: 8,
+                backgroundColor: isDark ? 'rgba(214, 177, 92, 0.08)' : '#fefce8',
+                border: isDark ? '1px solid rgba(214, 177, 92, 0.25)' : '1px solid #fde68a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.73rem',
+                color: isDark ? '#D6B15C' : '#92400e',
+                fontWeight: 600,
+              }}
+            >
+              <span>Tree Verification Score</span>
+              <span>
+                {trustScore.percentage}% ({trustScore.verifiedCount}/{trustScore.totalFacts} Verified)
               </span>
-            );
+            </div>
+          )}
+
+          {(() => {
+            const handleOnDemandVerify = async (field: VerifiableField) => {
+              if (!currentViewerId || isGuestRole || verifyingField) return;
+              const factId = buildFactId('person', personId, field);
+              const existing = verificationMap[factId];
+              if (existing?.recorded_by === currentViewerId) return;
+              setVerifyingField(field);
+              try {
+                const res = await verificationApi.submitAnswer({
+                  factId,
+                  entityType: 'person',
+                  entityId: personId,
+                  field,
+                  recordedBy: existing?.recorded_by ?? null,
+                  viewerId: currentViewerId,
+                  action: 'confirm',
+                });
+                if (res.success && res.data) {
+                  setVerificationMap((prev) => ({ ...prev, [factId]: res.data! }));
+                }
+              } finally {
+                setVerifyingField(null);
+              }
+            };
+
+            const renderBadge = (field: VerifiableField) => {
+              const factId = buildFactId('person', personId, field);
+              const record = verificationMap[factId];
+              const badge = getVerificationBadgeInfo(record);
+              const canVerify =
+                !badge.isVerified &&
+                !isGuestRole &&
+                Boolean(currentViewerId) &&
+                record?.recorded_by !== currentViewerId;
+
+              return (
+                <button
+                  type="button"
+                  disabled={!canVerify || verifyingField === field}
+                  onClick={() => canVerify && handleOnDemandVerify(field)}
+                  title={
+                    badge.isVerified
+                      ? 'Verified by 2 family members'
+                      : canVerify
+                      ? 'Click to verify this detail (1/2 -> 2/2 Verified)'
+                      : 'Awaiting verification by another family member'
+                  }
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    backgroundColor: badge.isVerified
+                      ? 'rgba(16, 185, 129, 0.14)'
+                      : 'rgba(245, 158, 11, 0.14)',
+                    color: badge.isVerified ? '#059669' : '#d97706',
+                    border: badge.isVerified
+                      ? '1px solid rgba(16, 185, 129, 0.35)'
+                      : '1px solid rgba(245, 158, 11, 0.35)',
+                    whiteSpace: 'nowrap',
+                    cursor: canVerify ? 'pointer' : 'default',
+                  }}
+                >
+                  {verifyingField === field
+                    ? 'Saving...'
+                    : badge.isVerified
+                    ? '2/2 ✓ Verified'
+                    : canVerify
+                    ? `${badge.label} · Verify`
+                    : badge.label}
+                </button>
+              );
+            };
 
             return (
               <>
@@ -318,13 +401,25 @@ export const PersonDetailsDrawer: React.FC<PersonDetailsDrawerProps> = ({
                   <span>
                     DOB: {activeNode.birthDate || (activeNode.birthYear ? String(activeNode.birthYear) : 'Unknown')}
                   </span>
-                  {(activeNode.birthDate || activeNode.birthYear) && renderBadge(dobBadge)}
+                  {(activeNode.birthDate || activeNode.birthYear) && renderBadge('birth_date')}
                 </div>
                 {person?.birth_place && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
                     <MapPin size={15} color="#64748b" />
                     <span>Place: {person.birth_place}</span>
-                    {renderBadge(placeBadge)}
+                    {renderBadge('birth_place')}
+                  </div>
+                )}
+                {person?.alias && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
+                    <span style={{ fontWeight: 600 }}>Alias: {person.alias}</span>
+                    {renderBadge('alias')}
+                  </div>
+                )}
+                {(!activeNode.isLiving || person?.death_date) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#475569' }}>
+                    <span>Status: Deceased{person?.death_date ? ` (${person.death_date})` : ''}</span>
+                    {renderBadge('is_living')}
                   </div>
                 )}
               </>

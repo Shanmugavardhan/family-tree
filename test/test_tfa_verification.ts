@@ -5,6 +5,7 @@ import {
   verificationApi,
   buildFactId,
   getVerificationBadgeInfo,
+  computeLineageTrustScore,
   resetTestVerificationStore,
 } from '../src/services/verificationApi';
 import {
@@ -77,7 +78,10 @@ async function runAll() {
     );
     for (const q of questions) {
       assert.ok(q.question_text.endsWith('?'), 'Question must be properly formatted');
-      assert.ok(q.options.length >= 3, 'Question must provide multiple-choice options');
+      assert.ok(
+        q.allowFillInput ? q.options.length >= 2 : q.options.length >= 3,
+        'Question must provide options'
+      );
     }
   });
 
@@ -146,7 +150,10 @@ async function runAll() {
     );
     const kavyaQuestion = meghanaQuestions.find((q) => q.fact_id === kavyaDobFactId);
     assert.ok(kavyaQuestion, 'Another family member must be eligible to verify Kavya DOB');
-    assert.ok(kavyaQuestion.question_text.includes('2006'), 'Dynamic question must include recorded birth year 2006');
+    assert.ok(
+      kavyaQuestion.options.some((o) => o.label === '2006' && o.action === 'confirm'),
+      'Smart multiple-choice options must include recorded birth year 2006'
+    );
   });
 
   await runTest('Two-Step Badge Progression: 1/2 transitions to 2/2 Verified upon second member acknowledgment', async () => {
@@ -244,6 +251,110 @@ async function runAll() {
     });
     assert.strictEqual(meghanaAfterSwitch.includes('konukuru'), false, 'Meghana must NOT retain simultaneous access to both families');
     assert.ok(meghanaAfterSwitch.includes('paradarami'));
+  });
+
+  await runTest('Upgrades 1-7: Smart distractors, conflict tie-breaker, fill-in-the-blank, branch cooling, compound check & trust score', async () => {
+    const shanmuga = allPersons.find((p) => p.first_name.includes('Shanmuga'))!;
+    const meghana = allPersons.find((p) => p.first_name === 'Meghana')!;
+    const kavya = (await personApi.getAll()).data!.find((p) => p.first_name === 'Kavya')!;
+
+    // Upgrade 1: Smart multiple-choice distractors for birth year (2006)
+    const freshPerson = (await personApi.create({
+      first_name: 'Vikram',
+      last_name: 'Konukuru',
+      gender: 'male',
+      birth_date: '2005',
+      alias: 'Vicky',
+      is_living: true,
+      father_id: shanmuga.id,
+    })).data!;
+
+    const qList = generateTfaQuestionsForViewer(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      meghana.id,
+      {},
+      { maxQuestions: 100, rng: () => 0.5 }
+    );
+
+    const vikramDobQ = qList.find((q) => q.entity_id === freshPerson.id && q.field === 'birth_date');
+    assert.ok(vikramDobQ, 'Must generate DOB question for Vikram');
+    assert.ok(vikramDobQ.options.some((o) => o.label === '2005' && o.action === 'confirm'), 'Must include correct year option');
+    assert.ok(vikramDobQ.options.length >= 4, 'Must include multiple-choice distractors');
+
+    // Upgrade 7: Alias verifiable field
+    const vikramAliasQ = qList.find((q) => q.entity_id === freshPerson.id && q.field === 'alias');
+    assert.ok(vikramAliasQ && vikramAliasQ.question_text.includes('Vicky'), 'Must verify alias field');
+
+    // Upgrade 5: Compound triangulated couple-children question
+    const compoundQ = qList.find((q) => q.fact_id.endsWith('__compound'));
+    assert.ok(compoundQ, 'Must generate triangulated couple-children question');
+
+    // Upgrade 2: Conflict resolution & tie-breaker boost (+200)
+    const vikramDobFact = buildFactId('person', freshPerson.id, 'birth_date');
+    await verificationApi.submitAnswer({
+      factId: vikramDobFact,
+      entityType: 'person',
+      entityId: freshPerson.id,
+      field: 'birth_date',
+      recordedBy: shanmuga.id,
+      viewerId: kavya.id,
+      action: 'reject',
+      suggestedValue: '2004',
+    });
+    const mapAfterDispute = (await verificationApi.getAllMap()).data || {};
+    assert.strictEqual(mapAfterDispute[vikramDobFact].suggested_corrections?.[0].value, '2004');
+    const tieBreakerQ = generateTfaQuestionsForViewer(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      meghana.id,
+      mapAfterDispute,
+      { maxQuestions: 10, rng: () => 0.5 }
+    );
+    const boosted = tieBreakerQ.find((q) => q.fact_id === vikramDobFact);
+    assert.ok(boosted && boosted.isDisputed, 'Disputed fact must be prioritized for 3rd-party tie-breaker');
+
+    // Upgrade 3: Fill-in-the-blank for missing DOB
+    const noDob = (await personApi.create({
+      first_name: 'Nikhil',
+      last_name: 'Konukuru',
+      gender: 'male',
+      is_living: true,
+      father_id: shanmuga.id,
+    })).data!;
+    const fillQ = generateTfaQuestionsForViewer(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      meghana.id,
+      mapAfterDispute,
+      { maxQuestions: 100, rng: () => 0.5 }
+    ).find((q) => q.entity_id === noDob.id && q.field === 'birth_date');
+    assert.ok(fillQ && fillQ.allowFillInput, 'Missing DOB must trigger fill-in-the-blank prompt');
+
+    // Upgrade 4: Adaptive branch cooling lowers score
+    const uncooled = generateTfaQuestionsForViewer(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      meghana.id,
+      mapAfterDispute,
+      { maxQuestions: 100, rng: () => 0.5 }
+    ).find((q) => q.fact_id === vikramDobFact)!;
+    const cooled = generateTfaQuestionsForViewer(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      meghana.id,
+      mapAfterDispute,
+      { maxQuestions: 100, cooledBranchKeys: new Set(['konukuru']), rng: () => 0.5 }
+    ).find((q) => q.fact_id === vikramDobFact)!;
+    assert.ok(cooled.relevance_score < uncooled.relevance_score, 'Cooled branch must reduce score');
+
+    // Upgrade 6: Lineage Trust Score
+    const trust = computeLineageTrustScore(
+      (await personApi.getAll()).data || [],
+      (await relationshipApi.getAll()).data || [],
+      mapAfterDispute
+    );
+    assert.ok(trust.totalFacts > 0 && trust.percentage >= 0 && trust.percentage <= 100);
   });
 
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
