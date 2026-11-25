@@ -4,6 +4,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   useNodes,
+  useEdges,
 } from '@xyflow/react';
 import { FamilyEdgeData } from '../../adapters/reactFlowAdapter';
 import { Heart, Navigation } from 'lucide-react';
@@ -13,10 +14,17 @@ interface Point {
   y: number;
 }
 
-function hashEdgeId(id: string): number {
+export interface ObstacleBox {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+function hashKey(key: string): number {
   let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = (h * 31 + id.charCodeAt(i)) | 0;
+  for (let i = 0; i < key.length; i++) {
+    h = (h * 31 + key.charCodeAt(i)) | 0;
   }
   return Math.abs(h);
 }
@@ -25,7 +33,6 @@ function hashEdgeId(id: string): number {
  * Builds a clean SVG path with rounded corners from a sequence of orthogonal points.
  */
 function buildRoundedOrthogonalPath(rawPoints: Point[], radius = 12): string {
-  // Deduplicate consecutive identical points
   const deduped: Point[] = [];
   for (const p of rawPoints) {
     const prev = deduped[deduped.length - 1];
@@ -34,7 +41,6 @@ function buildRoundedOrthogonalPath(rawPoints: Point[], radius = 12): string {
     }
   }
 
-  // Remove collinear middle points
   const pts: Point[] = [];
   for (let i = 0; i < deduped.length; i++) {
     if (i === 0 || i === deduped.length - 1) {
@@ -89,45 +95,118 @@ function buildRoundedOrthogonalPath(rawPoints: Point[], radius = 12): string {
   return d;
 }
 
+/**
+ * Merges connected spouse nodes in the same lane into unified obstacle boxes
+ * so that vertical lines never pass through a spouse dashed line or heart icon.
+ */
+export function buildMergedSpouseObstacleBoxes(
+  personNodes: Array<{ id: string; x: number; y: number; width: number; height: number }>,
+  spouseEdges: Array<{ source: string; target: string }>
+): ObstacleBox[] {
+  const nodeMap = new Map(personNodes.map((n) => [n.id, n]));
+  const spouseAdj = new Map<string, Set<string>>();
+  for (const e of spouseEdges) {
+    if (!spouseAdj.has(e.source)) spouseAdj.set(e.source, new Set());
+    if (!spouseAdj.has(e.target)) spouseAdj.set(e.target, new Set());
+    spouseAdj.get(e.source)!.add(e.target);
+    spouseAdj.get(e.target)!.add(e.source);
+  }
+
+  const visited = new Set<string>();
+  const boxes: ObstacleBox[] = [];
+
+  for (const n of personNodes) {
+    if (visited.has(n.id)) continue;
+    visited.add(n.id);
+    const unit = [n];
+    const queue = [n.id];
+
+    while (queue.length > 0) {
+      const currId = queue.shift()!;
+      const neighbors = spouseAdj.get(currId);
+      if (neighbors) {
+        for (const nbId of neighbors) {
+          if (!visited.has(nbId)) {
+            const nb = nodeMap.get(nbId);
+            if (nb && Math.abs(nb.y - n.y) < 40) {
+              visited.add(nbId);
+              unit.push(nb);
+              queue.push(nbId);
+            }
+          }
+        }
+      }
+    }
+
+    boxes.push({
+      left: Math.min(...unit.map((u) => u.x)) - 22,
+      right: Math.max(...unit.map((u) => u.x + u.width)) + 22,
+      top: Math.min(...unit.map((u) => u.y)) - 10,
+      bottom: Math.max(...unit.map((u) => u.y + u.height)) + 10,
+    });
+  }
+
+  return boxes;
+}
+
+/**
+ * Computes an orthogonal parent-child path that:
+ *  1) Shares a single couple trunk & sibling bus bar per parent couple (no overlapping sibling lines).
+ *  2) Never crosses any intermediate person tile OR spouse dashed line/heart.
+ *  3) Separates different couples' vertical/horizontal channels so lines never pass through each other.
+ */
 export function computeObstacleAwareParentPath(params: {
-  id: string;
+  coupleKey: string;
   sourceX: number;
   sourceY: number;
   targetX: number;
   targetY: number;
-  personBoxes: Array<{ left: number; right: number; top: number; bottom: number }>;
+  personBoxes: ObstacleBox[];
 }): { path: string; labelX: number; labelY: number } | null {
-  const { id, sourceX, sourceY, targetX, targetY, personBoxes } = params;
-  if (targetY <= sourceY + 40) return null;
+  const { coupleKey, sourceX, sourceY, targetX, targetY, personBoxes } = params;
+  if (targetY <= sourceY + 20) return null;
 
-  // Identify person tiles that sit vertically between sourceY and targetY
+  // Identify person/couple units sitting vertically between sourceY and targetY
   const intermediateBoxes = personBoxes.filter(
     (b) => b.top > sourceY + 15 && b.bottom < targetY - 15
   );
 
+  // All children of the same couple share the exact same coupleSlot -> 1 unified sibling bus bar!
+  const coupleSlot = (hashKey(coupleKey) % 5) - 2; // -2 .. +2
+
   if (intermediateBoxes.length === 0) {
-    return null; // Adjacent generation: standard SmoothStep in corridor is already clear
+    // Adjacent generation: single shared sibling bus in the empty corridor between the two lanes
+    const busY = Math.round((sourceY + targetY) / 2) + coupleSlot * 7;
+    const pts: Point[] = [
+      { x: sourceX, y: sourceY },
+      { x: sourceX, y: busY },
+      { x: targetX, y: busY },
+      { x: targetX, y: targetY },
+    ];
+    return {
+      path: buildRoundedOrthogonalPath(pts, 14),
+      labelX: (sourceX + targetX) / 2,
+      labelY: busY,
+    };
   }
 
-  const hash = hashEdgeId(id);
-  const laneSlot = (hash % 5) - 2; // -2 .. +2
-  const upperCorridorY = sourceY + 40 + laneSlot * 5;
-  const lowerCorridorY = targetY - 40 + laneSlot * 5;
+  // Multi-generation span: route cleanly around all intermediate couple/person boxes
+  const upperCorridorY = sourceY + 42 + coupleSlot * 7;
+  const lowerCorridorY = targetY - 42 + coupleSlot * 7;
 
   const isXClear = (x: number) =>
     !intermediateBoxes.some((b) => x >= b.left && x <= b.right);
 
-  // Build candidate X coordinates for the vertical drop through the intermediate lane
   const candidates: number[] = [targetX, sourceX];
   const sortedBoxes = [...intermediateBoxes].sort((a, b) => a.left - b.left);
 
   if (sortedBoxes.length > 0) {
-    candidates.push(sortedBoxes[0].left - 24);
-    candidates.push(sortedBoxes[sortedBoxes.length - 1].right + 24);
+    candidates.push(sortedBoxes[0].left - 26);
+    candidates.push(sortedBoxes[sortedBoxes.length - 1].right + 26);
     for (let i = 0; i < sortedBoxes.length - 1; i++) {
       const gapLeft = sortedBoxes[i].right;
       const gapRight = sortedBoxes[i + 1].left;
-      if (gapRight > gapLeft + 4) {
+      if (gapRight > gapLeft + 6) {
         candidates.push((gapLeft + gapRight) / 2);
       }
     }
@@ -144,8 +223,9 @@ export function computeObstacleAwareParentPath(params: {
   if (clearCandidates.length > 0) {
     clearCandidates.sort((a, b) => Math.abs(a - idealX) - Math.abs(b - idealX));
     const bestBase = clearCandidates[0];
-    const jittered = bestBase + laneSlot * 4;
-    dropX = isXClear(jittered) ? jittered : bestBase;
+    // All children of the same couple share the exact same dropX channel -> zero line crossings!
+    const spread = bestBase + coupleSlot * 5;
+    dropX = isXClear(spread) ? spread : bestBase;
   }
 
   const pts: Point[] = [
@@ -166,6 +246,7 @@ export function computeObstacleAwareParentPath(params: {
 
 export const FamilyEdge: React.FC<any> = ({
   id,
+  source,
   sourceX,
   sourceY,
   targetX,
@@ -177,6 +258,7 @@ export const FamilyEdge: React.FC<any> = ({
   data,
 }) => {
   const nodes = useNodes();
+  const edges = useEdges();
   const edgeData = data as FamilyEdgeData;
   const isSpouse = edgeData?.edgeType === 'spouse';
   const isHighlighted = edgeData?.isHighlighted;
@@ -189,23 +271,57 @@ export const FamilyEdge: React.FC<any> = ({
 
   const customRoute = React.useMemo(() => {
     if (isSpouse) return null;
-    const personBoxes = nodes
+
+    const personNodes = nodes
       .filter((n) => n.type === 'personCard')
       .map((n) => ({
-        left: n.position.x - 18,
-        right: n.position.x + (n.measured?.width || 190) + 18,
-        top: n.position.y - 10,
-        bottom: n.position.y + (n.measured?.height || 180) + 10,
+        id: n.id,
+        x: n.position.x,
+        y: n.position.y,
+        width: n.measured?.width || 190,
+        height: n.measured?.height || 180,
       }));
+
+    const spouseEdges = edges
+      .filter((e) => (e.data as FamilyEdgeData)?.edgeType === 'spouse')
+      .map((e) => ({ source: e.source, target: e.target }));
+
+    // If source has a spouse in the same lane, anchor the single couple trunk at the heart midpoint!
+    const srcNode = personNodes.find((n) => n.id === source);
+    let effectiveSourceX = sourceX;
+    let effectiveSourceY = sourceY;
+    let coupleKey = source;
+
+    if (srcNode) {
+      const spouseEdge = spouseEdges.find(
+        (e) => e.source === source || e.target === source
+      );
+      if (spouseEdge) {
+        const spouseId =
+          spouseEdge.source === source ? spouseEdge.target : spouseEdge.source;
+        const spNode = personNodes.find((n) => n.id === spouseId);
+        if (spNode && Math.abs(spNode.y - srcNode.y) < 40) {
+          const srcCenter = srcNode.x + srcNode.width / 2;
+          const spCenter = spNode.x + spNode.width / 2;
+          effectiveSourceX = (srcCenter + spCenter) / 2;
+          // Start cleanly from the bottom of the heart badge in the gap between spouses
+          effectiveSourceY = srcNode.y + 59;
+          coupleKey = [source, spouseId].sort().join('<->');
+        }
+      }
+    }
+
+    const personBoxes = buildMergedSpouseObstacleBoxes(personNodes, spouseEdges);
+
     return computeObstacleAwareParentPath({
-      id,
-      sourceX,
-      sourceY,
+      coupleKey,
+      sourceX: effectiveSourceX,
+      sourceY: effectiveSourceY,
       targetX,
       targetY,
       personBoxes,
     });
-  }, [isSpouse, nodes, id, sourceX, sourceY, targetX, targetY]);
+  }, [isSpouse, nodes, edges, source, sourceX, sourceY, targetX, targetY]);
 
   if (customRoute) {
     edgePath = customRoute.path;

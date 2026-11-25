@@ -449,28 +449,22 @@ export function buildFamilyLayoutFromRecords(
     };
   });
 
-  // Build deduplicated edges
+  // Build deduplicated edges:
+  // 1) Spouse edges (canonical pair)
+  // 2) Parent-child edges: if both parents of a child are spouses of each other,
+  //    emit ONE unified parent-child edge per (couple, child) so no duplicate lines appear.
   const edges: PositionedEdge[] = [];
   const edgeKeys = new Set<string>();
+  const spousePairsSet = new Set<string>();
+
   for (const rel of allRels) {
     if (!targetIdSet.has(rel.person_id) || !targetIdSet.has(rel.related_person_id)) {
       continue;
     }
-    if (rel.relationship_type === 'parent') {
-      const key = `parent:${rel.related_person_id}->${rel.person_id}`;
-      if (!edgeKeys.has(key)) {
-        edgeKeys.add(key);
-        edges.push({
-          id: `edge-parent-${rel.related_person_id}-${rel.person_id}`,
-          source: rel.related_person_id,
-          target: rel.person_id,
-          type: 'parent_child',
-          parentType: rel.parent_type || 'biological',
-        });
-      }
-    } else if (rel.relationship_type === 'spouse') {
+    if (rel.relationship_type === 'spouse') {
       const pair = [rel.person_id, rel.related_person_id].sort();
       const key = `spouse:${pair[0]}<->${pair[1]}`;
+      spousePairsSet.add(`${pair[0]}<->${pair[1]}`);
       if (!edgeKeys.has(key)) {
         edgeKeys.add(key);
         edges.push({
@@ -478,6 +472,56 @@ export function buildFamilyLayoutFromRecords(
           source: rel.person_id,
           target: rel.related_person_id,
           type: 'spouse',
+        });
+      }
+    }
+  }
+
+  // Group parents per child
+  const parentsByChild = new Map<string, Array<{ parentId: string; parentType: string }>>();
+  for (const rel of allRels) {
+    if (
+      rel.relationship_type === 'parent' &&
+      targetIdSet.has(rel.person_id) &&
+      targetIdSet.has(rel.related_person_id)
+    ) {
+      if (!parentsByChild.has(rel.person_id)) {
+        parentsByChild.set(rel.person_id, []);
+      }
+      const list = parentsByChild.get(rel.person_id)!;
+      if (!list.some((x) => x.parentId === rel.related_person_id)) {
+        list.push({
+          parentId: rel.related_person_id,
+          parentType: rel.parent_type || 'biological',
+        });
+      }
+    }
+  }
+
+  const personMap = new Map(targetPersons.map((p) => [p.id, p]));
+  for (const [childId, parentList] of parentsByChild.entries()) {
+    // Keep only one edge per married couple (prefer male/father deterministically)
+    const emittedParents: Array<{ parentId: string; parentType: string }> = [];
+    const sortedParents = [...parentList].sort((a, b) => {
+      const ga = personMap.get(a.parentId)?.gender === 'male' ? 0 : 1;
+      const gb = personMap.get(b.parentId)?.gender === 'male' ? 0 : 1;
+      if (ga !== gb) return ga - gb;
+      return a.parentId.localeCompare(b.parentId);
+    });
+
+    for (const pInfo of sortedParents) {
+      const hasSpouseAlreadyEmitted = emittedParents.some((em) => {
+        const pair = [em.parentId, pInfo.parentId].sort();
+        return spousePairsSet.has(`${pair[0]}<->${pair[1]}`);
+      });
+      if (!hasSpouseAlreadyEmitted) {
+        emittedParents.push(pInfo);
+        edges.push({
+          id: `edge-parent-${pInfo.parentId}-${childId}`,
+          source: pInfo.parentId,
+          target: childId,
+          type: 'parent_child',
+          parentType: pInfo.parentType,
         });
       }
     }

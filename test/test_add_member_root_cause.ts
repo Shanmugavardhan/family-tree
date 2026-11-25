@@ -303,28 +303,45 @@ async function runAll() {
     }
   });
 
-  await runTest('Obstacle-Aware Routing: Multi-generation lines route around intermediate person tiles without crossing', async () => {
-    const { computeObstacleAwareParentPath } = await import('../src/components/canvas/FamilyEdge');
-    const intermediateTiles = [
-      { left: 682, right: 908, top: 3210, bottom: 3410 }, // Sravya Narayanaswamy
-      { left: 420, right: 646, top: 3210, bottom: 3410 }, // Sai
-    ];
+  await runTest('Obstacle-Aware Routing: Single couple trunk & routes around merged spouse units without crossing spouse lines', async () => {
+    const { computeObstacleAwareParentPath, buildMergedSpouseObstacleBoxes } = await import('../src/components/canvas/FamilyEdge');
+
+    // Sai (x=400) and Sravya (x=646) are spouses connected by a dashed line (gap x=590..646)
+    const spouseBoxes = buildMergedSpouseObstacleBoxes(
+      [
+        { id: 'sai', x: 400, y: 3220, width: 190, height: 180 },
+        { id: 'sravya', x: 646, y: 3220, width: 190, height: 180 },
+      ],
+      [{ source: 'sai', target: 'sravya' }]
+    );
+
+    assert.strictEqual(spouseBoxes.length, 1, 'Connected spouses must merge into ONE obstacle box covering the spouse line & heart');
+    assert.ok(spouseBoxes[0].left < 400 && spouseBoxes[0].right > 836, 'Merged box must cover Sai, heart gap, and Sravya');
+
+    // Edge trying to drop at x=618 (right through Sai-Sravya heart!) must route outside [left, right]
     const routed = computeObstacleAwareParentPath({
-      id: 'edge-genx-to-genz',
-      sourceX: 795,
-      sourceY: 2940,
-      targetX: 795,
+      coupleKey: 'jagannadham<->suguna',
+      sourceX: 618,
+      sourceY: 2840,
+      targetX: 618,
       targetY: 3660,
-      personBoxes: intermediateTiles,
+      personBoxes: spouseBoxes,
     });
 
-    assert.ok(routed, 'Must compute custom obstacle-aware route when intermediate tiles exist');
-    assert.ok(routed.path.includes('M 795 2940'), 'Path must start at source');
-    assert.ok(routed.path.endsWith('L 795 3660'), 'Path must end at target');
-    const hitsAnyTile = intermediateTiles.some(
+    assert.ok(routed, 'Must compute custom obstacle-aware route');
+    const hitsSpouseUnit = spouseBoxes.some(
       (b) => routed.labelX >= b.left && routed.labelX <= b.right
     );
-    assert.strictEqual(hitsAnyTile, false, `Vertical drop X (${routed.labelX}) must NOT cross any intermediate tile`);
+    assert.strictEqual(hitsSpouseUnit, false, `Vertical drop X (${routed.labelX}) must NOT cross Sai-Sravya spouse line or tiles`);
+  });
+
+  await runTest('Single Line Per Couple: Married parents emit only ONE parent-child line per child', async () => {
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const layout = layoutRes.data!;
+    const subramanyamParentEdges = layout.edges.filter(
+      (e) => e.type === 'parent_child' && e.target === subramanyamId
+    );
+    assert.strictEqual(subramanyamParentEdges.length, 1, 'Child of married couple must have exactly ONE parent-child line, not duplicate lines');
   });
 
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
