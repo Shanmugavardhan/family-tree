@@ -68,7 +68,7 @@ async function runAll() {
   console.log('================================================================\n');
 
   const paraCompact: FamilyLayout = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8')
   );
 
   await runTest('Sanity Check: Reject upload with invalid file types (.txt, .pdf, .exe)', async () => {

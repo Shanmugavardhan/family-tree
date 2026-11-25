@@ -289,17 +289,13 @@ async function runAll() {
 });
 
   await runTest('Generational Boundary Invariant: Person tiles are strictly contained inside their generational strip and never cross boundaries', () => {
-  // Test across both standard and compact layouts for both lineages
+  // Test across standard full timeline layouts for both lineages
   const konuStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru.json'), 'utf-8'));
-  const konuCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-konukuru-compact.json'), 'utf-8'));
   const paraStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8'));
-  const paraCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8'));
 
   const layoutsToTest = [
     { name: 'Konukuru Standard', layout: augmentLayoutWithCustomPersons(konuStandard, 'konukuru') },
-    { name: 'Konukuru Compact', layout: augmentLayoutWithCustomPersons(konuCompact, 'konukuru', { compactLanes: true }) },
     { name: 'Paradarami Standard', layout: augmentLayoutWithCustomPersons(paraStandard, 'paradarami') },
-    { name: 'Paradarami Compact', layout: augmentLayoutWithCustomPersons(paraCompact, 'paradarami', { compactLanes: true }) },
   ];
 
   const CARD_NATURAL_HEIGHT = 180; // Portrait medallion (96px) + margins (14px) + 2 text lines (42px) + status/spacing (28px)
@@ -378,8 +374,8 @@ async function runAll() {
   };
   saveLocalCustomRelationship(muniRel);
 
-  const paraCompact: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8'));
-  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami', { compactLanes: true });
+  const paraStandard: FamilyLayout = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8'));
+  const augmented = augmentLayoutWithCustomPersons(paraStandard, 'paradarami');
 
   const rohithaNode = augmented.nodes.find((n) => n.id === rohitha.id);
   assert.ok(rohithaNode, 'Rohitha Galeti node must be present in augmented layout');
@@ -518,10 +514,10 @@ async function runAll() {
   assert.strictEqual(foundInAll.alias, 'Pedda Ayya', 'getAll must return updated alias');
 
   // 4. Verify canvas layout node is updated with edited properties
-  const paraCompact: FamilyLayout = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  const paraStandard: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8')
   );
-  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+  const augmented = augmentLayoutWithCustomPersons(paraStandard, 'paradarami');
   const ramayyaNode = augmented.nodes.find((n) => n.id === ramayyaId);
 
   assert.ok(ramayyaNode, 'Ramayya Chetty node must exist on canvas');
@@ -562,10 +558,10 @@ async function runAll() {
   assert.strictEqual(getByIdRes.data?.alias, 'Babu');
 
   // Verify layout node
-  const paraCompact: FamilyLayout = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  const paraStandard: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8')
   );
-  const augmented = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+  const augmented = augmentLayoutWithCustomPersons(paraStandard, 'paradarami');
   const customNode = augmented.nodes.find((n) => n.id === customId);
   assert.ok(customNode, 'Custom node must exist on canvas');
   assert.strictEqual(customNode.alias, 'Babu', 'Canvas node must reflect updated alias for custom member');
@@ -582,37 +578,21 @@ async function runAll() {
   assert.strictEqual(res.error?.code, 'PERSON_NOT_FOUND', 'Error code must be PERSON_NOT_FOUND');
 });
 
-  await runTest('Default Compact View: Canvas defaults to compact lanes without empty generational cohorts', () => {
-  const paraCompact: FamilyLayout = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami-compact.json'), 'utf-8')
+  await runTest('Full Timeline View: Canvas always displays all generational cohorts (no compact display)', () => {
+  const paraStandard: FamilyLayout = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../public/data/layout-paradarami.json'), 'utf-8')
   );
-  const layout = augmentLayoutWithCustomPersons(paraCompact, 'paradarami');
+  const layout = augmentLayoutWithCustomPersons(paraStandard, 'paradarami');
 
-  // In compact mode, empty cohorts (e.g. Greatest Generation 1901-1927, Silent Generation 1928-1945) must not be rendered
+  // Full timeline must include all generational cohorts, even those without current members
   const laneNames = layout.lanes.map((l) => l.name);
   assert.ok(laneNames.includes('Baby Boomers'), 'Baby Boomers cohort must be present');
   assert.ok(laneNames.includes('Generation X'), 'Generation X cohort must be present');
   assert.ok(laneNames.includes('Generation Z'), 'Generation Z cohort must be present');
-  assert.strictEqual(
-    laneNames.includes('Greatest Generation'),
-    false,
-    'Empty Greatest Generation must be omitted in compact mode'
-  );
-  assert.strictEqual(
-    laneNames.includes('Silent Generation'),
-    false,
-    'Empty Silent Generation must be omitted in compact mode'
-  );
-  assert.strictEqual(
-    laneNames.includes('Generation Alpha'),
-    false,
-    'Empty Generation Alpha must be omitted in compact mode'
-  );
-  assert.strictEqual(
-    laneNames.includes('Generation Beta'),
-    false,
-    'Empty Generation Beta must be omitted in compact mode'
-  );
+  assert.ok(laneNames.includes('Greatest Generation'), 'Greatest Generation must be preserved in full timeline');
+  assert.ok(laneNames.includes('Silent Generation'), 'Silent Generation must be preserved in full timeline');
+  assert.ok(laneNames.includes('Generation Alpha'), 'Generation Alpha must be preserved in full timeline');
+  assert.ok(laneNames.includes('Generation Beta'), 'Generation Beta must be preserved in full timeline');
 });
 
   console.log(`\nResults: ${passed} / ${total} tests passed.`);

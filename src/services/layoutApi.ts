@@ -382,36 +382,42 @@ export function augmentLayoutWithCustomPersons(
     }
   }
 
-  // 6. Unified active generations: strictly populated cohorts only.
-  // Empty generations (like Gilded, Missionary, Lost, Greatest, Silent, Alpha, Beta when unrepresented)
-  // are permanently omitted from both desktop and mobile views.
-  const populatedOrders = Array.from(
-    new Set(
-      nodes
-        .map((n) => n.generationOrder)
-        .filter((g): g is number => typeof g === 'number')
-    )
-  ).sort((a, b) => a - b);
+  // 6. Full generational timeline: preserve all generational cohort lanes (no compact mode).
+  const numericLaneMap = new Map<number, CohortLane>();
+  for (const l of baseLayout.lanes) {
+    if (typeof l.order === 'number') {
+      numericLaneMap.set(l.order, {
+        ...l,
+        nodeCount: nodes.filter((n) => n.generationOrder === l.order).length,
+      });
+    }
+  }
 
-  const finalLanes: CohortLane[] = [];
+  for (const n of nodes) {
+    if (typeof n.generationOrder === 'number' && !numericLaneMap.has(n.generationOrder)) {
+      const bandDef = GENERATION_BANDS.find((b) => b.order === n.generationOrder);
+      numericLaneMap.set(n.generationOrder, {
+        id: bandDef?.id || `gen_order_${n.generationOrder}`,
+        name: bandDef?.name || `Generation ${n.generationOrder}`,
+        order: n.generationOrder,
+        y: 0,
+        height: 440,
+        nodeCount: nodes.filter((node) => node.generationOrder === n.generationOrder).length,
+        startYear: bandDef?.start,
+        endYear: bandDef?.end,
+      });
+    }
+  }
+
+  const finalLanes: CohortLane[] = Array.from(numericLaneMap.values()).sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+
   let curY = 0;
-  for (const order of populatedOrders) {
-    const existingLane = baseLayout.lanes.find((l) => l.order === order);
-    const bandDef = GENERATION_BANDS.find((b) => b.order === order);
-    const laneHeight = existingLane?.height || 440;
-    const lane: CohortLane = {
-      id: existingLane?.id || bandDef?.id || `gen_order_${order}`,
-      name: existingLane?.name || bandDef?.name || `Generation ${order}`,
-      order,
-      y: curY,
-      height: laneHeight,
-      nodeCount: nodes.filter((n) => n.generationOrder === order).length,
-      startYear: existingLane?.startYear ?? bandDef?.start,
-      endYear: existingLane?.endYear ?? bandDef?.end,
-      backgroundColor: existingLane?.backgroundColor,
-      textColor: existingLane?.textColor,
-    };
-    finalLanes.push(lane);
+  for (const lane of finalLanes) {
+    const laneHeight = lane.height || 440;
+    lane.y = curY;
+    lane.height = laneHeight;
     curY += laneHeight;
   }
 
@@ -471,7 +477,7 @@ export const layoutApi = {
       try {
         const query = new URLSearchParams();
         if (options?.includeArchived) query.set('includeArchived', 'true');
-        query.set('compactLanes', 'true');
+        query.set('compactLanes', 'false');
         query.set('inferGenerations', (options?.inferGenerations ?? true).toString());
         if (options?.nodeWidth) query.set('nodeWidth', options.nodeWidth.toString());
         if (options?.nodeHeight) query.set('nodeHeight', options.nodeHeight.toString());
@@ -493,13 +499,10 @@ export const layoutApi = {
       }
     }
 
-    // 2. In production / static hosting CDN (or local fallback): load pre-rendered static layout directly
+    // 2. In production / static hosting CDN (or local fallback): load full timeline static layout directly
     try {
-      const staticUrl = `/data/layout-${lineage}-compact.json?v=${Date.now()}`;
-      let staticRes = await fetch(staticUrl, { cache: 'no-cache' });
-      if (!staticRes.ok) {
-        staticRes = await fetch(`/data/layout-${lineage}.json?v=${Date.now()}`, { cache: 'no-cache' });
-      }
+      const staticUrl = `/data/layout-${lineage}.json?v=${Date.now()}`;
+      const staticRes = await fetch(staticUrl, { cache: 'no-cache' });
       if (staticRes.ok) {
         const fallbackData = await staticRes.json();
         const augmented = augmentLayoutWithCustomPersons(fallbackData, lineage, options);

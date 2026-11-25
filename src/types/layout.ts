@@ -73,7 +73,6 @@ export interface FamilyLayout {
 
 export interface LayoutOptions {
   includeArchived?: boolean;
-  compactLanes?: boolean;
   inferGenerations?: boolean;
   nodeWidth?: number;
   nodeHeight?: number;
