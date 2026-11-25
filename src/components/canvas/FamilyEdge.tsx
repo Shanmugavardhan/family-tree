@@ -157,6 +157,7 @@ export function buildMergedSpouseObstacleBoxes(
  */
 export function computeObstacleAwareParentPath(params: {
   coupleKey: string;
+  coupleSlotOffset?: number;
   sourceX: number;
   sourceY: number;
   sourceClearY?: number;
@@ -164,7 +165,7 @@ export function computeObstacleAwareParentPath(params: {
   targetY: number;
   personBoxes: ObstacleBox[];
 }): { path: string; labelX: number; labelY: number } | null {
-  const { coupleKey, sourceX, sourceY, sourceClearY, targetX, targetY, personBoxes } = params;
+  const { coupleKey, coupleSlotOffset, sourceX, sourceY, sourceClearY, targetX, targetY, personBoxes } = params;
   if (targetY <= sourceY + 20) return null;
 
   const effectiveClearY = Math.max(sourceY, sourceClearY ?? sourceY);
@@ -175,8 +176,10 @@ export function computeObstacleAwareParentPath(params: {
   );
 
   // All children of the same couple share the exact same coupleSlot -> 1 unified sibling bus bar!
-  const coupleSlot = (hashKey(coupleKey) % 5) - 2; // -2 .. +2
-  const upperCorridorY = effectiveClearY + 38 + coupleSlot * 7;
+  // When coupleSlotOffset is provided, every distinct couple in the same lane gets a unique Y slot.
+  const coupleSlot = coupleSlotOffset !== undefined ? coupleSlotOffset : (hashKey(coupleKey) % 5) - 2;
+  const SLOT_STEP_Y = 14;
+  const upperCorridorY = effectiveClearY + 38 + coupleSlot * SLOT_STEP_Y;
 
   const isXClear = (x: number) =>
     !intermediateBoxes.some((b) => x >= b.left && x <= b.right);
@@ -194,7 +197,7 @@ export function computeObstacleAwareParentPath(params: {
   if (intermediateBoxes.length === 0 || isXClear(targetX)) {
     const busY =
       intermediateBoxes.length === 0
-        ? Math.round((effectiveClearY + targetY) / 2) + coupleSlot * 7
+        ? Math.round((effectiveClearY + targetY) / 2) + coupleSlot * SLOT_STEP_Y
         : upperCorridorY;
     const pts: Point[] = [
       { x: sourceX, y: sourceY },
@@ -210,7 +213,7 @@ export function computeObstacleAwareParentPath(params: {
   }
 
   // Case 3: Multi-generation span where targetX is blocked by an intermediate person/spouse unit -> route around obstacle
-  const lowerCorridorY = targetY - 42 + coupleSlot * 7;
+  const lowerCorridorY = targetY - 42 + coupleSlot * SLOT_STEP_Y;
 
   const candidates: number[] = [sourceX];
   const sortedBoxes = [...intermediateBoxes].sort((a, b) => a.left - b.left);
@@ -327,8 +330,46 @@ export const FamilyEdge: React.FC<any> = ({
 
     const personBoxes = buildMergedSpouseObstacleBoxes(personNodes, spouseEdges);
 
+    // Assign a deterministic, collision-free vertical slot for every couple in the same source lane
+    let coupleSlotOffset = 0;
+    if (srcNode) {
+      const coupleMap = new Map<string, number>();
+      const parentEdges = edges.filter(
+        (e) => (e.data as FamilyEdgeData)?.edgeType === 'parent_child'
+      );
+      for (const pe of parentEdges) {
+        const peSrc = personNodes.find((n) => n.id === pe.source);
+        if (!peSrc || Math.abs(peSrc.y - srcNode.y) >= 40) continue;
+        const peSpouseEdge = spouseEdges.find(
+          (se) => se.source === pe.source || se.target === pe.source
+        );
+        let cKey = pe.source;
+        let cX = peSrc.x + peSrc.width / 2;
+        if (peSpouseEdge) {
+          const spId =
+            peSpouseEdge.source === pe.source ? peSpouseEdge.target : peSpouseEdge.source;
+          const peSp = personNodes.find((n) => n.id === spId);
+          if (peSp && Math.abs(peSp.y - peSrc.y) < 40) {
+            cKey = [pe.source, spId].sort().join('<->');
+            cX = (peSrc.x + peSrc.width / 2 + peSp.x + peSp.width / 2) / 2;
+          }
+        }
+        if (!coupleMap.has(cKey)) {
+          coupleMap.set(cKey, cX);
+        }
+      }
+      const sortedCouples = Array.from(coupleMap.entries()).sort((a, b) =>
+        a[1] !== b[1] ? a[1] - b[1] : a[0].localeCompare(b[0])
+      );
+      const myIdx = sortedCouples.findIndex(([k]) => k === coupleKey);
+      if (myIdx >= 0 && sortedCouples.length > 1) {
+        coupleSlotOffset = myIdx - (sortedCouples.length - 1) / 2;
+      }
+    }
+
     return computeObstacleAwareParentPath({
       coupleKey,
+      coupleSlotOffset,
       sourceX: effectiveSourceX,
       sourceY: effectiveSourceY,
       sourceClearY: srcNode ? srcNode.y + srcNode.height + 12 : sourceY,

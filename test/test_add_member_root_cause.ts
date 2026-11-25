@@ -408,6 +408,101 @@ async function runAll() {
     assert.strictEqual(subramanyamParentEdges.length, 1, 'Child of married couple must have exactly ONE parent-child line, not duplicate lines');
   });
 
+  await runTest('Subtree-Width Reservation: Wide child branch reserves space in parent lane so siblings stay centered without crowding adjacent family', async () => {
+    const { arrangeSideBySideInLanes } = await import('../src/services/layoutApi');
+    const mkNode = (id: string, firstName: string, generationOrder: number, birthYear: number) => ({
+      id,
+      firstName,
+      lastName: 'Test',
+      generationOrder,
+      birthYear,
+      gender: 'male' as const,
+      x: 0,
+      y: generationOrder * 360,
+      width: 190,
+      height: 156,
+      lineage: 'paradarami',
+      isDeceased: false,
+    });
+    const lanes = [
+      { order: 0, name: 'Gen X', y: 0, height: 360 },
+      { order: 1, name: 'Millennials', y: 360, height: 360 },
+    ] as any;
+    const nodes: any[] = [
+      mkNode('nara', 'Narayanaswami', 0, 1968),
+      mkNode('srivalli', 'Srivalli', 0, 1972),
+      mkNode('rani', 'Rani', 0, 1975),
+      mkNode('giri', 'Giribabu', 1, 1995),
+      mkNode('pavani', 'Pavani', 1, 1997),
+      mkNode('sai', 'Sai', 1, 1998),
+      mkNode('sravya', 'Sravya', 1, 2000),
+      mkNode('lakshmi', 'Lakshmi', 1, 1999),
+      mkNode('nikil', 'Nikil', 1, 2002),
+    ];
+    const edges: any[] = [
+      { id: 's1', source: 'nara', target: 'srivalli', type: 'spouse' },
+      { id: 's2', source: 'giri', target: 'pavani', type: 'spouse' },
+      { id: 's3', source: 'sai', target: 'sravya', type: 'spouse' },
+      { id: 'p1', source: 'srivalli', target: 'pavani', type: 'parent_child' },
+      { id: 'p2', source: 'srivalli', target: 'sravya', type: 'parent_child' },
+      { id: 'p3', source: 'rani', target: 'lakshmi', type: 'parent_child' },
+      { id: 'p4', source: 'rani', target: 'nikil', type: 'parent_child' },
+    ];
+    arrangeSideBySideInLanes(nodes, edges, lanes, 1600);
+    const nara = nodes.find((n) => n.id === 'nara')!;
+    const srivalli = nodes.find((n) => n.id === 'srivalli')!;
+    const rani = nodes.find((n) => n.id === 'rani')!;
+    const giri = nodes.find((n) => n.id === 'giri')!;
+    const sravya = nodes.find((n) => n.id === 'sravya')!;
+    const lakshmi = nodes.find((n) => n.id === 'lakshmi')!;
+    const nikil = nodes.find((n) => n.id === 'nikil')!;
+
+    const naraSrivalliCenter = (nara.x + nara.width / 2 + srivalli.x + srivalli.width / 2) / 2;
+    const childGroupCenter = (giri.x + sravya.x + sravya.width) / 2;
+    assert.ok(
+      Math.abs(naraSrivalliCenter - childGroupCenter) <= 5,
+      `Narayanaswami+Srivalli center (${naraSrivalliCenter}) should align with their children (${childGroupCenter})`
+    );
+    const gapBetweenBranches = lakshmi.x - (sravya.x + sravya.width);
+    assert.ok(
+      gapBetweenBranches >= 72,
+      `Gap between Sravya and Lakshmi (${gapBetweenBranches}px) must be >= 72px`
+    );
+    const raniCenter = rani.x + rani.width / 2;
+    const raniChildCenter = (lakshmi.x + nikil.x + nikil.width) / 2;
+    assert.ok(
+      Math.abs(raniCenter - raniChildCenter) <= 5,
+      `Rani center (${raniCenter}) should align with her children (${raniChildCenter})`
+    );
+  });
+
+  await runTest('Collision-Free Bloodline busY: Distinct couples in the same lane with coupleSlotOffset get distinct busY', async () => {
+    const { computeObstacleAwareParentPath } = await import('../src/components/canvas/FamilyEdge');
+    const routeA = computeObstacleAwareParentPath({
+      coupleKey: 'nara<->srivalli',
+      coupleSlotOffset: -0.5,
+      sourceX: 500,
+      sourceY: 100,
+      sourceClearY: 200,
+      targetX: 350,
+      targetY: 360,
+      personBoxes: [],
+    });
+    const routeB = computeObstacleAwareParentPath({
+      coupleKey: 'rani',
+      coupleSlotOffset: 0.5,
+      sourceX: 1100,
+      sourceY: 100,
+      sourceClearY: 200,
+      targetX: 1000,
+      targetY: 360,
+      personBoxes: [],
+    });
+    assert.ok(routeA && routeB);
+    assert.notStrictEqual(routeA.labelY, routeB.labelY, 'Adjacent couples in same lane must never share the same busY');
+    assert.ok(Math.abs(routeA.labelY - routeB.labelY) >= 12, `busY separation (${Math.abs(routeA.labelY - routeB.labelY)}px) must prevent line collision`);
+  });
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);

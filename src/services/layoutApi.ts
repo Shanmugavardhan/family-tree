@@ -159,7 +159,7 @@ export function partitionLineageMembers(
   return { mainTreePersonIds, coreBloodlineIds, externalParentsMap };
 }
 
-function arrangeSideBySideInLanes(
+export function arrangeSideBySideInLanes(
   nodes: PositionedNode[],
   edges: PositionedEdge[],
   lanes: CohortLane[],
@@ -226,6 +226,85 @@ function arrangeSideBySideInLanes(
     }
     return 99999999;
   };
+
+  // Bottom-up subtree width calculation: each parent unit reserves at least the horizontal span
+  // required by all of its descendant units so adjacent family branches never crowd or collide.
+  const subtreeWidthByNodeId = new Map<string, number>();
+  const getUnitKey = (unitNodes: PositionedNode[]) =>
+    unitNodes
+      .map((n) => n.id)
+      .sort()
+      .join('|');
+
+  const unitMapByOrder = new Map<number, PositionedNode[][]>();
+  const nodeToUnitKey = new Map<string, string>();
+  for (const lane of sortedLanes) {
+    if (lane.order === null) continue;
+    const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
+    const laneVisited = new Set<string>();
+    const laneUnits: PositionedNode[][] = [];
+    for (const node of laneNodes) {
+      if (laneVisited.has(node.id)) continue;
+      const unitMembers: PositionedNode[] = [node];
+      laneVisited.add(node.id);
+      const queue = [node.id];
+      while (queue.length > 0) {
+        const currId = queue.shift()!;
+        const spSet = spouseAdj.get(currId);
+        if (spSet) {
+          for (const spId of spSet) {
+            if (!laneVisited.has(spId)) {
+              const spNode = nodeById.get(spId);
+              if (spNode && spNode.generationOrder === lane.order) {
+                laneVisited.add(spId);
+                unitMembers.push(spNode);
+                queue.push(spId);
+              }
+            }
+          }
+        }
+      }
+      laneUnits.push(unitMembers);
+      const uKey = getUnitKey(unitMembers);
+      for (const m of unitMembers) nodeToUnitKey.set(m.id, uKey);
+    }
+    unitMapByOrder.set(lane.order, laneUnits);
+  }
+
+  for (let lIdx = sortedLanes.length - 1; lIdx >= 0; lIdx--) {
+    const lane = sortedLanes[lIdx];
+    if (lane.order === null) continue;
+    const laneUnits = unitMapByOrder.get(lane.order) || [];
+    for (const unitMembers of laneUnits) {
+      const ownWidth =
+        unitMembers.reduce((sum, n) => sum + (n.width || 190), 0) +
+        Math.max(0, unitMembers.length - 1) * SP_GAP;
+
+      // Collect unique child units in lower lanes
+      const childUnitKeys = new Set<string>();
+      const childUnitWidths: number[] = [];
+      for (const m of unitMembers) {
+        const cIds = parentToChildren.get(m.id) || [];
+        for (const cId of cIds) {
+          const cNode = nodeById.get(cId);
+          if (!cNode || cNode.generationOrder === null || lane.order === null || cNode.generationOrder <= lane.order) continue;
+          const cuKey = nodeToUnitKey.get(cId);
+          if (cuKey && !childUnitKeys.has(cuKey)) {
+            childUnitKeys.add(cuKey);
+            childUnitWidths.push(subtreeWidthByNodeId.get(cId) ?? (cNode.width || 190));
+          }
+        }
+      }
+
+      const childrenSpan =
+        childUnitWidths.reduce((s, w) => s + w, 0) +
+        Math.max(0, childUnitWidths.length - 1) * UNIT_GAP;
+      const totalSubtreeWidth = Math.max(ownWidth, childrenSpan);
+      for (const m of unitMembers) {
+        subtreeWidthByNodeId.set(m.id, totalSubtreeWidth);
+      }
+    }
+  }
 
   const positionLaneUnits = (lane: CohortLane, useParentCenters: boolean) => {
     const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
@@ -327,13 +406,20 @@ function arrangeSideBySideInLanes(
       if (i === groupStart) i++;
 
       const groupUnits = units.slice(groupStart, i);
-      const unitWidths = groupUnits.map(
+      const ownWidths = groupUnits.map(
         (u) =>
           u.nodes.reduce((sum, n) => sum + (n.width || 190), 0) +
           Math.max(0, u.nodes.length - 1) * SP_GAP
       );
+      const slotWidths = groupUnits.map(
+        (u, idx) =>
+          Math.max(
+            ownWidths[idx],
+            subtreeWidthByNodeId.get(u.nodes[0]?.id || '') ?? ownWidths[idx]
+          )
+      );
       const totalGroupWidth =
-        unitWidths.reduce((s, w) => s + w, 0) +
+        slotWidths.reduce((s, w) => s + w, 0) +
         Math.max(0, groupUnits.length - 1) * UNIT_GAP;
 
       const idealGroupStart = groupUnits[0].hasParents
@@ -342,16 +428,19 @@ function arrangeSideBySideInLanes(
       let groupX = Math.max(cursorX, idealGroupStart);
 
       for (let gIdx = 0; gIdx < groupUnits.length; gIdx++) {
-        let currX = groupX;
+        const unitOffset = Math.round((slotWidths[gIdx] - ownWidths[gIdx]) / 2);
+        let currX = groupX + unitOffset;
         for (const n of groupUnits[gIdx].nodes) {
           n.x = Math.round(currX);
           currX += (n.width || 190) + SP_GAP;
         }
-        groupX += unitWidths[gIdx] + UNIT_GAP;
+        groupX += slotWidths[gIdx] + UNIT_GAP;
       }
 
       cursorX = groupX;
-      if (cursorX + 120 > maxX) maxX = Math.round(cursorX + 120);
+      const lastGroupNode = groupUnits[groupUnits.length - 1]?.nodes[groupUnits[groupUnits.length - 1].nodes.length - 1];
+      const actualRight = lastGroupNode ? lastGroupNode.x + (lastGroupNode.width || 190) : cursorX;
+      if (actualRight + 120 > maxX) maxX = Math.round(actualRight + 120);
     }
   };
 
@@ -365,6 +454,7 @@ function arrangeSideBySideInLanes(
   let widestLaneOrder: number | null = null;
   let widestWidth = -1;
   for (const lane of sortedLanes) {
+    if (lane.order === null) continue;
     const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
     if (laneNodes.length === 0) continue;
     const minLeft = Math.min(...laneNodes.map((n) => n.x));
@@ -376,28 +466,47 @@ function arrangeSideBySideInLanes(
   }
 
   for (const lane of sortedLanes) {
+    if (lane.order === null) continue;
     const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
     if (laneNodes.length === 0) continue;
 
     const hasAnyParent = laneNodes.some((n) => (childToParents.get(n.id) || []).length > 0);
     if (!hasAnyParent || lane.order === widestLaneOrder) {
-      const minLeft = Math.min(...laneNodes.map((n) => n.x));
-      const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
-      const laneWidth = maxRight - minLeft;
+      const sortedLaneNodes = [...laneNodes].sort((a, b) => a.x - b.x);
+      const firstNode = sortedLaneNodes[0];
+      const lastNode = sortedLaneNodes[sortedLaneNodes.length - 1];
+      const minLeft = firstNode.x;
+      const maxRight = lastNode.x + (lastNode.width || 190);
+      // Account for subtree-slot padding on the leftmost/rightmost units of a root lane
+      // so centering the root lane never pushes its wider child branches past LEFT_MARGIN.
+      const firstSubtreeW = !hasAnyParent ? (subtreeWidthByNodeId.get(firstNode.id) ?? (firstNode.width || 190)) : 0;
+      const firstUnitNodes = sortedLaneNodes.filter((n) => nodeToUnitKey.get(n.id) === nodeToUnitKey.get(firstNode.id));
+      const firstOwnW = firstUnitNodes.reduce((s, n) => s + (n.width || 190), 0) + Math.max(0, firstUnitNodes.length - 1) * SP_GAP;
+      const leftPad = !hasAnyParent ? Math.max(0, Math.round((firstSubtreeW - firstOwnW) / 2)) : 0;
+
+      const lastSubtreeW = !hasAnyParent ? (subtreeWidthByNodeId.get(lastNode.id) ?? (lastNode.width || 190)) : 0;
+      const lastUnitNodes = sortedLaneNodes.filter((n) => nodeToUnitKey.get(n.id) === nodeToUnitKey.get(lastNode.id));
+      const lastOwnW = lastUnitNodes.reduce((s, n) => s + (n.width || 190), 0) + Math.max(0, lastUnitNodes.length - 1) * SP_GAP;
+      const rightPad = !hasAnyParent ? Math.max(0, Math.round((lastSubtreeW - lastOwnW) / 2)) : 0;
+
+      const effectiveMinLeft = minLeft - leftPad;
+      const effectiveMaxRight = maxRight + rightPad;
+      const laneWidth = effectiveMaxRight - effectiveMinLeft;
       const desiredLeft = Math.max(LEFT_MARGIN, Math.round(canvasCenterX - laneWidth / 2));
-      const shiftX = desiredLeft - minLeft;
+      const shiftX = desiredLeft - effectiveMinLeft;
       if (shiftX !== 0) {
         for (const n of laneNodes) n.x += shiftX;
       }
     }
   }
 
-  // Pass 3: Re-align child lanes directly centered beneath their centered parent couples
+  // Pass 3: Re-align all child lanes directly centered beneath their centered parent couples
   for (const lane of sortedLanes) {
+    if (lane.order === null) continue;
     const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
     if (laneNodes.length === 0) continue;
     const hasAnyParent = laneNodes.some((n) => (childToParents.get(n.id) || []).length > 0);
-    if (hasAnyParent && lane.order !== widestLaneOrder) {
+    if (hasAnyParent) {
       positionLaneUnits(lane, true);
     }
   }
