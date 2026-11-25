@@ -285,6 +285,48 @@ async function runAll() {
     assert.strictEqual(Object.keys(store).length, 0, 'Zero localStorage keys must be written across entire test suite');
   });
 
+  await runTest('Center Alignment: Every generational strip (including elderly root couple) is horizontally centered', async () => {
+    const layoutRes = await layoutApi.getLayout({ lineage: 'paradarami' });
+    const layout = layoutRes.data!;
+    const canvasCenter = layout.width / 2;
+
+    for (const lane of layout.lanes) {
+      const laneNodes = layout.nodes.filter((n) => n.generationOrder === lane.order);
+      if (laneNodes.length === 0) continue;
+      const minLeft = Math.min(...laneNodes.map((n) => n.x));
+      const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
+      const laneMidpoint = (minLeft + maxRight) / 2;
+      assert.ok(
+        Math.abs(laneMidpoint - canvasCenter) <= 2,
+        `Lane "${lane.name}" midpoint (${laneMidpoint}) must be centered at canvasCenter (${canvasCenter})`
+      );
+    }
+  });
+
+  await runTest('Obstacle-Aware Routing: Multi-generation lines route around intermediate person tiles without crossing', async () => {
+    const { computeObstacleAwareParentPath } = await import('../src/components/canvas/FamilyEdge');
+    const intermediateTiles = [
+      { left: 682, right: 908, top: 3210, bottom: 3410 }, // Sravya Narayanaswamy
+      { left: 420, right: 646, top: 3210, bottom: 3410 }, // Sai
+    ];
+    const routed = computeObstacleAwareParentPath({
+      id: 'edge-genx-to-genz',
+      sourceX: 795,
+      sourceY: 2940,
+      targetX: 795,
+      targetY: 3660,
+      personBoxes: intermediateTiles,
+    });
+
+    assert.ok(routed, 'Must compute custom obstacle-aware route when intermediate tiles exist');
+    assert.ok(routed.path.includes('M 795 2940'), 'Path must start at source');
+    assert.ok(routed.path.endsWith('L 795 3660'), 'Path must end at target');
+    const hitsAnyTile = intermediateTiles.some(
+      (b) => routed.labelX >= b.left && routed.labelX <= b.right
+    );
+    assert.strictEqual(hitsAnyTile, false, `Vertical drop X (${routed.labelX}) must NOT cross any intermediate tile`);
+  });
+
   console.log(`\nResults: ${passed} / ${total} tests passed.`);
   if (passed !== total) {
     process.exit(1);

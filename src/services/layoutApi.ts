@@ -268,6 +268,25 @@ function arrangeSideBySideInLanes(
     }
   }
 
+  // Center-alignment pass: center every generational lane horizontally around canvas midpoint
+  const canvasCenterX = maxX / 2;
+  for (const lane of sortedLanes) {
+    const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
+    if (laneNodes.length === 0) continue;
+
+    const minLeft = Math.min(...laneNodes.map((n) => n.x));
+    const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
+    const laneWidth = maxRight - minLeft;
+    const desiredLeft = Math.max(LEFT_MARGIN, Math.round(canvasCenterX - laneWidth / 2));
+    const shiftX = desiredLeft - minLeft;
+
+    if (shiftX !== 0) {
+      for (const n of laneNodes) {
+        n.x += shiftX;
+      }
+    }
+  }
+
   // Canonical left-to-right orientation for spouse edges
   for (const edge of edges) {
     if (edge.type === 'spouse') {
