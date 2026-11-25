@@ -299,6 +299,45 @@ async function runAll() {
       Math.abs(boomersMid - canvasCenter) <= 2,
       `Baby Boomers midpoint (${boomersMid}) must be centered at canvasCenter (${canvasCenter})`
     );
+
+    // Children must be center-aligned with their parents (e.g. Pavani & Sravya centered under Narayanaswamy + Srivalli)
+    const { buildFamilyLayoutFromRecords } = await import('../src/services/layoutApi');
+    const srivalli = layout.nodes.find((n) => n.firstName === 'Srivalli')!;
+    const narayanaswamy = layout.nodes.find((n) => n.firstName === 'Narayanaswamy')!;
+    assert.ok(srivalli && narayanaswamy);
+
+    await personApi.create({
+      first_name: 'Pavani',
+      last_name: 'Narayanaswamy',
+      gender: 'female',
+      birth_date: '1995',
+      father_id: narayanaswamy.id,
+      mother_id: srivalli.id,
+    });
+    await personApi.create({
+      first_name: 'Sravya',
+      last_name: 'Narayanaswamy',
+      gender: 'female',
+      birth_date: '1996',
+      father_id: narayanaswamy.id,
+      mother_id: srivalli.id,
+    });
+
+    const refreshed = buildFamilyLayoutFromRecords(
+      (await personApi.getAll()).data!,
+      (await relationshipApi.getAll()).data!,
+      'paradarami'
+    );
+    const pNode = refreshed.nodes.find((n) => n.firstName === 'Pavani')!;
+    const sNode = refreshed.nodes.find((n) => n.firstName === 'Sravya')!;
+    const srivalliNode = refreshed.nodes.find((n) => n.firstName === 'Srivalli')!;
+    const naraNode = refreshed.nodes.find((n) => n.firstName === 'Narayanaswamy')!;
+    const parentsMid = (Math.min(srivalliNode.x, naraNode.x) + Math.max(srivalliNode.x, naraNode.x) + 190) / 2;
+    const childrenMid = (pNode.x + sNode.x + 190) / 2;
+    assert.ok(
+      Math.abs(childrenMid - parentsMid) <= 2,
+      `Children midpoint (${childrenMid}) must be center-aligned with parents midpoint (${parentsMid})`
+    );
   });
 
   await runTest('Obstacle-Aware Routing: Clears parent name labels, uses minimal turns, and avoids spouse units', async () => {

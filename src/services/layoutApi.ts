@@ -311,39 +311,94 @@ function arrangeSideBySideInLanes(
       return (a.nodes[0]?.firstName || '').localeCompare(b.nodes[0]?.firstName || '');
     });
 
+    // Group sibling units sharing the same parent couple (desiredX) and center each sibling group under its parents
     let cursorX = LEFT_MARGIN;
-    for (const unit of units) {
-      const unitWidth =
-        unit.nodes.reduce((sum, n) => sum + (n.width || 190), 0) +
-        Math.max(0, unit.nodes.length - 1) * SP_GAP;
-      let currX = cursorX;
-      for (const n of unit.nodes) {
-        n.x = Math.round(currX);
-        currX += (n.width || 190) + SP_GAP;
+    let i = 0;
+    while (i < units.length) {
+      const groupStart = i;
+      const groupDesiredX = units[i].desiredX;
+      while (
+        i < units.length &&
+        units[i].hasParents &&
+        Math.abs(units[i].desiredX - groupDesiredX) <= 10
+      ) {
+        i++;
       }
-      cursorX += unitWidth + UNIT_GAP;
+      if (i === groupStart) i++;
+
+      const groupUnits = units.slice(groupStart, i);
+      const unitWidths = groupUnits.map(
+        (u) =>
+          u.nodes.reduce((sum, n) => sum + (n.width || 190), 0) +
+          Math.max(0, u.nodes.length - 1) * SP_GAP
+      );
+      const totalGroupWidth =
+        unitWidths.reduce((s, w) => s + w, 0) +
+        Math.max(0, groupUnits.length - 1) * UNIT_GAP;
+
+      const idealGroupStart = groupUnits[0].hasParents
+        ? Math.round(groupDesiredX - totalGroupWidth / 2)
+        : cursorX;
+      let groupX = Math.max(cursorX, idealGroupStart);
+
+      for (let gIdx = 0; gIdx < groupUnits.length; gIdx++) {
+        let currX = groupX;
+        for (const n of groupUnits[gIdx].nodes) {
+          n.x = Math.round(currX);
+          currX += (n.width || 190) + SP_GAP;
+        }
+        groupX += unitWidths[gIdx] + UNIT_GAP;
+      }
+
+      cursorX = groupX;
       if (cursorX + 120 > maxX) maxX = Math.round(cursorX + 120);
     }
   };
 
-  // Pass 1: age-ordered placement per lane
+  // Pass 1: age-ordered, parent-centered placement per lane
   for (const lane of sortedLanes) {
     positionLaneUnits(lane, true);
   }
 
-  // Pass 2: Center every generational lane horizontally around canvasCenterX while preserving age order
+  // Pass 2: Center root/elder lanes & widest lane around canvasCenterX
   const canvasCenterX = maxX / 2;
+  let widestLaneOrder: number | null = null;
+  let widestWidth = -1;
+  for (const lane of sortedLanes) {
+    const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
+    if (laneNodes.length === 0) continue;
+    const minLeft = Math.min(...laneNodes.map((n) => n.x));
+    const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
+    if (maxRight - minLeft > widestWidth) {
+      widestWidth = maxRight - minLeft;
+      widestLaneOrder = lane.order;
+    }
+  }
+
   for (const lane of sortedLanes) {
     const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
     if (laneNodes.length === 0) continue;
 
-    const minLeft = Math.min(...laneNodes.map((n) => n.x));
-    const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
-    const laneWidth = maxRight - minLeft;
-    const desiredLeft = Math.max(LEFT_MARGIN, Math.round(canvasCenterX - laneWidth / 2));
-    const shiftX = desiredLeft - minLeft;
-    if (shiftX !== 0) {
-      for (const n of laneNodes) n.x += shiftX;
+    const hasAnyParent = laneNodes.some((n) => (childToParents.get(n.id) || []).length > 0);
+    if (!hasAnyParent || lane.order === widestLaneOrder) {
+      const minLeft = Math.min(...laneNodes.map((n) => n.x));
+      const maxRight = Math.max(...laneNodes.map((n) => n.x + (n.width || 190)));
+      const laneWidth = maxRight - minLeft;
+      const desiredLeft = Math.max(LEFT_MARGIN, Math.round(canvasCenterX - laneWidth / 2));
+      const shiftX = desiredLeft - minLeft;
+      if (shiftX !== 0) {
+        for (const n of laneNodes) n.x += shiftX;
+      }
+    }
+  }
+
+  // Pass 3: Re-align child lanes directly centered beneath their centered parent couples
+  for (const lane of sortedLanes) {
+    const laneNodes = nodes.filter((n) => n.generationOrder === lane.order);
+    if (laneNodes.length === 0) continue;
+    const hasAnyParent = laneNodes.some((n) => (childToParents.get(n.id) || []).length > 0);
+    if (hasAnyParent && lane.order !== widestLaneOrder) {
+      positionLaneUnits(lane, true);
     }
   }
 
