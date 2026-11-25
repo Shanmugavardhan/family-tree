@@ -63,7 +63,7 @@ export interface GenerateTfaOptions {
  * Probabilistic check so TFA questions appear randomly, not on every single visit.
  */
 export function shouldTriggerTfaPrompt(
-  probability = 0.5,
+  probability = 0.85,
   rng: () => number = Math.random
 ): boolean {
   return rng() < probability;
@@ -297,7 +297,7 @@ export function generateTfaQuestionsForViewer(
       question_text: questionText,
       detail_hint: detailHint,
       options: optionsList,
-      relevance_score: boosts.score + rng() * 25,
+      relevance_score: boosts.score + rng() * 5,
       allowCorrection: true,
       correctionPlaceholder: 'Optional: describe the correct relationship...',
       isDisputed: boosts.isDisputed,
@@ -339,7 +339,7 @@ export function generateTfaQuestionsForViewer(
           { id: 'reject', label: 'No, Incorrect', action: 'reject' },
           { id: 'skip', label: 'Not Sure', action: 'skip' },
         ],
-        relevance_score: boosts.score + rng() * 25,
+        relevance_score: boosts.score + rng() * 5,
         allowCorrection: true,
         correctionPlaceholder: 'Optional: list the correct children...',
         isDisputed: boosts.isDisputed,
@@ -384,7 +384,7 @@ export function generateTfaQuestionsForViewer(
           { id: 'fill', label: 'Submit Birth Year / Date', action: 'fill' },
           { id: 'skip', label: 'Not Sure', action: 'skip' },
         ],
-        relevance_score: boosts.score + rng() * 20,
+        relevance_score: boosts.score + rng() * 4,
         allowFillInput: true,
         fillPlaceholder: 'e.g. 1978 or 1978-05-14',
         branchKey: boosts.branchKey,
@@ -463,7 +463,7 @@ export function generateTfaQuestionsForViewer(
         ? `${getFullName(person)} (${derived.relationship})`
         : 'Birth record verification',
       options: optionsList,
-      relevance_score: boosts.score + rng() * 30,
+      relevance_score: boosts.score + rng() * 5,
       allowCorrection: true,
       correctionPlaceholder: 'Optional: enter correct birth year or YYYY-MM-DD',
       isDisputed: boosts.isDisputed,
@@ -505,7 +505,7 @@ export function generateTfaQuestionsForViewer(
           { id: 'fill', label: 'Submit Birth Place', action: 'fill' },
           { id: 'skip', label: 'Not Sure', action: 'skip' },
         ],
-        relevance_score: boosts.score + rng() * 20,
+        relevance_score: boosts.score + rng() * 4,
         allowFillInput: true,
         fillPlaceholder: 'e.g. Madanapalli, Tirupati',
         branchKey: boosts.branchKey,
@@ -559,7 +559,7 @@ export function generateTfaQuestionsForViewer(
           : `Where was ${getFullName(person)} born?`,
       detail_hint: 'Birthplace record verification',
       options: optionsList,
-      relevance_score: boosts.score + rng() * 30,
+      relevance_score: boosts.score + rng() * 5,
       allowCorrection: true,
       correctionPlaceholder: 'Optional: enter correct birthplace',
       isDisputed: boosts.isDisputed,
@@ -594,7 +594,7 @@ export function generateTfaQuestionsForViewer(
             { id: 'reject', label: 'No, Incorrect', action: 'reject' },
             { id: 'skip', label: 'Not Sure', action: 'skip' },
           ],
-          relevance_score: boosts.score + rng() * 20,
+          relevance_score: boosts.score + rng() * 4,
           allowCorrection: true,
           correctionPlaceholder: 'Optional: enter correct nickname/alias',
           isDisputed: boosts.isDisputed,
@@ -628,7 +628,7 @@ export function generateTfaQuestionsForViewer(
             { id: 'reject', label: 'No, Incorrect', action: 'reject' },
             { id: 'skip', label: 'Not Sure', action: 'skip' },
           ],
-          relevance_score: boosts.score + rng() * 20,
+          relevance_score: boosts.score + rng() * 4,
           allowCorrection: true,
           correctionPlaceholder: 'Optional: enter correct year or status',
           isDisputed: boosts.isDisputed,

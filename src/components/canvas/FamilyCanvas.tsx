@@ -294,8 +294,8 @@ const FamilyCanvasInternal: React.FC = () => {
       sessionStorage.setItem(sessionKey, '1');
     } catch {}
 
-    // Randomize whether to prompt on this visit (not every single time)
-    if (!shouldTriggerTfaPrompt(0.55)) return;
+    // High-frequency prompt on visits (not every single reload, ~90% of sessions)
+    if (!shouldTriggerTfaPrompt(0.9)) return;
 
     (async () => {
       try {
@@ -311,7 +311,7 @@ const FamilyCanvasInternal: React.FC = () => {
           relsRes.data || [],
           currentViewerId,
           verRes.data || {},
-          { maxQuestions: 2 }
+          { maxQuestions: 3 }
         );
 
         if (questions.length > 0) {
